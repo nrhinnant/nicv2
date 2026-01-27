@@ -16,3 +16,4 @@ C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\cli\obj\Debug\net8.0\re
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\cli\obj\Debug\net8.0\wfpctl.pdb
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\cli\obj\Debug\net8.0\Cli.genruntimeconfig.cache
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\cli\obj\Debug\net8.0\ref\wfpctl.dll
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\cli\obj\Debug\net8.0\Cli.sourcelink.json

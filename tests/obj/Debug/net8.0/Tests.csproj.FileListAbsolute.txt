@@ -99,3 +99,4 @@ C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\refi
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\Tests.pdb
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\Tests.genruntimeconfig.cache
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\ref\Tests.dll
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\Tests.sourcelink.json

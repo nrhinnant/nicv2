@@ -2,6 +2,10 @@ using WfpTrafficControl.Shared;
 
 namespace WfpTrafficControl.Service;
 
+/// <summary>
+/// Background worker service that manages the WFP policy controller lifecycle.
+/// Currently a placeholder that demonstrates clean start/stop behavior.
+/// </summary>
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
@@ -11,16 +15,60 @@ public class Worker : BackgroundService
         _logger = logger;
     }
 
+    public override Task StartAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "{ServiceName} v{Version} starting at {Time}",
+            WfpConstants.ServiceName,
+            GetVersion(),
+            DateTimeOffset.Now);
+
+        return base.StartAsync(cancellationToken);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("{ServiceName} starting", WfpConstants.ServiceName);
+        _logger.LogInformation("{ServiceName} is now running", WfpConstants.ServiceName);
 
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            // Placeholder: WFP policy controller logic will go here
-            await Task.Delay(TimeSpan.FromSeconds(60), stoppingToken);
+            // Main service loop
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                // Placeholder: WFP policy controller logic will go here
+                // For now, just idle and stay responsive to stop signals
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+            }
         }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation is requested - not an error
+            _logger.LogDebug("Service execution cancelled");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception in service execution");
+            // Don't rethrow - let the service stop gracefully
+            // The lifetime will be stopped in StopAsync
+        }
+    }
 
-        _logger.LogInformation("{ServiceName} stopping", WfpConstants.ServiceName);
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "{ServiceName} stopping at {Time}",
+            WfpConstants.ServiceName,
+            DateTimeOffset.Now);
+
+        await base.StopAsync(cancellationToken);
+
+        _logger.LogInformation("{ServiceName} stopped", WfpConstants.ServiceName);
+    }
+
+    private static string GetVersion()
+    {
+        var assembly = typeof(Worker).Assembly;
+        var version = assembly.GetName().Version;
+        return version?.ToString(3) ?? "0.0.0";
     }
 }

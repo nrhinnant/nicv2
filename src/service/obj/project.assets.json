@@ -2568,6 +2568,7 @@
     "net8.0-windows7.0": [
       "Microsoft.Extensions.Hosting >= 8.0.0",
       "Microsoft.Extensions.Hosting.WindowsServices >= 8.0.0",
+      "Microsoft.Extensions.Logging.EventLog >= 8.0.0",
       "Shared >= 1.0.0"
     ]
   },
@@ -2578,7 +2579,7 @@
     "version": "1.0.0",
     "restore": {
       "projectUniqueName": "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\service\\Service.csproj",
-      "projectName": "Service",
+      "projectName": "WfpTrafficControl.Service",
       "projectPath": "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\service\\Service.csproj",
       "packagesPath": "C:\\Users\\nrhin\\.nuget\\packages\\",
       "outputPath": "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\service\\obj\\",
@@ -2622,6 +2623,10 @@
             "version": "[8.0.0, )"
           },
           "Microsoft.Extensions.Hosting.WindowsServices": {
+            "target": "Package",
+            "version": "[8.0.0, )"
+          },
+          "Microsoft.Extensions.Logging.EventLog": {
             "target": "Package",
             "version": "[8.0.0, )"
           }
