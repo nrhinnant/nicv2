@@ -100,3 +100,8 @@ C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\Test
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\Tests.genruntimeconfig.cache
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\ref\Tests.dll
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\obj\Debug\net8.0\Tests.sourcelink.json
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\bin\Debug\net8.0\wfpctl.deps.json
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\bin\Debug\net8.0\wfpctl.runtimeconfig.json
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\bin\Debug\net8.0\wfpctl.exe
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\bin\Debug\net8.0\wfpctl.dll
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\tests\bin\Debug\net8.0\wfpctl.pdb

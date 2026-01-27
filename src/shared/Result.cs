@@ -39,9 +39,12 @@ public static class ErrorCodes
     public const string InvalidArgument = "INVALID_ARGUMENT";
     public const string NotFound = "NOT_FOUND";
     public const string PermissionDenied = "PERMISSION_DENIED";
+    public const string AccessDenied = "ACCESS_DENIED";
     public const string InvalidPolicy = "INVALID_POLICY";
+    public const string InvalidState = "INVALID_STATE";
     public const string WfpError = "WFP_ERROR";
     public const string ServiceError = "SERVICE_ERROR";
+    public const string ServiceUnavailable = "SERVICE_UNAVAILABLE";
     public const string IpcError = "IPC_ERROR";
 }
 

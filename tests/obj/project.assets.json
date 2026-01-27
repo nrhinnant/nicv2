@@ -421,6 +421,19 @@
         "runtime": {
           "bin/placeholder/Shared.dll": {}
         }
+      },
+      "wfpctl/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "dependencies": {
+          "Shared": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/wfpctl.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/wfpctl.dll": {}
+        }
       }
     }
   },
@@ -1007,6 +1020,11 @@
       "type": "project",
       "path": "../src/shared/Shared.csproj",
       "msbuildProject": "../src/shared/Shared.csproj"
+    },
+    "wfpctl/1.0.0": {
+      "type": "project",
+      "path": "../src/cli/Cli.csproj",
+      "msbuildProject": "../src/cli/Cli.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -1014,6 +1032,7 @@
       "Microsoft.NET.Test.Sdk >= 17.9.0",
       "Shared >= 1.0.0",
       "coverlet.collector >= 6.0.1",
+      "wfpctl >= 1.0.0",
       "xunit >= 2.7.0",
       "xunit.runner.visualstudio >= 2.5.7"
     ]
@@ -1043,6 +1062,9 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
+            "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\cli\\Cli.csproj": {
+              "projectPath": "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\cli\\Cli.csproj"
+            },
             "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\shared\\Shared.csproj": {
               "projectPath": "C:\\Users\\nrhin\\OneDrive\\Documents\\Github Repos\\nicv2\\src\\shared\\Shared.csproj"
             }

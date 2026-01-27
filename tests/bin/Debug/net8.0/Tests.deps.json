@@ -11,8 +11,10 @@
           "Microsoft.NET.Test.Sdk": "17.9.0",
           "Shared": "1.0.0",
           "coverlet.collector": "6.0.1",
+          "wfpctl": "1.0.0",
           "xunit": "2.7.0",
-          "xunit.runner.visualstudio": "2.5.7"
+          "xunit.runner.visualstudio": "2.5.7",
+          "wfpctl.Reference": "1.0.0.0"
         },
         "runtime": {
           "Tests.dll": {}
@@ -348,6 +350,25 @@
             "fileVersion": "1.0.0.0"
           }
         }
+      },
+      "wfpctl/1.0.0": {
+        "dependencies": {
+          "Shared": "1.0.0"
+        },
+        "runtime": {
+          "wfpctl.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": ""
+          }
+        }
+      },
+      "wfpctl.Reference/1.0.0.0": {
+        "runtime": {
+          "wfpctl.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -464,6 +485,16 @@
     },
     "Shared/1.0.0": {
       "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "wfpctl/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "wfpctl.Reference/1.0.0.0": {
+      "type": "reference",
       "serviceable": false,
       "sha512": ""
     }

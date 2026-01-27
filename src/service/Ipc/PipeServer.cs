@@ -156,19 +156,21 @@ public sealed class PipeServer : IDisposable
     {
         try
         {
-            // Step 1: Authorize the client
-            if (!AuthorizeClient(pipeServer))
-            {
-                _logger.LogWarning("Unauthorized client connection rejected");
-                await SendResponseAsync(pipeServer, ErrorResponse.AccessDenied(), cancellationToken);
-                return;
-            }
-
-            // Step 2: Read the request with timeout
+            // Step 1: Read the request with timeout
+            // NOTE: On Windows, we must read data from the pipe before we can impersonate the client.
+            // Therefore, we read the request first, then authorize, then process.
             var request = await ReadRequestAsync(pipeServer, cancellationToken);
             if (request == null)
             {
                 // Error already logged and response sent in ReadRequestAsync
+                return;
+            }
+
+            // Step 2: Authorize the client (must happen after reading data from pipe)
+            if (!AuthorizeClient(pipeServer))
+            {
+                _logger.LogWarning("Unauthorized client connection rejected");
+                await SendResponseAsync(pipeServer, ErrorResponse.AccessDenied(), cancellationToken);
                 return;
             }
 
