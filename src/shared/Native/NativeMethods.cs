@@ -257,6 +257,51 @@ internal static partial class NativeMethods
         IntPtr engineHandle,
         in Guid key,
         out IntPtr filter);
+
+    // ========================================
+    // Filter Enumeration
+    // ========================================
+
+    /// <summary>
+    /// Creates a handle used to enumerate filters.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="enumTemplate">Template used to filter the results. Can be null to enumerate all.</param>
+    /// <param name="enumHandle">Receives the enumeration handle.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, or an error code on failure.</returns>
+    [DllImport(Fwpuclnt, SetLastError = false)]
+    internal static extern uint FwpmFilterCreateEnumHandle0(
+        IntPtr engineHandle,
+        IntPtr enumTemplate,
+        out IntPtr enumHandle);
+
+    /// <summary>
+    /// Returns the next batch of filters from the enumeration.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="enumHandle">Handle returned by FwpmFilterCreateEnumHandle0.</param>
+    /// <param name="numEntriesRequested">Maximum number of entries to return.</param>
+    /// <param name="entries">Receives an array of FWPM_FILTER0 pointers.</param>
+    /// <param name="numEntriesReturned">Number of entries actually returned.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, or an error code on failure.</returns>
+    [LibraryImport(Fwpuclnt, SetLastError = false)]
+    internal static partial uint FwpmFilterEnum0(
+        IntPtr engineHandle,
+        IntPtr enumHandle,
+        uint numEntriesRequested,
+        out IntPtr entries,
+        out uint numEntriesReturned);
+
+    /// <summary>
+    /// Frees a handle returned by FwpmFilterCreateEnumHandle0.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="enumHandle">Handle to destroy.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, or an error code on failure.</returns>
+    [LibraryImport(Fwpuclnt, SetLastError = false)]
+    internal static partial uint FwpmFilterDestroyEnumHandle0(
+        IntPtr engineHandle,
+        IntPtr enumHandle);
 }
 
 /// <summary>
@@ -384,6 +429,8 @@ internal static class WfpConditionGuids
 
 /// <summary>
 /// Structure for FWPM_FILTER0 used in FwpmFilterAdd0.
+/// Note: The rawContext field is a union in Windows SDK (UINT64 or GUID).
+/// We use Guid (16 bytes) to ensure correct alignment.
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
 internal struct FWPM_FILTER0
@@ -410,8 +457,11 @@ internal struct FWPM_FILTER0
     public IntPtr filterCondition;
     /// <summary>Action to take when filter matches.</summary>
     public FWPM_ACTION0 action;
-    /// <summary>Reserved, must be zero for block/permit.</summary>
-    public ulong rawContext;
+    /// <summary>
+    /// Union field: rawContext (UINT64) or providerContextKey (GUID).
+    /// Using Guid (16 bytes) to match the union size.
+    /// </summary>
+    public Guid rawContextOrProviderContextKey;
     /// <summary>Reserved, must be null.</summary>
     public IntPtr reserved;
     /// <summary>Runtime filter ID (output only, set by FwpmFilterAdd0).</summary>
@@ -544,4 +594,55 @@ internal static class FwpmFilterFlags
 {
     /// <summary>No special flags.</summary>
     public const uint FWPM_FILTER_FLAG_NONE = 0x00000000;
+}
+
+// ========================================
+// Filter Enumeration Structures
+// ========================================
+
+/// <summary>
+/// Template for filter enumeration. Used to scope enumeration to specific filters.
+/// All pointer fields are optional - if null, that field is not used for filtering.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWPM_FILTER_ENUM_TEMPLATE0
+{
+    /// <summary>Pointer to provider GUID to filter by. Null to enumerate all providers.</summary>
+    public IntPtr providerKey;
+    /// <summary>GUID of layer to filter by. Guid.Empty to enumerate all layers.</summary>
+    public Guid layerKey;
+    /// <summary>Type of enumeration (FWP_FILTER_ENUM_TYPE).</summary>
+    public uint enumType;
+    /// <summary>Filter flags to match.</summary>
+    public uint flags;
+    /// <summary>Pointer to provider context GUID. Null to enumerate all.</summary>
+    public IntPtr providerContextTemplate;
+    /// <summary>Number of filter conditions.</summary>
+    public uint numFilterConditions;
+    /// <summary>Pointer to array of filter conditions. Null for no condition filtering.</summary>
+    public IntPtr filterCondition;
+    /// <summary>Action type to match. 0xFFFFFFFF (FWP_ACTION_TYPE_ALL) to enumerate all.</summary>
+    public uint actionMask;
+    /// <summary>Pointer to callout GUID to filter by. Null to enumerate all.</summary>
+    public IntPtr calloutKey;
+}
+
+/// <summary>
+/// Filter enumeration types.
+/// </summary>
+internal static class FwpFilterEnumType
+{
+    /// <summary>Enumerate all filters matching the template.</summary>
+    public const uint FWP_FILTER_ENUM_FULLY_CONTAINED = 0;
+    /// <summary>Enumerate filters that overlap with template conditions.</summary>
+    public const uint FWP_FILTER_ENUM_OVERLAPPING = 1;
+}
+
+/// <summary>
+/// Action type mask for enumeration.
+/// </summary>
+internal static class FwpActionTypeMask
+{
+    /// <summary>Match all action types.</summary>
+    public const uint FWP_ACTION_TYPE_ALL = 0xFFFFFFFF;
 }

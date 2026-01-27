@@ -362,20 +362,20 @@ public sealed class DemoBlockStatusResponse : IpcResponse
 
 /// <summary>
 /// Response to a rollback request.
-/// Response: { "ok": true, "filtersRemoved": true }
+/// Response: { "ok": true, "filtersRemoved": 5 }
 /// </summary>
 public sealed class RollbackResponse : IpcResponse
 {
     /// <summary>
-    /// True if filters were removed successfully.
+    /// Number of filters that were removed.
     /// </summary>
     [JsonPropertyName("filtersRemoved")]
-    public bool FiltersRemoved { get; set; }
+    public int FiltersRemoved { get; set; }
 
     /// <summary>
     /// Creates a successful response.
     /// </summary>
-    public static RollbackResponse Success(bool filtersRemoved)
+    public static RollbackResponse Success(int filtersRemoved)
     {
         return new RollbackResponse
         {

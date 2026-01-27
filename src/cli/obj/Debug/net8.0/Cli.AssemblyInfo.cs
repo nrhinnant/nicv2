@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("wfpctl")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bc0a437cd881be446bdf33591bd75724181db938")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7cf61fff2090d70f65d4d47b09eba849e559915a")]
 [assembly: System.Reflection.AssemblyProductAttribute("wfpctl")]
 [assembly: System.Reflection.AssemblyTitleAttribute("wfpctl")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

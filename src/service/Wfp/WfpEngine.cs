@@ -590,13 +590,203 @@ public sealed class WfpEngine : IWfpEngine
     }
 
     /// <inheritdoc/>
-    public Result RemoveAllFilters()
+    public Result<int> RemoveAllFilters()
     {
-        _logger.LogInformation("Removing all filters from our sublayer");
+        _logger.LogInformation("Removing all filters from our sublayer (panic rollback)");
 
-        // For now, we only have the demo block filter
-        // In the future, this would enumerate and remove all filters in our sublayer
-        return RemoveDemoBlockFilter();
+        // Open engine session
+        var openResult = WfpSession.OpenEngine();
+        if (openResult.IsFailure)
+        {
+            _logger.LogError("Failed to open WFP engine: {Error}", openResult.Error);
+            return Result<int>.Failure(openResult.Error);
+        }
+
+        using var handle = openResult.Value;
+        var engineHandle = handle.DangerousGetHandle();
+
+        // Phase 1: Enumerate filters in our sublayer (outside transaction)
+        var enumerateResult = EnumerateFiltersInOurSublayer(engineHandle);
+        if (enumerateResult.IsFailure)
+        {
+            _logger.LogError("Failed to enumerate filters: {Error}", enumerateResult.Error);
+            return Result<int>.Failure(enumerateResult.Error);
+        }
+
+        var filterIds = enumerateResult.Value;
+        if (filterIds.Count == 0)
+        {
+            _logger.LogInformation("No filters found in our sublayer, nothing to remove");
+            return Result<int>.Success(0);
+        }
+
+        _logger.LogInformation("Found {FilterCount} filter(s) in our sublayer to remove", filterIds.Count);
+
+        // Phase 2: Delete all filters in a transaction
+        _logger.LogDebug("Beginning WFP transaction for filter deletion");
+        var txResult = WfpTransaction.Begin(engineHandle);
+        if (txResult.IsFailure)
+        {
+            _logger.LogError("Failed to begin transaction: {Error}", txResult.Error);
+            return Result<int>.Failure(txResult.Error);
+        }
+
+        using var transaction = txResult.Value;
+
+        try
+        {
+            int deletedCount = 0;
+            foreach (var filterId in filterIds)
+            {
+                _logger.LogDebug("Deleting filter with ID: {FilterId}", filterId);
+                var deleteResult = NativeMethods.FwpmFilterDeleteById0(engineHandle, filterId);
+
+                // FWP_E_FILTER_NOT_FOUND is acceptable (race condition - filter was already removed)
+                if (deleteResult == NativeMethods.FWP_E_FILTER_NOT_FOUND)
+                {
+                    _logger.LogDebug("Filter {FilterId} not found (already removed), continuing", filterId);
+                    continue;
+                }
+
+                if (!WfpErrorTranslator.IsSuccess(deleteResult))
+                {
+                    _logger.LogError("Failed to delete filter {FilterId}: 0x{ErrorCode:X8}", filterId, deleteResult);
+                    // Transaction will be aborted by dispose
+                    return WfpErrorTranslator.ToFailedResult<int>(deleteResult, $"Failed to delete filter {filterId}");
+                }
+
+                deletedCount++;
+            }
+
+            // Commit transaction
+            _logger.LogDebug("Committing WFP transaction");
+            var commitResult = transaction.Commit();
+            if (commitResult.IsFailure)
+            {
+                _logger.LogError("Failed to commit transaction: {Error}", commitResult.Error);
+                return Result<int>.Failure(commitResult.Error);
+            }
+
+            _logger.LogInformation("Successfully removed {DeletedCount} filter(s) from our sublayer", deletedCount);
+            return Result<int>.Success(deletedCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during filter removal");
+            // Transaction will be aborted by dispose
+            return Result<int>.Failure(ErrorCodes.WfpError, $"Unexpected error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Enumerates all filters in our sublayer.
+    /// </summary>
+    /// <param name="engineHandle">Open WFP engine handle.</param>
+    /// <returns>List of filter IDs in our sublayer.</returns>
+    private Result<List<ulong>> EnumerateFiltersInOurSublayer(IntPtr engineHandle)
+    {
+        _logger.LogDebug("Enumerating filters in sublayer {SublayerGuid}", WfpConstants.SublayerGuid);
+
+        var filterIds = new List<ulong>();
+        IntPtr enumHandle = IntPtr.Zero;
+
+        try
+        {
+            // Note: FWPM_FILTER_ENUM_TEMPLATE0 doesn't have a sublayer field, so we enumerate
+            // all filters and filter by sublayerKey client-side. This is the standard approach.
+
+            // Create enumeration handle (enumerate all filters, we'll filter by sublayer client-side)
+            var createResult = NativeMethods.FwpmFilterCreateEnumHandle0(
+                engineHandle,
+                IntPtr.Zero, // null template = enumerate all
+                out enumHandle);
+
+            if (!WfpErrorTranslator.IsSuccess(createResult))
+            {
+                return WfpErrorTranslator.ToFailedResult<List<ulong>>(createResult, "Failed to create filter enumeration handle");
+            }
+
+            _logger.LogDebug("Created filter enumeration handle");
+
+            // Enumerate filters in batches
+            const uint batchSize = 100;
+            while (true)
+            {
+                var enumResult = NativeMethods.FwpmFilterEnum0(
+                    engineHandle,
+                    enumHandle,
+                    batchSize,
+                    out IntPtr entries,
+                    out uint numReturned);
+
+                if (!WfpErrorTranslator.IsSuccess(enumResult))
+                {
+                    return WfpErrorTranslator.ToFailedResult<List<ulong>>(enumResult, "Failed to enumerate filters");
+                }
+
+                if (numReturned == 0)
+                {
+                    _logger.LogDebug("Enumeration complete, no more filters");
+                    break;
+                }
+
+                _logger.LogDebug("Enumerated batch of {Count} filter(s), looking for sublayer {TargetSublayer}",
+                    numReturned, WfpConstants.SublayerGuid);
+
+                try
+                {
+                    // Process the returned filters
+                    // entries is a pointer to an array of FWPM_FILTER0* (pointers to filter structures)
+                    for (uint i = 0; i < numReturned; i++)
+                    {
+                        // Read the pointer to the filter structure
+                        var filterPtr = Marshal.ReadIntPtr(entries, (int)(i * IntPtr.Size));
+                        if (filterPtr == IntPtr.Zero) continue;
+
+                        // Read the FWPM_FILTER0 structure
+                        var filter = Marshal.PtrToStructure<FWPM_FILTER0>(filterPtr);
+
+                        // Log all filters for diagnostic purposes (first few only to avoid spam)
+                        if (i < 5)
+                        {
+                            _logger.LogDebug("Filter[{Index}]: Key={FilterKey}, Sublayer={Sublayer}, Name={Name}",
+                                i, filter.filterKey, filter.subLayerKey, filter.displayData.name ?? "(null)");
+                        }
+
+                        // Check if this filter belongs to our sublayer
+                        if (filter.subLayerKey == WfpConstants.SublayerGuid)
+                        {
+                            _logger.LogInformation("Found filter in our sublayer: ID={FilterId}, Key={FilterKey}, Name={Name}",
+                                filter.filterId, filter.filterKey, filter.displayData.name ?? "(unnamed)");
+                            filterIds.Add(filter.filterId);
+                        }
+                    }
+                }
+                finally
+                {
+                    // Free the memory returned by the enumeration
+                    if (entries != IntPtr.Zero)
+                    {
+                        NativeMethods.FwpmFreeMemory0(ref entries);
+                    }
+                }
+            }
+
+            _logger.LogDebug("Enumeration found {TotalCount} filter(s) in our sublayer", filterIds.Count);
+            return Result<List<ulong>>.Success(filterIds);
+        }
+        finally
+        {
+            // Clean up the enumeration handle
+            if (enumHandle != IntPtr.Zero)
+            {
+                var destroyResult = NativeMethods.FwpmFilterDestroyEnumHandle0(engineHandle, enumHandle);
+                if (!WfpErrorTranslator.IsSuccess(destroyResult))
+                {
+                    _logger.LogWarning("Failed to destroy enumeration handle: 0x{ErrorCode:X8}", destroyResult);
+                }
+            }
+        }
     }
 
     private Result<bool> DemoBlockFilterExistsInternal(IntPtr engineHandle)
@@ -714,7 +904,7 @@ public sealed class WfpEngine : IWfpEngine
                     type = FwpActionType.FWP_ACTION_BLOCK,
                     filterType = Guid.Empty
                 },
-                rawContext = 0,
+                rawContextOrProviderContextKey = Guid.Empty,
                 reserved = IntPtr.Zero,
                 filterId = 0,
                 effectiveWeight = new FWP_VALUE0 { type = FwpDataType.FWP_EMPTY, value = 0 }

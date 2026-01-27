@@ -441,7 +441,7 @@ public sealed class PipeServer : IDisposable
 
     private IpcResponse ProcessRollbackRequest()
     {
-        _logger.LogInformation("Processing rollback request");
+        _logger.LogInformation("Processing rollback request (panic rollback)");
 
         var result = _wfpEngine.RemoveAllFilters();
         if (result.IsFailure)
@@ -450,7 +450,8 @@ public sealed class PipeServer : IDisposable
             return RollbackResponse.Failure(result.Error.Message);
         }
 
-        return RollbackResponse.Success(true);
+        _logger.LogInformation("Rollback completed, removed {FilterCount} filter(s)", result.Value);
+        return RollbackResponse.Success(result.Value);
     }
 
     private async Task SendResponseAsync(NamedPipeServerStream pipeServer, IpcResponse response, CancellationToken cancellationToken)

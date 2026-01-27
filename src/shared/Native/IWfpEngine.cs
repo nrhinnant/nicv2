@@ -77,13 +77,17 @@ public interface IWfpEngine
     Result<bool> DemoBlockFilterExists();
 
     /// <summary>
-    /// Removes all filters in our sublayer.
-    /// This is used for rollback to ensure the sublayer can be cleanly deleted if needed.
+    /// Removes all filters in our sublayer using enumeration.
+    /// This is the panic rollback mechanism.
     /// </summary>
-    /// <returns>A Result indicating success or failure.</returns>
+    /// <returns>
+    /// A Result containing the number of filters removed on success.
+    /// On failure, returns an error without partial cleanup.
+    /// </returns>
     /// <remarks>
-    /// This removes all filters we created but keeps the provider and sublayer intact.
-    /// To completely clean up, call this followed by RemoveProviderAndSublayer.
+    /// This enumerates all filters in our sublayer and deletes them in a transaction.
+    /// Provider and sublayer are kept intact - call RemoveProviderAndSublayer for full teardown.
+    /// This method is idempotent: calling it when no filters exist returns success with count 0.
     /// </remarks>
-    Result RemoveAllFilters();
+    Result<int> RemoveAllFilters();
 }

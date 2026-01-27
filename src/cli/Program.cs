@@ -347,9 +347,18 @@ static int RunRollbackCommand()
         return 1;
     }
 
-    Console.WriteLine("Rollback completed successfully");
-    Console.WriteLine($"  Filters removed: {response.FiltersRemoved}");
+    Console.WriteLine("Panic rollback completed successfully");
+    if (response.FiltersRemoved == 0)
+    {
+        Console.WriteLine("  No filters were present in sublayer");
+    }
+    else
+    {
+        Console.WriteLine($"  Filters removed: {response.FiltersRemoved}");
+    }
     Console.WriteLine("  Provider and sublayer kept intact");
+    Console.WriteLine();
+    Console.WriteLine("Use 'wfpctl teardown' to also remove provider and sublayer.");
 
     return 0;
 }

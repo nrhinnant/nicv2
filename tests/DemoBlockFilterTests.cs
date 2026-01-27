@@ -23,7 +23,7 @@ public class DemoBlockFilterTests
         public Result RemoveResult { get; set; } = Result.Success();
         public Result AddDemoBlockResult { get; set; } = Result.Success();
         public Result RemoveDemoBlockResult { get; set; } = Result.Success();
-        public Result RemoveAllFiltersResult { get; set; } = Result.Success();
+        public Result<int> RemoveAllFiltersResult { get; set; } = Result<int>.Success(0);
         public int AddDemoBlockCallCount { get; private set; }
         public int RemoveDemoBlockCallCount { get; private set; }
         public int RemoveAllFiltersCallCount { get; private set; }
@@ -73,7 +73,7 @@ public class DemoBlockFilterTests
 
         public Result<bool> DemoBlockFilterExists() => Result<bool>.Success(DemoBlockFilterExistsValue);
 
-        public Result RemoveAllFilters()
+        public Result<int> RemoveAllFilters()
         {
             RemoveAllFiltersCallCount++;
             if (RemoveAllFiltersResult.IsSuccess)
@@ -446,11 +446,11 @@ public class DemoBlockIpcMessageTests
     [Fact]
     public void RollbackResponse_Success_SetsProperties()
     {
-        var response = RollbackResponse.Success(filtersRemoved: true);
+        var response = RollbackResponse.Success(filtersRemoved: 3);
 
         Assert.True(response.Ok);
         Assert.Null(response.Error);
-        Assert.True(response.FiltersRemoved);
+        Assert.Equal(3, response.FiltersRemoved);
     }
 
     [Fact]
@@ -486,11 +486,11 @@ public class DemoBlockIpcMessageTests
     [Fact]
     public void SerializeResponse_RollbackResponse_ProducesValidJson()
     {
-        var response = RollbackResponse.Success(filtersRemoved: true);
+        var response = RollbackResponse.Success(filtersRemoved: 5);
         var json = IpcMessageParser.SerializeResponse(response);
 
         Assert.Contains("\"ok\":true", json);
-        Assert.Contains("\"filtersRemoved\":true", json);
+        Assert.Contains("\"filtersRemoved\":5", json);
     }
 }
 

@@ -25,7 +25,7 @@ public class WfpBootstrapTests
         public Result RemoveResult { get; set; } = Result.Success();
         public Result AddDemoBlockResult { get; set; } = Result.Success();
         public Result RemoveDemoBlockResult { get; set; } = Result.Success();
-        public Result RemoveAllFiltersResult { get; set; } = Result.Success();
+        public Result<int> RemoveAllFiltersResult { get; set; } = Result<int>.Success(0);
         public int EnsureCallCount { get; private set; }
         public int RemoveCallCount { get; private set; }
         public int AddDemoBlockCallCount { get; private set; }
@@ -79,7 +79,7 @@ public class WfpBootstrapTests
 
         public Result<bool> DemoBlockFilterExists() => Result<bool>.Success(DemoBlockFilterExistsValue);
 
-        public Result RemoveAllFilters()
+        public Result<int> RemoveAllFilters()
         {
             RemoveAllFiltersCallCount++;
             if (RemoveAllFiltersResult.IsSuccess)
