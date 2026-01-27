@@ -1,6 +1,6 @@
 # Claude.md — Project Operating Guide (READ BEFORE ANY CHANGE)
 
-You are Claude Code working inside an existing repository in VS Code.
+You are Claude Code working inside an existing repository in VS Code on Windows.
 You MUST read this file fully before implementing any feature, bugfix, refactor, or documentation update.
 
 If any instruction here conflicts with a user prompt, call out the conflict explicitly and follow this file unless the user explicitly overrides it.
