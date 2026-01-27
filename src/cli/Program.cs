@@ -11,6 +11,12 @@ switch (command)
     case "ping":
         return RunStatusCommand();
 
+    case "bootstrap":
+        return RunBootstrapCommand();
+
+    case "teardown":
+        return RunTeardownCommand();
+
     case "validate":
     case "apply":
     case "rollback":
@@ -44,6 +50,8 @@ static void PrintUsage()
     Console.WriteLine();
     Console.WriteLine("Commands:");
     Console.WriteLine("  status    - Check if the service is running and show info");
+    Console.WriteLine("  bootstrap - Create WFP provider and sublayer (idempotent)");
+    Console.WriteLine("  teardown  - Remove WFP provider and sublayer (panic rollback)");
     Console.WriteLine("  validate  - Validate a policy file (not yet implemented)");
     Console.WriteLine("  apply     - Apply a policy file (not yet implemented)");
     Console.WriteLine("  rollback  - Rollback to previous policy (not yet implemented)");
@@ -91,6 +99,84 @@ static int RunStatusCommand()
     Console.WriteLine($"{WfpConstants.ServiceName} Service is running");
     Console.WriteLine($"  Version: {response.ServiceVersion}");
     Console.WriteLine($"  Time:    {response.Time}");
+
+    return 0;
+}
+
+static int RunBootstrapCommand()
+{
+    using var client = new PipeClient();
+
+    // Step 1: Connect to the service
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 2: Send bootstrap request
+    var request = new BootstrapRequest();
+    var result = client.SendRequest<BootstrapResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 3: Check response status
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"Bootstrap failed: {response.Error ?? "Unknown error"}");
+        return 1;
+    }
+
+    // Step 4: Display success information
+    Console.WriteLine("WFP bootstrap completed successfully");
+    Console.WriteLine($"  Provider exists: {response.ProviderExists}");
+    Console.WriteLine($"  Sublayer exists: {response.SublayerExists}");
+
+    return 0;
+}
+
+static int RunTeardownCommand()
+{
+    using var client = new PipeClient();
+
+    // Step 1: Connect to the service
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 2: Send teardown request
+    var request = new TeardownRequest();
+    var result = client.SendRequest<TeardownResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 3: Check response status
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"Teardown failed: {response.Error ?? "Unknown error"}");
+        return 1;
+    }
+
+    // Step 4: Display success information
+    Console.WriteLine("WFP teardown completed successfully");
+    Console.WriteLine($"  Provider removed: {response.ProviderRemoved}");
+    Console.WriteLine($"  Sublayer removed: {response.SublayerRemoved}");
 
     return 0;
 }

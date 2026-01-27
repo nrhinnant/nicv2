@@ -29,6 +29,30 @@ public sealed class PingRequest : IpcRequest
 }
 
 /// <summary>
+/// Bootstrap request to ensure WFP provider and sublayer exist.
+/// Request: { "type": "bootstrap" }
+/// </summary>
+public sealed class BootstrapRequest : IpcRequest
+{
+    public const string RequestType = "bootstrap";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
+/// Teardown request to remove WFP provider and sublayer (panic rollback).
+/// Request: { "type": "teardown" }
+/// </summary>
+public sealed class TeardownRequest : IpcRequest
+{
+    public const string RequestType = "teardown";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
 /// Base class for all IPC responses.
 /// </summary>
 public abstract class IpcResponse
@@ -77,6 +101,94 @@ public sealed class PingResponse : IpcResponse
             Ok = true,
             ServiceVersion = serviceVersion,
             Time = DateTimeOffset.UtcNow.ToString("o")
+        };
+    }
+}
+
+/// <summary>
+/// Response to a bootstrap request.
+/// Response: { "ok": true, "providerCreated": true/false, "sublayerCreated": true/false }
+/// </summary>
+public sealed class BootstrapResponse : IpcResponse
+{
+    /// <summary>
+    /// True if the provider was created (false if it already existed).
+    /// </summary>
+    [JsonPropertyName("providerExists")]
+    public bool ProviderExists { get; set; }
+
+    /// <summary>
+    /// True if the sublayer was created (false if it already existed).
+    /// </summary>
+    [JsonPropertyName("sublayerExists")]
+    public bool SublayerExists { get; set; }
+
+    /// <summary>
+    /// Creates a successful bootstrap response.
+    /// </summary>
+    public static BootstrapResponse Success(bool providerExists, bool sublayerExists)
+    {
+        return new BootstrapResponse
+        {
+            Ok = true,
+            ProviderExists = providerExists,
+            SublayerExists = sublayerExists
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed bootstrap response.
+    /// </summary>
+    public static BootstrapResponse Failure(string error)
+    {
+        return new BootstrapResponse
+        {
+            Ok = false,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
+/// Response to a teardown request.
+/// Response: { "ok": true, "providerRemoved": true/false, "sublayerRemoved": true/false }
+/// </summary>
+public sealed class TeardownResponse : IpcResponse
+{
+    /// <summary>
+    /// True if the provider was removed (false if it didn't exist).
+    /// </summary>
+    [JsonPropertyName("providerRemoved")]
+    public bool ProviderRemoved { get; set; }
+
+    /// <summary>
+    /// True if the sublayer was removed (false if it didn't exist).
+    /// </summary>
+    [JsonPropertyName("sublayerRemoved")]
+    public bool SublayerRemoved { get; set; }
+
+    /// <summary>
+    /// Creates a successful teardown response.
+    /// </summary>
+    public static TeardownResponse Success(bool providerRemoved, bool sublayerRemoved)
+    {
+        return new TeardownResponse
+        {
+            Ok = true,
+            ProviderRemoved = providerRemoved,
+            SublayerRemoved = sublayerRemoved
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed teardown response.
+    /// </summary>
+    public static TeardownResponse Failure(string error)
+    {
+        return new TeardownResponse
+        {
+            Ok = false,
+            Error = error
         };
     }
 }
@@ -166,6 +278,8 @@ public static class IpcMessageParser
             return requestType switch
             {
                 PingRequest.RequestType => Result<IpcRequest>.Success(new PingRequest()),
+                BootstrapRequest.RequestType => Result<IpcRequest>.Success(new BootstrapRequest()),
+                TeardownRequest.RequestType => Result<IpcRequest>.Success(new TeardownRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };

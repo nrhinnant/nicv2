@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Ipc;
+using WfpTrafficControl.Shared.Native;
 
 namespace WfpTrafficControl.Service.Ipc;
 
@@ -15,6 +16,7 @@ public sealed class PipeServer : IDisposable
 {
     private readonly ILogger<PipeServer> _logger;
     private readonly string _serviceVersion;
+    private readonly IWfpEngine _wfpEngine;
     private readonly CancellationTokenSource _cts;
     private Task? _listenerTask;
     private bool _disposed;
@@ -39,10 +41,11 @@ public sealed class PipeServer : IDisposable
     /// </summary>
     private static readonly SecurityIdentifier AdministratorsSid = new(WellKnownSidType.BuiltinAdministratorsSid, null);
 
-    public PipeServer(ILogger<PipeServer> logger, string serviceVersion)
+    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serviceVersion = serviceVersion ?? throw new ArgumentNullException(nameof(serviceVersion));
+        _wfpEngine = wfpEngine ?? throw new ArgumentNullException(nameof(wfpEngine));
         _cts = new CancellationTokenSource();
     }
 
@@ -331,8 +334,50 @@ public sealed class PipeServer : IDisposable
         return request switch
         {
             PingRequest => PingResponse.Success(_serviceVersion),
+            BootstrapRequest => ProcessBootstrapRequest(),
+            TeardownRequest => ProcessTeardownRequest(),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
+    }
+
+    private IpcResponse ProcessBootstrapRequest()
+    {
+        _logger.LogInformation("Processing bootstrap request");
+
+        var result = _wfpEngine.EnsureProviderAndSublayerExist();
+        if (result.IsFailure)
+        {
+            _logger.LogError("Bootstrap failed: {Error}", result.Error);
+            return BootstrapResponse.Failure(result.Error.Message);
+        }
+
+        // Check current state to report what exists
+        var providerExists = _wfpEngine.ProviderExists();
+        var sublayerExists = _wfpEngine.SublayerExists();
+
+        return BootstrapResponse.Success(
+            providerExists.IsSuccess && providerExists.Value,
+            sublayerExists.IsSuccess && sublayerExists.Value);
+    }
+
+    private IpcResponse ProcessTeardownRequest()
+    {
+        _logger.LogInformation("Processing teardown request");
+
+        // Check what exists before removal for reporting
+        var providerExistedBefore = _wfpEngine.ProviderExists();
+        var sublayerExistedBefore = _wfpEngine.SublayerExists();
+
+        var result = _wfpEngine.RemoveProviderAndSublayer();
+        if (result.IsFailure)
+        {
+            _logger.LogError("Teardown failed: {Error}", result.Error);
+            return TeardownResponse.Failure(result.Error.Message);
+        }
+
+        return TeardownResponse.Success(
+            providerExistedBefore.IsSuccess && providerExistedBefore.Value,
+            sublayerExistedBefore.IsSuccess && sublayerExistedBefore.Value);
     }
 
     private async Task SendResponseAsync(NamedPipeServerStream pipeServer, IpcResponse response, CancellationToken cancellationToken)

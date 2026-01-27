@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WfpTrafficControl.Service")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1a2c0365b0833ee026206bd62ceb22a3539e4dec")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c1e54eecbdddb43128a2edd2b9a0a5b5bbb0832")]
 [assembly: System.Reflection.AssemblyProductAttribute("WfpTrafficControl.Service")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WfpTrafficControl.Service")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

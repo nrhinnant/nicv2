@@ -9,4 +9,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Allow Service and Tests to access internal types like NativeMethods -->
+    <InternalsVisibleTo Include="WfpTrafficControl.Service" />
+    <InternalsVisibleTo Include="WfpTrafficControl.Tests" />
+  </ItemGroup>
+
 </Project>
