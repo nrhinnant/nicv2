@@ -336,6 +336,10 @@ public sealed class PipeServer : IDisposable
             PingRequest => PingResponse.Success(_serviceVersion),
             BootstrapRequest => ProcessBootstrapRequest(),
             TeardownRequest => ProcessTeardownRequest(),
+            DemoBlockEnableRequest => ProcessDemoBlockEnableRequest(),
+            DemoBlockDisableRequest => ProcessDemoBlockDisableRequest(),
+            DemoBlockStatusRequest => ProcessDemoBlockStatusRequest(),
+            RollbackRequest => ProcessRollbackRequest(),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -378,6 +382,75 @@ public sealed class PipeServer : IDisposable
         return TeardownResponse.Success(
             providerExistedBefore.IsSuccess && providerExistedBefore.Value,
             sublayerExistedBefore.IsSuccess && sublayerExistedBefore.Value);
+    }
+
+    private IpcResponse ProcessDemoBlockEnableRequest()
+    {
+        _logger.LogInformation("Processing demo-block enable request");
+
+        // Ensure provider/sublayer exist first
+        var bootstrapResult = _wfpEngine.EnsureProviderAndSublayerExist();
+        if (bootstrapResult.IsFailure)
+        {
+            _logger.LogError("Bootstrap failed during demo-block enable: {Error}", bootstrapResult.Error);
+            return DemoBlockEnableResponse.Failure($"Bootstrap failed: {bootstrapResult.Error.Message}");
+        }
+
+        // Add the demo block filter
+        var result = _wfpEngine.AddDemoBlockFilter();
+        if (result.IsFailure)
+        {
+            _logger.LogError("Demo block enable failed: {Error}", result.Error);
+            return DemoBlockEnableResponse.Failure(result.Error.Message);
+        }
+
+        // Verify it's active
+        var existsResult = _wfpEngine.DemoBlockFilterExists();
+        return DemoBlockEnableResponse.Success(existsResult.IsSuccess && existsResult.Value);
+    }
+
+    private IpcResponse ProcessDemoBlockDisableRequest()
+    {
+        _logger.LogInformation("Processing demo-block disable request");
+
+        var result = _wfpEngine.RemoveDemoBlockFilter();
+        if (result.IsFailure)
+        {
+            _logger.LogError("Demo block disable failed: {Error}", result.Error);
+            return DemoBlockDisableResponse.Failure(result.Error.Message);
+        }
+
+        // Verify it's gone
+        var existsResult = _wfpEngine.DemoBlockFilterExists();
+        return DemoBlockDisableResponse.Success(!existsResult.IsSuccess || !existsResult.Value);
+    }
+
+    private IpcResponse ProcessDemoBlockStatusRequest()
+    {
+        _logger.LogInformation("Processing demo-block status request");
+
+        var existsResult = _wfpEngine.DemoBlockFilterExists();
+        if (existsResult.IsFailure)
+        {
+            _logger.LogError("Demo block status check failed: {Error}", existsResult.Error);
+            return DemoBlockStatusResponse.Failure(existsResult.Error.Message);
+        }
+
+        return DemoBlockStatusResponse.Success(existsResult.Value);
+    }
+
+    private IpcResponse ProcessRollbackRequest()
+    {
+        _logger.LogInformation("Processing rollback request");
+
+        var result = _wfpEngine.RemoveAllFilters();
+        if (result.IsFailure)
+        {
+            _logger.LogError("Rollback failed: {Error}", result.Error);
+            return RollbackResponse.Failure(result.Error.Message);
+        }
+
+        return RollbackResponse.Success(true);
     }
 
     private async Task SendResponseAsync(NamedPipeServerStream pipeServer, IpcResponse response, CancellationToken cancellationToken)

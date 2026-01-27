@@ -62,4 +62,38 @@ public static class WfpConstants
     /// Human-readable project name for display purposes.
     /// </summary>
     public const string ProjectName = "WfpTrafficControl";
+
+    // ========================================
+    // Demo Block Filter Constants
+    // ========================================
+
+    /// <summary>
+    /// Unique identifier for our demo block filter.
+    /// </summary>
+    public static readonly Guid DemoBlockFilterGuid = new("D3E4F5A6-7B8C-4D9E-0F1A-2B3C4D5E6F7A");
+
+    /// <summary>
+    /// Display name for the demo block filter.
+    /// </summary>
+    public const string DemoBlockFilterName = "WfpTrafficControl Demo Block (1.1.1.1:443)";
+
+    /// <summary>
+    /// Description for the demo block filter.
+    /// </summary>
+    public const string DemoBlockFilterDescription = "Demo filter that blocks outbound TCP to 1.1.1.1:443";
+
+    /// <summary>
+    /// The remote IP address blocked by the demo filter (1.1.1.1 in host byte order).
+    /// </summary>
+    public const uint DemoBlockRemoteIp = 0x01010101; // 1.1.1.1
+
+    /// <summary>
+    /// The remote port blocked by the demo filter.
+    /// </summary>
+    public const ushort DemoBlockRemotePort = 443;
+
+    /// <summary>
+    /// TCP protocol number.
+    /// </summary>
+    public const byte ProtocolTcp = 6;
 }

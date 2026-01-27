@@ -10,3 +10,6 @@ C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\shared\obj\Debug\net8.0
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\shared\obj\Debug\net8.0\Shared.pdb
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\shared\obj\Debug\net8.0\ref\Shared.dll
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\shared\obj\Debug\net8.0\Shared.sourcelink.json
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\Shared.deps.json
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\Shared.dll
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\Shared.pdb

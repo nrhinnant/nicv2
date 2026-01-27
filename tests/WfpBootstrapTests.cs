@@ -20,10 +20,17 @@ public class WfpBootstrapTests
     {
         public bool ProviderExistsValue { get; set; }
         public bool SublayerExistsValue { get; set; }
+        public bool DemoBlockFilterExistsValue { get; set; }
         public Result EnsureResult { get; set; } = Result.Success();
         public Result RemoveResult { get; set; } = Result.Success();
+        public Result AddDemoBlockResult { get; set; } = Result.Success();
+        public Result RemoveDemoBlockResult { get; set; } = Result.Success();
+        public Result RemoveAllFiltersResult { get; set; } = Result.Success();
         public int EnsureCallCount { get; private set; }
         public int RemoveCallCount { get; private set; }
+        public int AddDemoBlockCallCount { get; private set; }
+        public int RemoveDemoBlockCallCount { get; private set; }
+        public int RemoveAllFiltersCallCount { get; private set; }
 
         public Result EnsureProviderAndSublayerExist()
         {
@@ -49,6 +56,38 @@ public class WfpBootstrapTests
 
         public Result<bool> ProviderExists() => Result<bool>.Success(ProviderExistsValue);
         public Result<bool> SublayerExists() => Result<bool>.Success(SublayerExistsValue);
+
+        public Result AddDemoBlockFilter()
+        {
+            AddDemoBlockCallCount++;
+            if (AddDemoBlockResult.IsSuccess)
+            {
+                DemoBlockFilterExistsValue = true;
+            }
+            return AddDemoBlockResult;
+        }
+
+        public Result RemoveDemoBlockFilter()
+        {
+            RemoveDemoBlockCallCount++;
+            if (RemoveDemoBlockResult.IsSuccess)
+            {
+                DemoBlockFilterExistsValue = false;
+            }
+            return RemoveDemoBlockResult;
+        }
+
+        public Result<bool> DemoBlockFilterExists() => Result<bool>.Success(DemoBlockFilterExistsValue);
+
+        public Result RemoveAllFilters()
+        {
+            RemoveAllFiltersCallCount++;
+            if (RemoveAllFiltersResult.IsSuccess)
+            {
+                DemoBlockFilterExistsValue = false;
+            }
+            return RemoveAllFiltersResult;
+        }
     }
 
     // ========================================
@@ -401,6 +440,10 @@ public class IWfpEngineInterfaceTests
         Assert.NotNull(interfaceType.GetMethod("RemoveProviderAndSublayer"));
         Assert.NotNull(interfaceType.GetMethod("ProviderExists"));
         Assert.NotNull(interfaceType.GetMethod("SublayerExists"));
+        Assert.NotNull(interfaceType.GetMethod("AddDemoBlockFilter"));
+        Assert.NotNull(interfaceType.GetMethod("RemoveDemoBlockFilter"));
+        Assert.NotNull(interfaceType.GetMethod("DemoBlockFilterExists"));
+        Assert.NotNull(interfaceType.GetMethod("RemoveAllFilters"));
     }
 
     [Fact]

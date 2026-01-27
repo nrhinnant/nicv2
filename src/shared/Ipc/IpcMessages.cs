@@ -53,6 +53,54 @@ public sealed class TeardownRequest : IpcRequest
 }
 
 /// <summary>
+/// Enable demo block filter request.
+/// Request: { "type": "demo-block-enable" }
+/// </summary>
+public sealed class DemoBlockEnableRequest : IpcRequest
+{
+    public const string RequestType = "demo-block-enable";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
+/// Disable demo block filter request.
+/// Request: { "type": "demo-block-disable" }
+/// </summary>
+public sealed class DemoBlockDisableRequest : IpcRequest
+{
+    public const string RequestType = "demo-block-disable";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
+/// Demo block filter status request.
+/// Request: { "type": "demo-block-status" }
+/// </summary>
+public sealed class DemoBlockStatusRequest : IpcRequest
+{
+    public const string RequestType = "demo-block-status";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
+/// Rollback request to remove all filters but keep provider/sublayer.
+/// Request: { "type": "rollback" }
+/// </summary>
+public sealed class RollbackRequest : IpcRequest
+{
+    public const string RequestType = "rollback";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
 /// Base class for all IPC responses.
 /// </summary>
 public abstract class IpcResponse
@@ -194,6 +242,162 @@ public sealed class TeardownResponse : IpcResponse
 }
 
 /// <summary>
+/// Response to a demo block enable request.
+/// Response: { "ok": true, "filterEnabled": true }
+/// </summary>
+public sealed class DemoBlockEnableResponse : IpcResponse
+{
+    /// <summary>
+    /// True if the filter is now active.
+    /// </summary>
+    [JsonPropertyName("filterEnabled")]
+    public bool FilterEnabled { get; set; }
+
+    /// <summary>
+    /// Creates a successful response.
+    /// </summary>
+    public static DemoBlockEnableResponse Success(bool filterEnabled)
+    {
+        return new DemoBlockEnableResponse
+        {
+            Ok = true,
+            FilterEnabled = filterEnabled
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed response.
+    /// </summary>
+    public static DemoBlockEnableResponse Failure(string error)
+    {
+        return new DemoBlockEnableResponse
+        {
+            Ok = false,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
+/// Response to a demo block disable request.
+/// Response: { "ok": true, "filterDisabled": true }
+/// </summary>
+public sealed class DemoBlockDisableResponse : IpcResponse
+{
+    /// <summary>
+    /// True if the filter was removed (or didn't exist).
+    /// </summary>
+    [JsonPropertyName("filterDisabled")]
+    public bool FilterDisabled { get; set; }
+
+    /// <summary>
+    /// Creates a successful response.
+    /// </summary>
+    public static DemoBlockDisableResponse Success(bool filterDisabled)
+    {
+        return new DemoBlockDisableResponse
+        {
+            Ok = true,
+            FilterDisabled = filterDisabled
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed response.
+    /// </summary>
+    public static DemoBlockDisableResponse Failure(string error)
+    {
+        return new DemoBlockDisableResponse
+        {
+            Ok = false,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
+/// Response to a demo block status request.
+/// Response: { "ok": true, "filterActive": true, "blockedTarget": "1.1.1.1:443" }
+/// </summary>
+public sealed class DemoBlockStatusResponse : IpcResponse
+{
+    /// <summary>
+    /// True if the demo block filter is currently active.
+    /// </summary>
+    [JsonPropertyName("filterActive")]
+    public bool FilterActive { get; set; }
+
+    /// <summary>
+    /// Description of what is blocked (for display).
+    /// </summary>
+    [JsonPropertyName("blockedTarget")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? BlockedTarget { get; set; }
+
+    /// <summary>
+    /// Creates a successful response.
+    /// </summary>
+    public static DemoBlockStatusResponse Success(bool filterActive)
+    {
+        return new DemoBlockStatusResponse
+        {
+            Ok = true,
+            FilterActive = filterActive,
+            BlockedTarget = filterActive ? "TCP 1.1.1.1:443 (Cloudflare)" : null
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed response.
+    /// </summary>
+    public static DemoBlockStatusResponse Failure(string error)
+    {
+        return new DemoBlockStatusResponse
+        {
+            Ok = false,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
+/// Response to a rollback request.
+/// Response: { "ok": true, "filtersRemoved": true }
+/// </summary>
+public sealed class RollbackResponse : IpcResponse
+{
+    /// <summary>
+    /// True if filters were removed successfully.
+    /// </summary>
+    [JsonPropertyName("filtersRemoved")]
+    public bool FiltersRemoved { get; set; }
+
+    /// <summary>
+    /// Creates a successful response.
+    /// </summary>
+    public static RollbackResponse Success(bool filtersRemoved)
+    {
+        return new RollbackResponse
+        {
+            Ok = true,
+            FiltersRemoved = filtersRemoved
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed response.
+    /// </summary>
+    public static RollbackResponse Failure(string error)
+    {
+        return new RollbackResponse
+        {
+            Ok = false,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
 /// Generic error response for any failed request.
 /// </summary>
 public sealed class ErrorResponse : IpcResponse
@@ -280,6 +484,10 @@ public static class IpcMessageParser
                 PingRequest.RequestType => Result<IpcRequest>.Success(new PingRequest()),
                 BootstrapRequest.RequestType => Result<IpcRequest>.Success(new BootstrapRequest()),
                 TeardownRequest.RequestType => Result<IpcRequest>.Success(new TeardownRequest()),
+                DemoBlockEnableRequest.RequestType => Result<IpcRequest>.Success(new DemoBlockEnableRequest()),
+                DemoBlockDisableRequest.RequestType => Result<IpcRequest>.Success(new DemoBlockDisableRequest()),
+                DemoBlockStatusRequest.RequestType => Result<IpcRequest>.Success(new DemoBlockStatusRequest()),
+                RollbackRequest.RequestType => Result<IpcRequest>.Success(new RollbackRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };

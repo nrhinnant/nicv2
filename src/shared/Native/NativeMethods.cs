@@ -202,6 +202,61 @@ internal static partial class NativeMethods
 
     /// <summary>FWP_E_IN_USE: The object is in use and cannot be deleted.</summary>
     internal const uint FWP_E_IN_USE = 0x80320006;
+
+    /// <summary>FWP_E_FILTER_NOT_FOUND: The filter was not found.</summary>
+    internal const uint FWP_E_FILTER_NOT_FOUND = 0x80320003;
+
+    // ========================================
+    // Filter Management
+    // ========================================
+
+    /// <summary>
+    /// Adds a new filter to the system.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="filter">The filter to add.</param>
+    /// <param name="sd">Security descriptor (optional, can be null).</param>
+    /// <param name="id">Receives the runtime filter ID on success.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, or an error code on failure.</returns>
+    [DllImport(Fwpuclnt, SetLastError = false)]
+    internal static extern uint FwpmFilterAdd0(
+        IntPtr engineHandle,
+        in FWPM_FILTER0 filter,
+        IntPtr sd,
+        out ulong id);
+
+    /// <summary>
+    /// Deletes a filter by its runtime ID.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="id">The runtime ID of the filter to delete.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, FWP_E_FILTER_NOT_FOUND if not found, or an error code.</returns>
+    [LibraryImport(Fwpuclnt, SetLastError = false)]
+    internal static partial uint FwpmFilterDeleteById0(IntPtr engineHandle, ulong id);
+
+    /// <summary>
+    /// Deletes a filter by its GUID key.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="key">The GUID key of the filter to delete.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, FWP_E_FILTER_NOT_FOUND if not found, or an error code.</returns>
+    [LibraryImport(Fwpuclnt, SetLastError = false)]
+    internal static partial uint FwpmFilterDeleteByKey0(
+        IntPtr engineHandle,
+        in Guid key);
+
+    /// <summary>
+    /// Retrieves a filter by its GUID key.
+    /// </summary>
+    /// <param name="engineHandle">Handle for an open session to the filter engine.</param>
+    /// <param name="key">The GUID key of the filter.</param>
+    /// <param name="filter">Receives a pointer to the filter structure.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, FWP_E_FILTER_NOT_FOUND if not found, or an error code.</returns>
+    [LibraryImport(Fwpuclnt, SetLastError = false)]
+    internal static partial uint FwpmFilterGetByKey0(
+        IntPtr engineHandle,
+        in Guid key,
+        out IntPtr filter);
 }
 
 /// <summary>
@@ -282,4 +337,211 @@ internal static class FwpmSublayerFlags
 
     /// <summary>No special flags (default).</summary>
     public const uint FWPM_SUBLAYER_FLAG_NONE = 0x00000000;
+}
+
+// ========================================
+// WFP Layer GUIDs
+// ========================================
+
+/// <summary>
+/// WFP layer identifiers for filtering.
+/// </summary>
+internal static class WfpLayerGuids
+{
+    /// <summary>
+    /// FWPM_LAYER_ALE_AUTH_CONNECT_V4: Filters outbound IPv4 connection attempts.
+    /// This layer is evaluated when an application initiates an outbound TCP connection
+    /// or sends the first UDP packet to a remote endpoint.
+    /// </summary>
+    public static readonly Guid FWPM_LAYER_ALE_AUTH_CONNECT_V4 = new("c38d57d1-05a7-4c33-904f-7fbceee60e82");
+}
+
+/// <summary>
+/// WFP condition field identifiers.
+/// These GUIDs identify which field a filter condition matches against.
+/// </summary>
+internal static class WfpConditionGuids
+{
+    /// <summary>
+    /// FWPM_CONDITION_IP_REMOTE_ADDRESS: The remote IP address.
+    /// </summary>
+    public static readonly Guid FWPM_CONDITION_IP_REMOTE_ADDRESS = new("b235ae9a-1d64-49b8-a44c-5ff3d9095045");
+
+    /// <summary>
+    /// FWPM_CONDITION_IP_REMOTE_PORT: The remote port number.
+    /// </summary>
+    public static readonly Guid FWPM_CONDITION_IP_REMOTE_PORT = new("c35a604d-d22b-4e1a-91b4-68f674ee674b");
+
+    /// <summary>
+    /// FWPM_CONDITION_IP_PROTOCOL: The IP protocol number (e.g., 6 for TCP, 17 for UDP).
+    /// </summary>
+    public static readonly Guid FWPM_CONDITION_IP_PROTOCOL = new("3971ef2b-623e-4f9a-8cb1-6e79b806b9a7");
+}
+
+// ========================================
+// Filter Structures
+// ========================================
+
+/// <summary>
+/// Structure for FWPM_FILTER0 used in FwpmFilterAdd0.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWPM_FILTER0
+{
+    /// <summary>Uniquely identifies the filter. If null GUID, a GUID will be generated.</summary>
+    public Guid filterKey;
+    /// <summary>Display name and description.</summary>
+    public FWPM_DISPLAY_DATA0 displayData;
+    /// <summary>Filter flags (see FwpmFilterFlags).</summary>
+    public uint flags;
+    /// <summary>Pointer to provider GUID that owns this filter (or null).</summary>
+    public IntPtr providerKey;
+    /// <summary>Opaque provider data (set to empty).</summary>
+    public FWP_BYTE_BLOB providerData;
+    /// <summary>GUID of the layer where this filter applies.</summary>
+    public Guid layerKey;
+    /// <summary>GUID of the sublayer where this filter is added.</summary>
+    public Guid subLayerKey;
+    /// <summary>Filter weight (higher = higher priority). Use FWP_VALUE0 with type=FWP_UINT64.</summary>
+    public FWP_VALUE0 weight;
+    /// <summary>Number of filter conditions.</summary>
+    public uint numFilterConditions;
+    /// <summary>Pointer to array of FWPM_FILTER_CONDITION0 structures.</summary>
+    public IntPtr filterCondition;
+    /// <summary>Action to take when filter matches.</summary>
+    public FWPM_ACTION0 action;
+    /// <summary>Reserved, must be zero for block/permit.</summary>
+    public ulong rawContext;
+    /// <summary>Reserved, must be null.</summary>
+    public IntPtr reserved;
+    /// <summary>Runtime filter ID (output only, set by FwpmFilterAdd0).</summary>
+    public ulong filterId;
+    /// <summary>Effective weight (output only).</summary>
+    public FWP_VALUE0 effectiveWeight;
+}
+
+/// <summary>
+/// Filter action structure.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWPM_ACTION0
+{
+    /// <summary>Action type (block, permit, callout).</summary>
+    public uint type;
+    /// <summary>Callout GUID if action is callout, otherwise zero.</summary>
+    public Guid filterType;
+}
+
+/// <summary>
+/// Filter action types.
+/// Action types must include the FWP_ACTION_FLAG_TERMINATING flag for block/permit.
+/// </summary>
+internal static class FwpActionType
+{
+    /// <summary>Flag indicating the action terminates filter evaluation.</summary>
+    public const uint FWP_ACTION_FLAG_TERMINATING = 0x00001000;
+
+    /// <summary>Block the traffic (terminating action).</summary>
+    public const uint FWP_ACTION_BLOCK = 0x00000001 | FWP_ACTION_FLAG_TERMINATING; // 0x1001
+
+    /// <summary>Permit the traffic (terminating action).</summary>
+    public const uint FWP_ACTION_PERMIT = 0x00000002 | FWP_ACTION_FLAG_TERMINATING; // 0x1002
+}
+
+/// <summary>
+/// Filter condition structure.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWPM_FILTER_CONDITION0
+{
+    /// <summary>GUID of the condition field to match.</summary>
+    public Guid fieldKey;
+    /// <summary>Match type (equal, greater, range, etc.).</summary>
+    public uint matchType;
+    /// <summary>Value to compare against.</summary>
+    public FWP_CONDITION_VALUE0 conditionValue;
+}
+
+/// <summary>
+/// Match types for filter conditions.
+/// </summary>
+internal static class FwpMatchType
+{
+    /// <summary>Exact match.</summary>
+    public const uint FWP_MATCH_EQUAL = 0;
+}
+
+/// <summary>
+/// Byte blob structure for opaque data.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWP_BYTE_BLOB
+{
+    public uint size;
+    public IntPtr data;
+}
+
+/// <summary>
+/// Generic value structure used in filters.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWP_VALUE0
+{
+    /// <summary>Type of the value (see FwpDataType).</summary>
+    public uint type;
+    /// <summary>The value (interpretation depends on type).</summary>
+    public ulong value;
+}
+
+/// <summary>
+/// Condition value structure (same layout as FWP_VALUE0 but semantically different).
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWP_CONDITION_VALUE0
+{
+    /// <summary>Type of the value (see FwpDataType).</summary>
+    public uint type;
+    /// <summary>The value (interpretation depends on type). For pointers, use IntPtr.</summary>
+    public ulong value;
+}
+
+/// <summary>
+/// Data types for FWP_VALUE0 and FWP_CONDITION_VALUE0.
+/// Values from Windows SDK fwptypes.h
+/// </summary>
+internal static class FwpDataType
+{
+    /// <summary>Empty/unused value.</summary>
+    public const uint FWP_EMPTY = 0;
+    /// <summary>8-bit unsigned integer.</summary>
+    public const uint FWP_UINT8 = 1;
+    /// <summary>16-bit unsigned integer.</summary>
+    public const uint FWP_UINT16 = 2;
+    /// <summary>32-bit unsigned integer.</summary>
+    public const uint FWP_UINT32 = 3;
+    /// <summary>64-bit unsigned integer.</summary>
+    public const uint FWP_UINT64 = 4;
+    /// <summary>IPv4 address with mask (pointer to FWP_V4_ADDR_AND_MASK).</summary>
+    public const uint FWP_V4_ADDR_MASK = 0x100;  // 256 in SDK fwptypes.h
+}
+
+/// <summary>
+/// IPv4 address and mask for condition matching.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWP_V4_ADDR_AND_MASK
+{
+    /// <summary>IPv4 address in host byte order.</summary>
+    public uint addr;
+    /// <summary>Subnet mask in host byte order (0xFFFFFFFF for exact match).</summary>
+    public uint mask;
+}
+
+/// <summary>
+/// Filter flags for FWPM_FILTER0.
+/// </summary>
+internal static class FwpmFilterFlags
+{
+    /// <summary>No special flags.</summary>
+    public const uint FWPM_FILTER_FLAG_NONE = 0x00000000;
 }

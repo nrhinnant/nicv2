@@ -436,4 +436,314 @@ public sealed class WfpEngine : IWfpEngine
         _logger.LogInformation("WFP sublayer deleted successfully");
         return Result.Success();
     }
+
+    // ========================================
+    // Demo Block Filter Methods
+    // ========================================
+
+    /// <inheritdoc/>
+    public Result AddDemoBlockFilter()
+    {
+        _logger.LogInformation("Adding demo block filter (block TCP to 1.1.1.1:443)");
+
+        // Open engine session
+        var openResult = WfpSession.OpenEngine();
+        if (openResult.IsFailure)
+        {
+            _logger.LogError("Failed to open WFP engine: {Error}", openResult.Error);
+            return Result.Failure(openResult.Error);
+        }
+
+        using var handle = openResult.Value;
+        var engineHandle = handle.DangerousGetHandle();
+
+        // Begin transaction
+        _logger.LogDebug("Beginning WFP transaction for demo filter");
+        var txResult = WfpTransaction.Begin(engineHandle);
+        if (txResult.IsFailure)
+        {
+            _logger.LogError("Failed to begin transaction: {Error}", txResult.Error);
+            return Result.Failure(txResult.Error);
+        }
+
+        using var transaction = txResult.Value;
+
+        try
+        {
+            // Check if already exists (idempotent)
+            var existsResult = DemoBlockFilterExistsInternal(engineHandle);
+            if (existsResult.IsFailure)
+            {
+                return Result.Failure(existsResult.Error);
+            }
+
+            if (existsResult.Value)
+            {
+                _logger.LogDebug("Demo block filter already exists, skipping creation");
+                // Still commit the empty transaction for consistency
+                transaction.Commit();
+                return Result.Success();
+            }
+
+            // Create the filter
+            var createResult = CreateDemoBlockFilterInternal(engineHandle);
+            if (createResult.IsFailure)
+            {
+                _logger.LogError("Failed to create demo block filter: {Error}", createResult.Error);
+                return Result.Failure(createResult.Error);
+            }
+
+            // Commit transaction
+            var commitResult = transaction.Commit();
+            if (commitResult.IsFailure)
+            {
+                _logger.LogError("Failed to commit transaction: {Error}", commitResult.Error);
+                return commitResult;
+            }
+
+            _logger.LogInformation("Demo block filter created successfully (ID: {FilterId})", createResult.Value);
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error adding demo block filter");
+            return Result.Failure(ErrorCodes.WfpError, $"Unexpected error: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc/>
+    public Result RemoveDemoBlockFilter()
+    {
+        _logger.LogInformation("Removing demo block filter");
+
+        // Open engine session
+        var openResult = WfpSession.OpenEngine();
+        if (openResult.IsFailure)
+        {
+            _logger.LogError("Failed to open WFP engine: {Error}", openResult.Error);
+            return Result.Failure(openResult.Error);
+        }
+
+        using var handle = openResult.Value;
+        var engineHandle = handle.DangerousGetHandle();
+
+        // Begin transaction
+        _logger.LogDebug("Beginning WFP transaction for removing demo filter");
+        var txResult = WfpTransaction.Begin(engineHandle);
+        if (txResult.IsFailure)
+        {
+            _logger.LogError("Failed to begin transaction: {Error}", txResult.Error);
+            return Result.Failure(txResult.Error);
+        }
+
+        using var transaction = txResult.Value;
+
+        try
+        {
+            // Delete by GUID key directly (simpler than get-then-delete-by-id)
+            var filterGuid = WfpConstants.DemoBlockFilterGuid;
+            _logger.LogDebug("Deleting demo block filter by GUID: {FilterGuid}", filterGuid);
+            var deleteResult = NativeMethods.FwpmFilterDeleteByKey0(engineHandle, in filterGuid);
+
+            // Not found is success for idempotent delete
+            if (deleteResult == NativeMethods.FWP_E_FILTER_NOT_FOUND)
+            {
+                _logger.LogDebug("Demo block filter does not exist, skipping removal");
+                transaction.Commit();
+                return Result.Success();
+            }
+
+            if (!WfpErrorTranslator.IsSuccess(deleteResult))
+            {
+                return WfpErrorTranslator.ToFailedResult(deleteResult, "Failed to delete demo block filter");
+            }
+
+            // Commit transaction
+            var commitResult = transaction.Commit();
+            if (commitResult.IsFailure)
+            {
+                _logger.LogError("Failed to commit transaction: {Error}", commitResult.Error);
+                return commitResult;
+            }
+
+            _logger.LogInformation("Demo block filter removed successfully");
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error removing demo block filter");
+            return Result.Failure(ErrorCodes.WfpError, $"Unexpected error: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc/>
+    public Result<bool> DemoBlockFilterExists()
+    {
+        var openResult = WfpSession.OpenEngine();
+        if (openResult.IsFailure)
+        {
+            return Result<bool>.Failure(openResult.Error);
+        }
+
+        using var handle = openResult.Value;
+        return DemoBlockFilterExistsInternal(handle.DangerousGetHandle());
+    }
+
+    /// <inheritdoc/>
+    public Result RemoveAllFilters()
+    {
+        _logger.LogInformation("Removing all filters from our sublayer");
+
+        // For now, we only have the demo block filter
+        // In the future, this would enumerate and remove all filters in our sublayer
+        return RemoveDemoBlockFilter();
+    }
+
+    private Result<bool> DemoBlockFilterExistsInternal(IntPtr engineHandle)
+    {
+        var filterGuid = WfpConstants.DemoBlockFilterGuid;
+        var result = NativeMethods.FwpmFilterGetByKey0(engineHandle, in filterGuid, out IntPtr filterPtr);
+
+        if (result == NativeMethods.FWP_E_FILTER_NOT_FOUND)
+        {
+            _logger.LogDebug("Demo block filter does not exist");
+            return Result<bool>.Success(false);
+        }
+
+        if (!WfpErrorTranslator.IsSuccess(result))
+        {
+            return WfpErrorTranslator.ToFailedResult<bool>(result, "Failed to check if demo block filter exists");
+        }
+
+        // Free the returned memory
+        if (filterPtr != IntPtr.Zero)
+        {
+            NativeMethods.FwpmFreeMemory0(ref filterPtr);
+        }
+
+        _logger.LogDebug("Demo block filter exists");
+        return Result<bool>.Success(true);
+    }
+
+    private Result<ulong> CreateDemoBlockFilterInternal(IntPtr engineHandle)
+    {
+        _logger.LogDebug("Creating demo block filter structure");
+
+        // Allocate memory for the filter conditions array (3 conditions)
+        var conditionSize = Marshal.SizeOf<FWPM_FILTER_CONDITION0>();
+        var conditionsPtr = Marshal.AllocHGlobal(conditionSize * 3);
+
+        // Allocate memory for the IPv4 address structure
+        var addrMaskPtr = Marshal.AllocHGlobal(Marshal.SizeOf<FWP_V4_ADDR_AND_MASK>());
+
+        // Pin the provider GUID for the filter
+        var providerGuid = WfpConstants.ProviderGuid;
+        var providerGuidHandle = GCHandle.Alloc(providerGuid, GCHandleType.Pinned);
+
+        try
+        {
+            // Condition 1: Protocol = TCP (6)
+            var protocolCondition = new FWPM_FILTER_CONDITION0
+            {
+                fieldKey = WfpConditionGuids.FWPM_CONDITION_IP_PROTOCOL,
+                matchType = FwpMatchType.FWP_MATCH_EQUAL,
+                conditionValue = new FWP_CONDITION_VALUE0
+                {
+                    type = FwpDataType.FWP_UINT8,
+                    value = WfpConstants.ProtocolTcp
+                }
+            };
+            Marshal.StructureToPtr(protocolCondition, conditionsPtr, false);
+
+            // Condition 2: Remote IP = 1.1.1.1
+            var addrMask = new FWP_V4_ADDR_AND_MASK
+            {
+                addr = WfpConstants.DemoBlockRemoteIp,
+                mask = 0xFFFFFFFF // Exact match
+            };
+            Marshal.StructureToPtr(addrMask, addrMaskPtr, false);
+
+            var ipCondition = new FWPM_FILTER_CONDITION0
+            {
+                fieldKey = WfpConditionGuids.FWPM_CONDITION_IP_REMOTE_ADDRESS,
+                matchType = FwpMatchType.FWP_MATCH_EQUAL,
+                conditionValue = new FWP_CONDITION_VALUE0
+                {
+                    type = FwpDataType.FWP_V4_ADDR_MASK,
+                    value = (ulong)addrMaskPtr
+                }
+            };
+            Marshal.StructureToPtr(ipCondition, conditionsPtr + conditionSize, false);
+
+            // Condition 3: Remote Port = 443
+            var portCondition = new FWPM_FILTER_CONDITION0
+            {
+                fieldKey = WfpConditionGuids.FWPM_CONDITION_IP_REMOTE_PORT,
+                matchType = FwpMatchType.FWP_MATCH_EQUAL,
+                conditionValue = new FWP_CONDITION_VALUE0
+                {
+                    type = FwpDataType.FWP_UINT16,
+                    value = WfpConstants.DemoBlockRemotePort
+                }
+            };
+            Marshal.StructureToPtr(portCondition, conditionsPtr + (conditionSize * 2), false);
+
+            // Create the filter structure
+            var filter = new FWPM_FILTER0
+            {
+                filterKey = WfpConstants.DemoBlockFilterGuid,
+                displayData = new FWPM_DISPLAY_DATA0
+                {
+                    name = WfpConstants.DemoBlockFilterName,
+                    description = WfpConstants.DemoBlockFilterDescription
+                },
+                flags = FwpmFilterFlags.FWPM_FILTER_FLAG_NONE,
+                providerKey = providerGuidHandle.AddrOfPinnedObject(),
+                providerData = new FWP_BYTE_BLOB { size = 0, data = IntPtr.Zero },
+                layerKey = WfpLayerGuids.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
+                subLayerKey = WfpConstants.SublayerGuid,
+                weight = new FWP_VALUE0
+                {
+                    type = FwpDataType.FWP_EMPTY, // Let WFP auto-calculate based on conditions
+                    value = 0
+                },
+                numFilterConditions = 3,
+                filterCondition = conditionsPtr,
+                action = new FWPM_ACTION0
+                {
+                    type = FwpActionType.FWP_ACTION_BLOCK,
+                    filterType = Guid.Empty
+                },
+                rawContext = 0,
+                reserved = IntPtr.Zero,
+                filterId = 0,
+                effectiveWeight = new FWP_VALUE0 { type = FwpDataType.FWP_EMPTY, value = 0 }
+            };
+
+            _logger.LogDebug("Calling FwpmFilterAdd0 to add demo block filter");
+            var result = NativeMethods.FwpmFilterAdd0(engineHandle, in filter, IntPtr.Zero, out ulong filterId);
+
+            // Handle "already exists" as success for idempotency
+            if (result == NativeMethods.FWP_E_ALREADY_EXISTS)
+            {
+                _logger.LogDebug("Demo block filter already exists (race condition), treating as success");
+                return Result<ulong>.Success(0);
+            }
+
+            if (!WfpErrorTranslator.IsSuccess(result))
+            {
+                return WfpErrorTranslator.ToFailedResult<ulong>(result, "Failed to add demo block filter");
+            }
+
+            _logger.LogDebug("FwpmFilterAdd0 returned filter ID: {FilterId}", filterId);
+            return Result<ulong>.Success(filterId);
+        }
+        finally
+        {
+            // Clean up all allocated memory
+            Marshal.FreeHGlobal(conditionsPtr);
+            Marshal.FreeHGlobal(addrMaskPtr);
+            providerGuidHandle.Free();
+        }
+    }
 }

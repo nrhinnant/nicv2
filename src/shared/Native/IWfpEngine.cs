@@ -45,4 +45,45 @@ public interface IWfpEngine
     /// </summary>
     /// <returns>A Result containing true if the sublayer exists, false if not found.</returns>
     Result<bool> SublayerExists();
+
+    // ========================================
+    // Demo Block Filter Operations
+    // ========================================
+
+    /// <summary>
+    /// Adds the demo block filter that blocks outbound TCP to 1.1.1.1:443.
+    /// This operation is idempotent — calling it when the filter already exists returns success.
+    /// </summary>
+    /// <returns>
+    /// A Result indicating success or failure.
+    /// On success, the demo filter is active in our sublayer.
+    /// </returns>
+    /// <remarks>
+    /// Prerequisites: Provider and sublayer must exist (call EnsureProviderAndSublayerExist first).
+    /// </remarks>
+    Result AddDemoBlockFilter();
+
+    /// <summary>
+    /// Removes the demo block filter if it exists.
+    /// This operation is idempotent — calling it when the filter doesn't exist returns success.
+    /// </summary>
+    /// <returns>A Result indicating success or failure.</returns>
+    Result RemoveDemoBlockFilter();
+
+    /// <summary>
+    /// Checks if the demo block filter exists.
+    /// </summary>
+    /// <returns>A Result containing true if the filter exists, false if not found.</returns>
+    Result<bool> DemoBlockFilterExists();
+
+    /// <summary>
+    /// Removes all filters in our sublayer.
+    /// This is used for rollback to ensure the sublayer can be cleanly deleted if needed.
+    /// </summary>
+    /// <returns>A Result indicating success or failure.</returns>
+    /// <remarks>
+    /// This removes all filters we created but keeps the provider and sublayer intact.
+    /// To completely clean up, call this followed by RemoveProviderAndSublayer.
+    /// </remarks>
+    Result RemoveAllFilters();
 }
