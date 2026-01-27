@@ -9,7 +9,10 @@
       "Bash(dotnet sln:*)",
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
-      "Bash(del \"c:\\\\Users\\\\nrhin\\\\OneDrive\\\\Documents\\\\Github Repos\\\\nicv2\\\\src\\\\shared\\\\Native\\\\WfpEngine.cs\")"
+      "Bash(del \"c:\\\\Users\\\\nrhin\\\\OneDrive\\\\Documents\\\\Github Repos\\\\nicv2\\\\src\\\\shared\\\\Native\\\\WfpEngine.cs\")",
+      "Bash(cd:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

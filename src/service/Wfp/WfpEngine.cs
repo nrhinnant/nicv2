@@ -40,14 +40,16 @@ public sealed class WfpEngine : IWfpEngine
         using var handle = openResult.Value;
         var engineHandle = handle.DangerousGetHandle();
 
-        // Begin transaction for atomicity
-        var beginResult = BeginTransaction(engineHandle);
-        if (beginResult.IsFailure)
+        // Begin transaction for atomicity - auto-aborts on dispose if not committed
+        _logger.LogDebug("Beginning WFP transaction");
+        var txResult = WfpTransaction.Begin(engineHandle);
+        if (txResult.IsFailure)
         {
-            return beginResult;
+            _logger.LogError("Failed to begin transaction: {Error}", txResult.Error);
+            return Result.Failure(txResult.Error);
         }
 
-        bool transactionActive = true;
+        using var transaction = txResult.Value;
 
         try
         {
@@ -56,9 +58,7 @@ public sealed class WfpEngine : IWfpEngine
             if (providerResult.IsFailure)
             {
                 _logger.LogError("Failed to ensure provider exists: {Error}", providerResult.Error);
-                AbortTransaction(engineHandle);
-                transactionActive = false;
-                return providerResult;
+                return providerResult; // Transaction aborted by dispose
             }
 
             // Step 2: Ensure sublayer exists
@@ -66,16 +66,15 @@ public sealed class WfpEngine : IWfpEngine
             if (sublayerResult.IsFailure)
             {
                 _logger.LogError("Failed to ensure sublayer exists: {Error}", sublayerResult.Error);
-                AbortTransaction(engineHandle);
-                transactionActive = false;
-                return sublayerResult;
+                return sublayerResult; // Transaction aborted by dispose
             }
 
             // Commit transaction
-            var commitResult = CommitTransaction(engineHandle);
-            transactionActive = false;
+            _logger.LogDebug("Committing WFP transaction");
+            var commitResult = transaction.Commit();
             if (commitResult.IsFailure)
             {
+                _logger.LogError("Failed to commit transaction: {Error}", commitResult.Error);
                 return commitResult;
             }
 
@@ -85,10 +84,7 @@ public sealed class WfpEngine : IWfpEngine
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during bootstrap");
-            if (transactionActive)
-            {
-                AbortTransaction(engineHandle);
-            }
+            // Transaction will be aborted by dispose
             return Result.Failure(ErrorCodes.WfpError, $"Unexpected error: {ex.Message}");
         }
     }
@@ -109,14 +105,16 @@ public sealed class WfpEngine : IWfpEngine
         using var handle = openResult.Value;
         var engineHandle = handle.DangerousGetHandle();
 
-        // Begin transaction for atomicity
-        var beginResult = BeginTransaction(engineHandle);
-        if (beginResult.IsFailure)
+        // Begin transaction for atomicity - auto-aborts on dispose if not committed
+        _logger.LogDebug("Beginning WFP transaction");
+        var txResult = WfpTransaction.Begin(engineHandle);
+        if (txResult.IsFailure)
         {
-            return beginResult;
+            _logger.LogError("Failed to begin transaction: {Error}", txResult.Error);
+            return Result.Failure(txResult.Error);
         }
 
-        bool transactionActive = true;
+        using var transaction = txResult.Value;
 
         try
         {
@@ -126,9 +124,7 @@ public sealed class WfpEngine : IWfpEngine
             if (sublayerResult.IsFailure)
             {
                 _logger.LogError("Failed to remove sublayer: {Error}", sublayerResult.Error);
-                AbortTransaction(engineHandle);
-                transactionActive = false;
-                return sublayerResult;
+                return sublayerResult; // Transaction aborted by dispose
             }
 
             // Step 2: Remove provider
@@ -136,16 +132,15 @@ public sealed class WfpEngine : IWfpEngine
             if (providerResult.IsFailure)
             {
                 _logger.LogError("Failed to remove provider: {Error}", providerResult.Error);
-                AbortTransaction(engineHandle);
-                transactionActive = false;
-                return providerResult;
+                return providerResult; // Transaction aborted by dispose
             }
 
             // Commit transaction
-            var commitResult = CommitTransaction(engineHandle);
-            transactionActive = false;
+            _logger.LogDebug("Committing WFP transaction");
+            var commitResult = transaction.Commit();
             if (commitResult.IsFailure)
             {
+                _logger.LogError("Failed to commit transaction: {Error}", commitResult.Error);
                 return commitResult;
             }
 
@@ -155,10 +150,7 @@ public sealed class WfpEngine : IWfpEngine
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error during teardown");
-            if (transactionActive)
-            {
-                AbortTransaction(engineHandle);
-            }
+            // Transaction will be aborted by dispose
             return Result.Failure(ErrorCodes.WfpError, $"Unexpected error: {ex.Message}");
         }
     }
@@ -192,38 +184,6 @@ public sealed class WfpEngine : IWfpEngine
     // ========================================
     // Internal Helper Methods
     // ========================================
-
-    private Result BeginTransaction(IntPtr engineHandle)
-    {
-        _logger.LogDebug("Beginning WFP transaction");
-        var result = NativeMethods.FwpmTransactionBegin0(engineHandle, 0);
-        if (!WfpErrorTranslator.IsSuccess(result))
-        {
-            return WfpErrorTranslator.ToFailedResult(result, "Failed to begin WFP transaction");
-        }
-        return Result.Success();
-    }
-
-    private Result CommitTransaction(IntPtr engineHandle)
-    {
-        _logger.LogDebug("Committing WFP transaction");
-        var result = NativeMethods.FwpmTransactionCommit0(engineHandle);
-        if (!WfpErrorTranslator.IsSuccess(result))
-        {
-            return WfpErrorTranslator.ToFailedResult(result, "Failed to commit WFP transaction");
-        }
-        return Result.Success();
-    }
-
-    private void AbortTransaction(IntPtr engineHandle)
-    {
-        _logger.LogDebug("Aborting WFP transaction");
-        var result = NativeMethods.FwpmTransactionAbort0(engineHandle);
-        if (!WfpErrorTranslator.IsSuccess(result))
-        {
-            _logger.LogWarning("Failed to abort WFP transaction: 0x{ErrorCode:X8}", result);
-        }
-    }
 
     private Result<bool> ProviderExistsInternal(IntPtr engineHandle)
     {
