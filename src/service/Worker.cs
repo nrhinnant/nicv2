@@ -1,3 +1,4 @@
+using WfpTrafficControl.Service.Ipc;
 using WfpTrafficControl.Shared;
 
 namespace WfpTrafficControl.Service;
@@ -9,19 +10,28 @@ namespace WfpTrafficControl.Service;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
+    private readonly ILoggerFactory _loggerFactory;
+    private PipeServer? _pipeServer;
 
-    public Worker(ILogger<Worker> logger)
+    public Worker(ILogger<Worker> logger, ILoggerFactory loggerFactory)
     {
         _logger = logger;
+        _loggerFactory = loggerFactory;
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
+        var version = GetVersion();
+
         _logger.LogInformation(
             "{ServiceName} v{Version} starting at {Time}",
             WfpConstants.ServiceName,
-            GetVersion(),
+            version,
             DateTimeOffset.Now);
+
+        // Start the IPC pipe server
+        _pipeServer = new PipeServer(_loggerFactory.CreateLogger<PipeServer>(), version);
+        _pipeServer.Start();
 
         return base.StartAsync(cancellationToken);
     }
@@ -59,6 +69,14 @@ public class Worker : BackgroundService
             "{ServiceName} stopping at {Time}",
             WfpConstants.ServiceName,
             DateTimeOffset.Now);
+
+        // Stop the IPC pipe server
+        if (_pipeServer != null)
+        {
+            await _pipeServer.StopAsync();
+            _pipeServer.Dispose();
+            _pipeServer = null;
+        }
 
         await base.StopAsync(cancellationToken);
 
