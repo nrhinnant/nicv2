@@ -1,6 +1,7 @@
 using WfpTrafficControl.Cli;
 using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Ipc;
+using WfpTrafficControl.Shared.Policy;
 
 // Parse command line arguments
 var command = args.Length > 0 ? args[0].ToLowerInvariant() : null;
@@ -27,6 +28,8 @@ switch (command)
         return RunRollbackCommand();
 
     case "validate":
+        return RunValidateCommand(args.Length > 1 ? args[1] : null);
+
     case "apply":
     case "enable":
     case "disable":
@@ -64,7 +67,7 @@ static void PrintUsage()
     Console.WriteLine("  demo-block disable - Disable demo block filter");
     Console.WriteLine("  demo-block status  - Show demo block filter status");
     Console.WriteLine("  rollback           - Remove all filters (keeps provider/sublayer)");
-    Console.WriteLine("  validate           - Validate a policy file (not yet implemented)");
+    Console.WriteLine("  validate <file>    - Validate a policy JSON file");
     Console.WriteLine("  apply              - Apply a policy file (not yet implemented)");
     Console.WriteLine("  enable             - Enable traffic control (not yet implemented)");
     Console.WriteLine("  disable            - Disable traffic control (not yet implemented)");
@@ -361,4 +364,117 @@ static int RunRollbackCommand()
     Console.WriteLine("Use 'wfpctl teardown' to also remove provider and sublayer.");
 
     return 0;
+}
+
+static int RunValidateCommand(string? filePath)
+{
+    // Step 1: Check if file path was provided
+    if (string.IsNullOrWhiteSpace(filePath))
+    {
+        Console.Error.WriteLine("Error: No policy file specified.");
+        Console.Error.WriteLine("Usage: wfpctl validate <policy.json>");
+        return 1;
+    }
+
+    // Step 2: Check if file exists
+    if (!File.Exists(filePath))
+    {
+        Console.Error.WriteLine($"Error: File not found: {filePath}");
+        return 1;
+    }
+
+    // Step 3: Check file size
+    var fileInfo = new FileInfo(filePath);
+    if (fileInfo.Length > PolicyValidator.MaxPolicyFileSize)
+    {
+        Console.Error.WriteLine($"Error: Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
+        return 1;
+    }
+
+    // Step 4: Read file content
+    string json;
+    try
+    {
+        json = File.ReadAllText(filePath);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error reading file: {ex.Message}");
+        return 1;
+    }
+
+    // Step 5: Validate the policy locally (no service needed for validation)
+    var result = PolicyValidator.ValidateJson(json);
+
+    // Step 6: Display results
+    if (result.IsValid)
+    {
+        var policy = Policy.FromJson(json);
+        Console.WriteLine("Policy is valid.");
+        Console.WriteLine();
+        Console.WriteLine("Policy Summary:");
+        Console.WriteLine($"  Version:        {policy?.Version ?? "unknown"}");
+        Console.WriteLine($"  Default Action: {policy?.DefaultAction ?? "unknown"}");
+        Console.WriteLine($"  Updated At:     {policy?.UpdatedAt:O}");
+        Console.WriteLine($"  Rule Count:     {policy?.Rules.Count ?? 0}");
+
+        if (policy?.Rules.Count > 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Rules:");
+            var enabledCount = policy.Rules.Count(r => r.Enabled);
+            var disabledCount = policy.Rules.Count - enabledCount;
+            Console.WriteLine($"  Enabled:  {enabledCount}");
+            Console.WriteLine($"  Disabled: {disabledCount}");
+
+            // Show first few rules
+            Console.WriteLine();
+            Console.WriteLine("First 5 rules (preview):");
+            foreach (var rule in policy.Rules.Take(5))
+            {
+                var status = rule.Enabled ? "+" : "-";
+                var direction = rule.Direction.ToUpperInvariant()[0];
+                Console.WriteLine($"  [{status}] {rule.Id}: {rule.Action} {rule.Protocol} {direction} {FormatEndpoints(rule)}");
+            }
+            if (policy.Rules.Count > 5)
+            {
+                Console.WriteLine($"  ... and {policy.Rules.Count - 5} more rules");
+            }
+        }
+
+        return 0;
+    }
+    else
+    {
+        Console.Error.WriteLine(result.GetSummary());
+        return 1;
+    }
+}
+
+static string FormatEndpoints(Rule rule)
+{
+    var parts = new List<string>();
+
+    if (rule.Remote != null)
+    {
+        var remote = new List<string>();
+        if (!string.IsNullOrEmpty(rule.Remote.Ip)) remote.Add(rule.Remote.Ip);
+        if (!string.IsNullOrEmpty(rule.Remote.Ports)) remote.Add($":{rule.Remote.Ports}");
+        if (remote.Count > 0) parts.Add($"to {string.Join("", remote)}");
+    }
+
+    if (rule.Local != null)
+    {
+        var local = new List<string>();
+        if (!string.IsNullOrEmpty(rule.Local.Ip)) local.Add(rule.Local.Ip);
+        if (!string.IsNullOrEmpty(rule.Local.Ports)) local.Add($":{rule.Local.Ports}");
+        if (local.Count > 0) parts.Add($"from {string.Join("", local)}");
+    }
+
+    if (!string.IsNullOrEmpty(rule.Process))
+    {
+        parts.Add($"({Path.GetFileName(rule.Process)})");
+    }
+
+    return parts.Count > 0 ? string.Join(" ", parts) : "(any)";
 }

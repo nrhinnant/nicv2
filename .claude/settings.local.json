@@ -12,7 +12,12 @@
       "Bash(del \"c:\\\\Users\\\\nrhin\\\\OneDrive\\\\Documents\\\\Github Repos\\\\nicv2\\\\src\\\\shared\\\\Native\\\\WfpEngine.cs\")",
       "Bash(cd:*)",
       "Bash(taskkill:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(grep:*)",
+      "Bash(xargs:*)",
+      "Bash(dotnet fsi:*)"
     ]
   }
 }

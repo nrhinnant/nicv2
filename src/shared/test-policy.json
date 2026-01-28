@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "defaultAction": "allow",
+  "updatedAt": "2024-01-15T10:30:00Z",
+  "rules": [
+    {
+      "id": "block-cloudflare",
+      "action": "block",
+      "direction": "outbound",
+      "protocol": "tcp",
+      "remote": { "ip": "1.1.1.1", "ports": "443" },
+      "priority": 100,
+      "enabled": true
+    }
+  ]
+}

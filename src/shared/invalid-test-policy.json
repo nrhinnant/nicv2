@@ -1,0 +1,4 @@
+{
+  "version": "invalid",
+  "rules": [{ "id": "", "action": "invalid" }]
+}

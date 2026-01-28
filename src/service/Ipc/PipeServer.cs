@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Ipc;
 using WfpTrafficControl.Shared.Native;
+using WfpTrafficControl.Shared.Policy;
 
 namespace WfpTrafficControl.Service.Ipc;
 
@@ -340,6 +341,7 @@ public sealed class PipeServer : IDisposable
             DemoBlockDisableRequest => ProcessDemoBlockDisableRequest(),
             DemoBlockStatusRequest => ProcessDemoBlockStatusRequest(),
             RollbackRequest => ProcessRollbackRequest(),
+            ValidateRequest validateRequest => ProcessValidateRequest(validateRequest),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -452,6 +454,40 @@ public sealed class PipeServer : IDisposable
 
         _logger.LogInformation("Rollback completed, removed {FilterCount} filter(s)", result.Value);
         return RollbackResponse.Success(result.Value);
+    }
+
+    private IpcResponse ProcessValidateRequest(ValidateRequest request)
+    {
+        _logger.LogInformation("Processing validate request");
+
+        try
+        {
+            var validationResult = PolicyValidator.ValidateJson(request.PolicyJson);
+
+            if (validationResult.IsValid)
+            {
+                var policy = Policy.FromJson(request.PolicyJson);
+                if (policy == null)
+                {
+                    return ValidateResponse.Failure("Failed to parse policy after validation");
+                }
+
+                _logger.LogInformation("Policy validation succeeded: {RuleCount} rules, version {Version}",
+                    policy.Rules.Count, policy.Version);
+                return ValidateResponse.ForValidPolicy(policy);
+            }
+            else
+            {
+                _logger.LogInformation("Policy validation failed with {ErrorCount} error(s)",
+                    validationResult.Errors.Count);
+                return ValidateResponse.ForInvalidPolicy(validationResult);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during policy validation");
+            return ValidateResponse.Failure($"Validation error: {ex.Message}");
+        }
     }
 
     private async Task SendResponseAsync(NamedPipeServerStream pipeServer, IpcResponse response, CancellationToken cancellationToken)

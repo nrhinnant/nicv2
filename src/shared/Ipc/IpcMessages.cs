@@ -488,6 +488,7 @@ public static class IpcMessageParser
                 DemoBlockDisableRequest.RequestType => Result<IpcRequest>.Success(new DemoBlockDisableRequest()),
                 DemoBlockStatusRequest.RequestType => Result<IpcRequest>.Success(new DemoBlockStatusRequest()),
                 RollbackRequest.RequestType => Result<IpcRequest>.Success(new RollbackRequest()),
+                ValidateRequest.RequestType => ParseValidateRequest(json),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -512,5 +513,29 @@ public static class IpcMessageParser
     public static string CreateErrorResponse(string error)
     {
         return SerializeResponse(new ErrorResponse(error));
+    }
+
+    /// <summary>
+    /// Parses a validate request, extracting the policy JSON.
+    /// </summary>
+    private static Result<IpcRequest> ParseValidateRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<ValidateRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse validate request.");
+            }
+            if (string.IsNullOrWhiteSpace(request.PolicyJson))
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'policyJson' field in validate request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid validate request JSON: {ex.Message}");
+        }
     }
 }
