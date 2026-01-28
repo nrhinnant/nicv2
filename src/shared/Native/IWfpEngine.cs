@@ -1,3 +1,5 @@
+using WfpTrafficControl.Shared.Policy;
+
 namespace WfpTrafficControl.Shared.Native;
 
 /// <summary>
@@ -90,4 +92,41 @@ public interface IWfpEngine
     /// This method is idempotent: calling it when no filters exist returns success with count 0.
     /// </remarks>
     Result<int> RemoveAllFilters();
+
+    // ========================================
+    // Policy Application Operations
+    // ========================================
+
+    /// <summary>
+    /// Applies compiled filters to WFP, replacing all existing filters.
+    /// </summary>
+    /// <param name="filters">List of compiled filters to apply.</param>
+    /// <returns>
+    /// A Result containing the number of filters created on success.
+    /// On failure, the WFP state is unchanged (transaction aborted).
+    /// </returns>
+    /// <remarks>
+    /// This method:
+    /// 1. Ensures provider and sublayer exist
+    /// 2. Removes all existing filters in our sublayer
+    /// 3. Adds all new filters from the compiled list
+    /// 4. Commits atomically (all or nothing)
+    /// </remarks>
+    Result<ApplyResult> ApplyFilters(List<Policy.CompiledFilter> filters);
+}
+
+/// <summary>
+/// Result of applying filters to WFP.
+/// </summary>
+public sealed class ApplyResult
+{
+    /// <summary>
+    /// Number of filters successfully created.
+    /// </summary>
+    public int FiltersCreated { get; set; }
+
+    /// <summary>
+    /// Number of filters removed (from previous policy).
+    /// </summary>
+    public int FiltersRemoved { get; set; }
 }

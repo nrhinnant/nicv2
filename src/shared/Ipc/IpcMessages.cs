@@ -489,6 +489,7 @@ public static class IpcMessageParser
                 DemoBlockStatusRequest.RequestType => Result<IpcRequest>.Success(new DemoBlockStatusRequest()),
                 RollbackRequest.RequestType => Result<IpcRequest>.Success(new RollbackRequest()),
                 ValidateRequest.RequestType => ParseValidateRequest(json),
+                ApplyRequest.RequestType => ParseApplyRequest(json),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -536,6 +537,30 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid validate request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses an apply request, extracting the policy path.
+    /// </summary>
+    private static Result<IpcRequest> ParseApplyRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<ApplyRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse apply request.");
+            }
+            if (string.IsNullOrWhiteSpace(request.PolicyPath))
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'policyPath' field in apply request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid apply request JSON: {ex.Message}");
         }
     }
 }

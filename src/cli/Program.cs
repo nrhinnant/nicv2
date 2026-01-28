@@ -31,6 +31,8 @@ switch (command)
         return RunValidateCommand(args.Length > 1 ? args[1] : null);
 
     case "apply":
+        return RunApplyCommand(args.Length > 1 ? args[1] : null);
+
     case "enable":
     case "disable":
     case "logs":
@@ -68,7 +70,7 @@ static void PrintUsage()
     Console.WriteLine("  demo-block status  - Show demo block filter status");
     Console.WriteLine("  rollback           - Remove all filters (keeps provider/sublayer)");
     Console.WriteLine("  validate <file>    - Validate a policy JSON file");
-    Console.WriteLine("  apply              - Apply a policy file (not yet implemented)");
+    Console.WriteLine("  apply <file>       - Apply a policy file (outbound TCP rules only)");
     Console.WriteLine("  enable             - Enable traffic control (not yet implemented)");
     Console.WriteLine("  disable            - Disable traffic control (not yet implemented)");
     Console.WriteLine("  logs               - Show logs (not yet implemented)");
@@ -449,6 +451,102 @@ static int RunValidateCommand(string? filePath)
         Console.Error.WriteLine(result.GetSummary());
         return 1;
     }
+}
+
+static int RunApplyCommand(string? filePath)
+{
+    // Step 1: Check if file path was provided
+    if (string.IsNullOrWhiteSpace(filePath))
+    {
+        Console.Error.WriteLine("Error: No policy file specified.");
+        Console.Error.WriteLine("Usage: wfpctl apply <policy.json>");
+        return 1;
+    }
+
+    // Step 2: Get absolute path
+    string absolutePath;
+    try
+    {
+        absolutePath = Path.GetFullPath(filePath);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error: Invalid file path: {ex.Message}");
+        return 1;
+    }
+
+    // Step 3: Check if file exists (pre-check before sending to service)
+    if (!File.Exists(absolutePath))
+    {
+        Console.Error.WriteLine($"Error: File not found: {absolutePath}");
+        return 1;
+    }
+
+    // Step 4: Connect to service
+    using var client = new PipeClient();
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 5: Send apply request with absolute path
+    Console.WriteLine($"Applying policy: {absolutePath}");
+    var request = new ApplyRequest { PolicyPath = absolutePath };
+    var result = client.SendRequest<ApplyResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 6: Check response status
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"Apply failed: {response.Error ?? "Unknown error"}");
+
+        // Show compilation errors if present
+        if (response.CompilationErrors != null && response.CompilationErrors.Count > 0)
+        {
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("Compilation errors:");
+            foreach (var error in response.CompilationErrors)
+            {
+                Console.Error.WriteLine($"  - Rule '{error.RuleId}': {error.Message}");
+            }
+        }
+
+        return 1;
+    }
+
+    // Step 7: Display success information
+    Console.WriteLine();
+    Console.WriteLine("Policy applied successfully!");
+    Console.WriteLine($"  Policy version:  {response.PolicyVersion ?? "unknown"}");
+    Console.WriteLine($"  Total rules:     {response.TotalRules}");
+    Console.WriteLine($"  Filters created: {response.FiltersCreated}");
+    Console.WriteLine($"  Filters removed: {response.FiltersRemoved}");
+    Console.WriteLine($"  Rules skipped:   {response.RulesSkipped}");
+
+    // Show warnings if any
+    if (response.Warnings != null && response.Warnings.Count > 0)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Warnings:");
+        foreach (var warning in response.Warnings)
+        {
+            Console.WriteLine($"  - {warning}");
+        }
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("Use 'wfpctl rollback' to remove all filters.");
+
+    return 0;
 }
 
 static string FormatEndpoints(Rule rule)

@@ -1,6 +1,7 @@
 using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Ipc;
 using WfpTrafficControl.Shared.Native;
+using WfpTrafficControl.Shared.Policy;
 using Xunit;
 
 namespace WfpTrafficControl.Tests;
@@ -96,6 +97,11 @@ public class PanicRollbackTests
             FilterCount = 0;
             DemoBlockFilterExistsValue = false;
             return Result<int>.Success(removedCount);
+        }
+
+        public Result<ApplyResult> ApplyFilters(List<CompiledFilter> filters)
+        {
+            return Result<ApplyResult>.Success(new ApplyResult { FiltersCreated = filters?.Count ?? 0, FiltersRemoved = 0 });
         }
     }
 

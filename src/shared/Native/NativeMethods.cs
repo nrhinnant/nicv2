@@ -135,6 +135,21 @@ internal static partial class NativeMethods
     [LibraryImport(Fwpuclnt, SetLastError = false)]
     internal static partial void FwpmFreeMemory0(ref IntPtr p);
 
+    /// <summary>
+    /// Retrieves an application identifier (device path) from a file name.
+    /// Used to match processes in WFP filters.
+    /// </summary>
+    /// <param name="fileName">The DOS-style file name (e.g., C:\Windows\System32\notepad.exe).</param>
+    /// <param name="appId">Receives a pointer to an FWP_BYTE_BLOB containing the app ID.</param>
+    /// <returns>ERROR_SUCCESS (0) on success, or an error code on failure.</returns>
+    /// <remarks>
+    /// The caller must free the returned appId blob using FwpmFreeMemory0.
+    /// </remarks>
+    [LibraryImport(Fwpuclnt, SetLastError = false, StringMarshalling = StringMarshalling.Utf16)]
+    internal static partial uint FwpmGetAppIdFromFileName0(
+        string fileName,
+        out IntPtr appId);
+
     // ========================================
     // Sublayer Management
     // ========================================
@@ -421,6 +436,11 @@ internal static class WfpConditionGuids
     /// FWPM_CONDITION_IP_PROTOCOL: The IP protocol number (e.g., 6 for TCP, 17 for UDP).
     /// </summary>
     public static readonly Guid FWPM_CONDITION_IP_PROTOCOL = new("3971ef2b-623e-4f9a-8cb1-6e79b806b9a7");
+
+    /// <summary>
+    /// FWPM_CONDITION_ALE_APP_ID: The application identifier (device path to executable).
+    /// </summary>
+    public static readonly Guid FWPM_CONDITION_ALE_APP_ID = new("d78e1e87-8644-4ea5-9437-d809ecefc971");
 }
 
 // ========================================
@@ -519,6 +539,16 @@ internal static class FwpMatchType
 {
     /// <summary>Exact match.</summary>
     public const uint FWP_MATCH_EQUAL = 0;
+    /// <summary>Greater than.</summary>
+    public const uint FWP_MATCH_GREATER = 1;
+    /// <summary>Less than.</summary>
+    public const uint FWP_MATCH_LESS = 2;
+    /// <summary>Greater than or equal.</summary>
+    public const uint FWP_MATCH_GREATER_OR_EQUAL = 3;
+    /// <summary>Less than or equal.</summary>
+    public const uint FWP_MATCH_LESS_OR_EQUAL = 4;
+    /// <summary>Range match (inclusive).</summary>
+    public const uint FWP_MATCH_RANGE = 5;
 }
 
 /// <summary>
@@ -571,6 +601,10 @@ internal static class FwpDataType
     public const uint FWP_UINT32 = 3;
     /// <summary>64-bit unsigned integer.</summary>
     public const uint FWP_UINT64 = 4;
+    /// <summary>Byte blob (pointer to FWP_BYTE_BLOB).</summary>
+    public const uint FWP_BYTE_BLOB_TYPE = 5;
+    /// <summary>Range (pointer to FWP_RANGE0).</summary>
+    public const uint FWP_RANGE_TYPE = 7;
     /// <summary>IPv4 address with mask (pointer to FWP_V4_ADDR_AND_MASK).</summary>
     public const uint FWP_V4_ADDR_MASK = 0x100;  // 256 in SDK fwptypes.h
 }
@@ -585,6 +619,18 @@ internal struct FWP_V4_ADDR_AND_MASK
     public uint addr;
     /// <summary>Subnet mask in host byte order (0xFFFFFFFF for exact match).</summary>
     public uint mask;
+}
+
+/// <summary>
+/// Range structure for FWP_MATCH_RANGE condition matching.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+internal struct FWP_RANGE0
+{
+    /// <summary>Low end of the range (inclusive).</summary>
+    public FWP_VALUE0 valueLow;
+    /// <summary>High end of the range (inclusive).</summary>
+    public FWP_VALUE0 valueHigh;
 }
 
 /// <summary>

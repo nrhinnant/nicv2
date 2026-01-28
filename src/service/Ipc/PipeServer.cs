@@ -342,6 +342,7 @@ public sealed class PipeServer : IDisposable
             DemoBlockStatusRequest => ProcessDemoBlockStatusRequest(),
             RollbackRequest => ProcessRollbackRequest(),
             ValidateRequest validateRequest => ProcessValidateRequest(validateRequest),
+            ApplyRequest applyRequest => ProcessApplyRequest(applyRequest),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -487,6 +488,106 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during policy validation");
             return ValidateResponse.Failure($"Validation error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessApplyRequest(ApplyRequest request)
+    {
+        _logger.LogInformation("Processing apply request for policy: {PolicyPath}", request.PolicyPath);
+
+        try
+        {
+            // Step 1: Validate the path
+            if (string.IsNullOrWhiteSpace(request.PolicyPath))
+            {
+                return ApplyResponse.Failure("Policy path is required");
+            }
+
+            // Security: Check for path traversal
+            if (request.PolicyPath.Contains(".."))
+            {
+                _logger.LogWarning("Rejected policy path with traversal: {Path}", request.PolicyPath);
+                return ApplyResponse.Failure("Policy path cannot contain '..' (path traversal)");
+            }
+
+            // Step 2: Check if file exists
+            if (!File.Exists(request.PolicyPath))
+            {
+                return ApplyResponse.Failure($"Policy file not found: {request.PolicyPath}");
+            }
+
+            // Step 3: Check file size
+            var fileInfo = new FileInfo(request.PolicyPath);
+            if (fileInfo.Length > PolicyValidator.MaxPolicyFileSize)
+            {
+                return ApplyResponse.Failure($"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
+            }
+
+            // Step 4: Read file content
+            string json;
+            try
+            {
+                json = File.ReadAllText(request.PolicyPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to read policy file: {Path}", request.PolicyPath);
+                return ApplyResponse.Failure($"Failed to read policy file: {ex.Message}");
+            }
+
+            // Step 5: Validate the policy
+            var validationResult = PolicyValidator.ValidateJson(json);
+            if (!validationResult.IsValid)
+            {
+                _logger.LogWarning("Policy validation failed with {ErrorCount} error(s)", validationResult.Errors.Count);
+                return ApplyResponse.Failure($"Policy validation failed: {validationResult.GetSummary()}");
+            }
+
+            // Step 6: Parse the policy
+            var policy = Policy.FromJson(json);
+            if (policy == null)
+            {
+                return ApplyResponse.Failure("Failed to parse policy after validation");
+            }
+
+            _logger.LogInformation("Policy loaded: version={Version}, rules={RuleCount}",
+                policy.Version, policy.Rules.Count);
+
+            // Step 7: Compile the policy to WFP filters
+            var compilationResult = RuleCompiler.Compile(policy);
+            if (!compilationResult.IsSuccess)
+            {
+                _logger.LogWarning("Policy compilation failed with {ErrorCount} error(s)",
+                    compilationResult.Errors.Count);
+                return ApplyResponse.CompilationFailed(compilationResult);
+            }
+
+            _logger.LogInformation("Policy compiled: {FilterCount} filter(s), {SkippedCount} rule(s) skipped",
+                compilationResult.Filters.Count, compilationResult.SkippedRules);
+
+            // Step 8: Apply the compiled filters to WFP
+            var applyResult = _wfpEngine.ApplyFilters(compilationResult.Filters);
+            if (applyResult.IsFailure)
+            {
+                _logger.LogError("Failed to apply filters to WFP: {Error}", applyResult.Error);
+                return ApplyResponse.Failure($"Failed to apply filters: {applyResult.Error.Message}");
+            }
+
+            _logger.LogInformation("Policy applied successfully: {Created} filter(s) created, {Removed} filter(s) removed",
+                applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
+
+            return ApplyResponse.Success(
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved,
+                compilationResult.SkippedRules,
+                policy.Version,
+                policy.Rules.Count,
+                compilationResult.Warnings);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during policy apply");
+            return ApplyResponse.Failure($"Apply error: {ex.Message}");
         }
     }
 
