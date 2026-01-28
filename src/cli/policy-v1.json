@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "defaultAction": "allow",
+  "updatedAt": "2024-01-01T00:00:00Z",
+  "rules": [
+    {
+      "id": "block-cloudflare-dns",
+      "action": "block",
+      "direction": "outbound",
+      "protocol": "tcp",
+      "remote": {
+        "ip": "1.1.1.1",
+        "ports": "443"
+      },
+      "priority": 100,
+      "enabled": true,
+      "comment": "Block HTTPS to Cloudflare DNS"
+    },
+    {
+      "id": "block-google-dns",
+      "action": "block",
+      "direction": "outbound",
+      "protocol": "tcp",
+      "remote": {
+        "ip": "8.8.8.8",
+        "ports": "443"
+      },
+      "priority": 100,
+      "enabled": true,
+      "comment": "Block HTTPS to Google DNS"
+    }
+  ]
+}

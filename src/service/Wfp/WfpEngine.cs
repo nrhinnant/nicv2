@@ -614,14 +614,14 @@ public sealed class WfpEngine : IWfpEngine
             return Result<int>.Failure(enumerateResult.Error);
         }
 
-        var filterIds = enumerateResult.Value;
-        if (filterIds.Count == 0)
+        var existingFilters = enumerateResult.Value;
+        if (existingFilters.Count == 0)
         {
             _logger.LogInformation("No filters found in our sublayer, nothing to remove");
             return Result<int>.Success(0);
         }
 
-        _logger.LogInformation("Found {FilterCount} filter(s) in our sublayer to remove", filterIds.Count);
+        _logger.LogInformation("Found {FilterCount} filter(s) in our sublayer to remove", existingFilters.Count);
 
         // Phase 2: Delete all filters in a transaction
         _logger.LogDebug("Beginning WFP transaction for filter deletion");
@@ -637,23 +637,23 @@ public sealed class WfpEngine : IWfpEngine
         try
         {
             int deletedCount = 0;
-            foreach (var filterId in filterIds)
+            foreach (var filter in existingFilters)
             {
-                _logger.LogDebug("Deleting filter with ID: {FilterId}", filterId);
-                var deleteResult = NativeMethods.FwpmFilterDeleteById0(engineHandle, filterId);
+                _logger.LogDebug("Deleting filter with ID: {FilterId} (Key: {FilterKey})", filter.FilterId, filter.FilterKey);
+                var deleteResult = NativeMethods.FwpmFilterDeleteById0(engineHandle, filter.FilterId);
 
                 // FWP_E_FILTER_NOT_FOUND is acceptable (race condition - filter was already removed)
                 if (deleteResult == NativeMethods.FWP_E_FILTER_NOT_FOUND)
                 {
-                    _logger.LogDebug("Filter {FilterId} not found (already removed), continuing", filterId);
+                    _logger.LogDebug("Filter {FilterId} not found (already removed), continuing", filter.FilterId);
                     continue;
                 }
 
                 if (!WfpErrorTranslator.IsSuccess(deleteResult))
                 {
-                    _logger.LogError("Failed to delete filter {FilterId}: 0x{ErrorCode:X8}", filterId, deleteResult);
+                    _logger.LogError("Failed to delete filter {FilterId}: 0x{ErrorCode:X8}", filter.FilterId, deleteResult);
                     // Transaction will be aborted by dispose
-                    return WfpErrorTranslator.ToFailedResult<int>(deleteResult, $"Failed to delete filter {filterId}");
+                    return WfpErrorTranslator.ToFailedResult<int>(deleteResult, $"Failed to delete filter {filter.FilterId}");
                 }
 
                 deletedCount++;
@@ -686,7 +686,7 @@ public sealed class WfpEngine : IWfpEngine
     /// <inheritdoc/>
     public Result<ApplyResult> ApplyFilters(List<CompiledFilter> filters)
     {
-        _logger.LogInformation("Applying {FilterCount} compiled filter(s)", filters?.Count ?? 0);
+        _logger.LogInformation("Applying {FilterCount} compiled filter(s) using idempotent reconciliation", filters?.Count ?? 0);
 
         if (filters == null)
         {
@@ -712,7 +712,7 @@ public sealed class WfpEngine : IWfpEngine
             return Result<ApplyResult>.Failure(bootstrapResult.Error);
         }
 
-        // Step 2: Enumerate existing filters for removal count
+        // Step 2: Enumerate existing filters to compute diff
         var enumerateResult = EnumerateFiltersInOurSublayer(engineHandle);
         if (enumerateResult.IsFailure)
         {
@@ -720,11 +720,28 @@ public sealed class WfpEngine : IWfpEngine
             return Result<ApplyResult>.Failure(enumerateResult.Error);
         }
 
-        var existingFilterIds = enumerateResult.Value;
-        _logger.LogInformation("Found {ExistingCount} existing filter(s) to remove", existingFilterIds.Count);
+        var existingFilters = enumerateResult.Value;
+        _logger.LogInformation("Found {ExistingCount} existing filter(s) in our sublayer", existingFilters.Count);
 
-        // Step 3: Begin transaction for atomic replace
-        _logger.LogDebug("Beginning WFP transaction for policy apply");
+        // Step 3: Compute diff between desired and current state
+        var diff = FilterDiffComputer.ComputeDiff(filters, existingFilters);
+        _logger.LogInformation("Diff computed: {ToAdd} to add, {ToRemove} to remove, {Unchanged} unchanged",
+            diff.ToAdd.Count, diff.ToRemove.Count, diff.Unchanged);
+
+        // If no changes needed, return early (true idempotency)
+        if (diff.IsEmpty)
+        {
+            _logger.LogInformation("No changes needed - policy is already applied (idempotent)");
+            return Result<ApplyResult>.Success(new ApplyResult
+            {
+                FiltersCreated = 0,
+                FiltersRemoved = 0,
+                FiltersUnchanged = diff.Unchanged
+            });
+        }
+
+        // Step 4: Begin transaction for atomic apply
+        _logger.LogDebug("Beginning WFP transaction for policy reconciliation");
         var txResult = WfpTransaction.Begin(engineHandle);
         if (txResult.IsFailure)
         {
@@ -736,33 +753,33 @@ public sealed class WfpEngine : IWfpEngine
 
         try
         {
-            // Step 4: Remove all existing filters
+            // Step 5: Remove filters that are no longer in the policy
             int removedCount = 0;
-            foreach (var filterId in existingFilterIds)
+            foreach (var filterKey in diff.ToRemove)
             {
-                _logger.LogDebug("Removing existing filter ID: {FilterId}", filterId);
-                var deleteResult = NativeMethods.FwpmFilterDeleteById0(engineHandle, filterId);
+                _logger.LogDebug("Removing obsolete filter: {FilterKey}", filterKey);
+                var deleteResult = NativeMethods.FwpmFilterDeleteByKey0(engineHandle, in filterKey);
 
                 if (deleteResult == NativeMethods.FWP_E_FILTER_NOT_FOUND)
                 {
-                    _logger.LogDebug("Filter {FilterId} not found (already removed)", filterId);
+                    _logger.LogDebug("Filter {FilterKey} not found (already removed), continuing", filterKey);
                     continue;
                 }
 
                 if (!WfpErrorTranslator.IsSuccess(deleteResult))
                 {
-                    _logger.LogError("Failed to delete filter {FilterId}: 0x{ErrorCode:X8}", filterId, deleteResult);
-                    return WfpErrorTranslator.ToFailedResult<ApplyResult>(deleteResult, $"Failed to delete existing filter {filterId}");
+                    _logger.LogError("Failed to delete filter {FilterKey}: 0x{ErrorCode:X8}", filterKey, deleteResult);
+                    return WfpErrorTranslator.ToFailedResult<ApplyResult>(deleteResult, $"Failed to delete filter {filterKey}");
                 }
 
                 removedCount++;
             }
 
-            // Step 5: Add all new filters
+            // Step 6: Add new filters that don't exist yet
             int createdCount = 0;
-            foreach (var compiledFilter in filters)
+            foreach (var compiledFilter in diff.ToAdd)
             {
-                _logger.LogDebug("Creating filter for rule '{RuleId}': {DisplayName}",
+                _logger.LogDebug("Creating new filter for rule '{RuleId}': {DisplayName}",
                     compiledFilter.RuleId, compiledFilter.DisplayName);
 
                 var createResult = CreateFilterFromCompiled(engineHandle, compiledFilter);
@@ -778,7 +795,7 @@ public sealed class WfpEngine : IWfpEngine
                     createResult.Value, compiledFilter.RuleId);
             }
 
-            // Step 6: Commit transaction
+            // Step 7: Commit transaction
             _logger.LogDebug("Committing WFP transaction");
             var commitResult = transaction.Commit();
             if (commitResult.IsFailure)
@@ -787,18 +804,19 @@ public sealed class WfpEngine : IWfpEngine
                 return Result<ApplyResult>.Failure(commitResult.Error);
             }
 
-            _logger.LogInformation("Policy applied successfully: {CreatedCount} filter(s) created, {RemovedCount} filter(s) removed",
-                createdCount, removedCount);
+            _logger.LogInformation("Policy reconciled successfully: {CreatedCount} created, {RemovedCount} removed, {UnchangedCount} unchanged",
+                createdCount, removedCount, diff.Unchanged);
 
             return Result<ApplyResult>.Success(new ApplyResult
             {
                 FiltersCreated = createdCount,
-                FiltersRemoved = removedCount
+                FiltersRemoved = removedCount,
+                FiltersUnchanged = diff.Unchanged
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during policy apply");
+            _logger.LogError(ex, "Unexpected error during policy reconciliation");
             return Result<ApplyResult>.Failure(ErrorCodes.WfpError, $"Unexpected error: {ex.Message}");
         }
     }
@@ -1028,15 +1046,15 @@ public sealed class WfpEngine : IWfpEngine
     }
 
     /// <summary>
-    /// Enumerates all filters in our sublayer.
+    /// Enumerates all filters in our sublayer, returning their GUIDs and IDs.
     /// </summary>
     /// <param name="engineHandle">Open WFP engine handle.</param>
-    /// <returns>List of filter IDs in our sublayer.</returns>
-    private Result<List<ulong>> EnumerateFiltersInOurSublayer(IntPtr engineHandle)
+    /// <returns>List of existing filters in our sublayer.</returns>
+    private Result<List<ExistingFilter>> EnumerateFiltersInOurSublayer(IntPtr engineHandle)
     {
         _logger.LogDebug("Enumerating filters in sublayer {SublayerGuid}", WfpConstants.SublayerGuid);
 
-        var filterIds = new List<ulong>();
+        var filters = new List<ExistingFilter>();
         IntPtr enumHandle = IntPtr.Zero;
 
         try
@@ -1052,7 +1070,7 @@ public sealed class WfpEngine : IWfpEngine
 
             if (!WfpErrorTranslator.IsSuccess(createResult))
             {
-                return WfpErrorTranslator.ToFailedResult<List<ulong>>(createResult, "Failed to create filter enumeration handle");
+                return WfpErrorTranslator.ToFailedResult<List<ExistingFilter>>(createResult, "Failed to create filter enumeration handle");
             }
 
             _logger.LogDebug("Created filter enumeration handle");
@@ -1070,7 +1088,7 @@ public sealed class WfpEngine : IWfpEngine
 
                 if (!WfpErrorTranslator.IsSuccess(enumResult))
                 {
-                    return WfpErrorTranslator.ToFailedResult<List<ulong>>(enumResult, "Failed to enumerate filters");
+                    return WfpErrorTranslator.ToFailedResult<List<ExistingFilter>>(enumResult, "Failed to enumerate filters");
                 }
 
                 if (numReturned == 0)
@@ -1105,9 +1123,14 @@ public sealed class WfpEngine : IWfpEngine
                         // Check if this filter belongs to our sublayer
                         if (filter.subLayerKey == WfpConstants.SublayerGuid)
                         {
-                            _logger.LogInformation("Found filter in our sublayer: ID={FilterId}, Key={FilterKey}, Name={Name}",
+                            _logger.LogDebug("Found filter in our sublayer: ID={FilterId}, Key={FilterKey}, Name={Name}",
                                 filter.filterId, filter.filterKey, filter.displayData.name ?? "(unnamed)");
-                            filterIds.Add(filter.filterId);
+                            filters.Add(new ExistingFilter
+                            {
+                                FilterKey = filter.filterKey,
+                                FilterId = filter.filterId,
+                                DisplayName = filter.displayData.name
+                            });
                         }
                     }
                 }
@@ -1121,8 +1144,8 @@ public sealed class WfpEngine : IWfpEngine
                 }
             }
 
-            _logger.LogDebug("Enumeration found {TotalCount} filter(s) in our sublayer", filterIds.Count);
-            return Result<List<ulong>>.Success(filterIds);
+            _logger.LogDebug("Enumeration found {TotalCount} filter(s) in our sublayer", filters.Count);
+            return Result<List<ExistingFilter>>.Success(filters);
         }
         finally
         {

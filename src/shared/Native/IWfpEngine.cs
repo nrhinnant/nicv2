@@ -129,4 +129,14 @@ public sealed class ApplyResult
     /// Number of filters removed (from previous policy).
     /// </summary>
     public int FiltersRemoved { get; set; }
+
+    /// <summary>
+    /// Number of filters that were unchanged (already existed with same GUID).
+    /// </summary>
+    public int FiltersUnchanged { get; set; }
+
+    /// <summary>
+    /// Total number of filters now active.
+    /// </summary>
+    public int TotalActive => FiltersUnchanged + FiltersCreated;
 }

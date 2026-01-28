@@ -217,3 +217,62 @@ A feature is done only when:
 If anything is unclear (OS version, privilege model, IPC method, language choice, packaging),
 ask a single targeted question *after* Phase 1 Plan OR propose a reasonable default and proceed,
 explicitly documenting the assumption.
+
+## 11) Context Loading Discipline (Cost-Aware, Not Restrictive)
+
+This project is large enough that indiscriminate context loading is inefficient.
+However, correctness takes priority over minimizing tokens.
+
+You are expected to exercise **engineering judgment**, not avoidance.
+
+### Default Posture
+- You SHOULD examine code whenever there is reasonable uncertainty about:
+  - correctness
+  - interfaces or contracts
+  - invariants relied upon by the current change
+- Do NOT avoid reading code simply to save tokens if that would reduce confidence.
+
+The goal is **intentional context loading**, not minimal context at all costs.
+
+### Clearly Irrelevant Files (Skip by Default)
+The following are almost never relevant unless explicitly stated:
+- Build outputs and generated artifacts (`/bin`, `/obj`, `*.exe`, `*.dll`)
+- Previous milestone documentation unrelated to the current feature
+- Test files outside Phase 5 (TEST DEVELOPMENT)
+- Scripts unrelated to the current operation
+- CLI code when modifying service internals (and vice versa), unless verifying a contract
+
+Skipping these does not require justification.
+
+### Discretionary Code Examination (Encouraged When Unsure)
+You are encouraged to load code when:
+- You are unsure how an existing component behaves
+- A public method or interface is being called but not fully specified
+- A correctness or safety property depends on prior implementation
+- A change could subtly affect rollback, cleanup, or security
+
+In these cases:
+- Prefer loading **specific files** over entire directories
+- Prefer reading **interfaces and boundaries** before implementations
+- Stop once uncertainty is resolved
+
+### Phase-Specific Expectations
+- Phase 1 (PLAN):
+  - Identify uncertainty explicitly.
+  - Load code as needed to resolve uncertainty.
+  - List the files you examined and why.
+- Phase 2 (EXECUTE):
+  - Operate primarily on files being modified and their direct dependencies.
+- Phase 3 (CODE REVIEW):
+  - Review diffs plus any code whose behavior is relied upon.
+- Phase 4 (DOCUMENT):
+  - Load only documentation relevant to the current feature.
+- Phase 5 (TEST DEVELOPMENT):
+  - Load production code necessary to design meaningful tests.
+
+### Guiding Heuristic
+If skipping a file would force you to make assumptions, **read the file**.
+If reading a file would only provide background context with no impact on decisions, **skip it**.
+
+Err slightly on the side of correctness, but avoid global re-scans.
+
