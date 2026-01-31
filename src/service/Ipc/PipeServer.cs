@@ -19,6 +19,7 @@ public sealed class PipeServer : IDisposable
     private readonly ILogger<PipeServer> _logger;
     private readonly string _serviceVersion;
     private readonly IWfpEngine _wfpEngine;
+    private readonly PolicyFileWatcher _fileWatcher;
     private readonly CancellationTokenSource _cts;
     private Task? _listenerTask;
     private bool _disposed;
@@ -43,11 +44,12 @@ public sealed class PipeServer : IDisposable
     /// </summary>
     private static readonly SecurityIdentifier AdministratorsSid = new(WellKnownSidType.BuiltinAdministratorsSid, null);
 
-    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine)
+    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine, PolicyFileWatcher fileWatcher)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serviceVersion = serviceVersion ?? throw new ArgumentNullException(nameof(serviceVersion));
         _wfpEngine = wfpEngine ?? throw new ArgumentNullException(nameof(wfpEngine));
+        _fileWatcher = fileWatcher ?? throw new ArgumentNullException(nameof(fileWatcher));
         _cts = new CancellationTokenSource();
     }
 
@@ -346,6 +348,8 @@ public sealed class PipeServer : IDisposable
             ApplyRequest applyRequest => ProcessApplyRequest(applyRequest),
             LkgShowRequest => ProcessLkgShowRequest(),
             LkgRevertRequest => ProcessLkgRevertRequest(),
+            WatchSetRequest watchSetRequest => ProcessWatchSetRequest(watchSetRequest),
+            WatchStatusRequest => ProcessWatchStatusRequest(),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -711,6 +715,76 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during LKG revert");
             return LkgRevertResponse.Failure($"LKG revert error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessWatchSetRequest(WatchSetRequest request)
+    {
+        _logger.LogInformation("Processing watch-set request");
+
+        try
+        {
+            // If no path provided, disable watching
+            if (string.IsNullOrWhiteSpace(request.PolicyPath))
+            {
+                _fileWatcher.StopWatching();
+                _logger.LogInformation("File watching disabled");
+                return WatchSetResponse.Disabled();
+            }
+
+            // Get absolute path
+            string absolutePath;
+            try
+            {
+                absolutePath = Path.GetFullPath(request.PolicyPath);
+            }
+            catch (Exception ex)
+            {
+                return WatchSetResponse.Failure($"Invalid policy path: {ex.Message}");
+            }
+
+            // Start watching
+            var result = _fileWatcher.StartWatching(absolutePath);
+            if (result.IsFailure)
+            {
+                _logger.LogWarning("Failed to start file watching: {Error}", result.Error.Message);
+                return WatchSetResponse.Failure(result.Error.Message);
+            }
+
+            _logger.LogInformation("File watching enabled on: {Path}", absolutePath);
+            return WatchSetResponse.Success(
+                watching: true,
+                policyPath: absolutePath,
+                initialApplySuccess: result.Value.InitialApplySuccess,
+                warning: result.Value.Warning);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during watch-set");
+            return WatchSetResponse.Failure($"Watch-set error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessWatchStatusRequest()
+    {
+        _logger.LogInformation("Processing watch-status request");
+
+        try
+        {
+            return WatchStatusResponse.Success(
+                watching: _fileWatcher.IsWatching,
+                policyPath: _fileWatcher.WatchedPath,
+                debounceMs: _fileWatcher.DebounceMs,
+                lastApplyTime: _fileWatcher.LastApplyTime,
+                lastError: _fileWatcher.LastError,
+                lastErrorTime: _fileWatcher.LastErrorTime,
+                applyCount: _fileWatcher.ApplyCount,
+                errorCount: _fileWatcher.ErrorCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during watch-status");
+            return WatchStatusResponse.Failure($"Watch-status error: {ex.Message}");
         }
     }
 

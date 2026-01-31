@@ -19,6 +19,7 @@ public class Worker : BackgroundService
     private readonly IConfiguration _configuration;
     private readonly IWfpEngine _wfpEngine;
     private PipeServer? _pipeServer;
+    private PolicyFileWatcher? _fileWatcher;
 
     public Worker(ILogger<Worker> logger, ILoggerFactory loggerFactory, IConfiguration configuration)
     {
@@ -38,8 +39,26 @@ public class Worker : BackgroundService
             version,
             DateTimeOffset.Now);
 
-        // Start the IPC pipe server
-        _pipeServer = new PipeServer(_loggerFactory.CreateLogger<PipeServer>(), version, _wfpEngine);
+        // Initialize file watcher with configuration
+        _fileWatcher = new PolicyFileWatcher(
+            _loggerFactory.CreateLogger<PolicyFileWatcher>(),
+            _wfpEngine);
+
+        // Configure debounce from appsettings
+        var debounceMs = _configuration.GetValue<int>("WfpTrafficControl:FileWatch:DebounceMs",
+            PolicyFileWatcher.DefaultDebounceMs);
+        if (debounceMs >= PolicyFileWatcher.MinDebounceMs && debounceMs <= PolicyFileWatcher.MaxDebounceMs)
+        {
+            _fileWatcher.SetDebounceMs(debounceMs);
+            _logger.LogDebug("File watch debounce set to {DebounceMs}ms", debounceMs);
+        }
+
+        // Start the IPC pipe server (pass file watcher for control)
+        _pipeServer = new PipeServer(
+            _loggerFactory.CreateLogger<PipeServer>(),
+            version,
+            _wfpEngine,
+            _fileWatcher);
         _pipeServer.Start();
 
         // Auto-apply LKG policy on startup if enabled via configuration.
@@ -162,6 +181,13 @@ public class Worker : BackgroundService
             "{ServiceName} stopping at {Time}",
             WfpConstants.ServiceName,
             DateTimeOffset.Now);
+
+        // Stop file watching
+        if (_fileWatcher != null)
+        {
+            _fileWatcher.Dispose();
+            _fileWatcher = null;
+        }
 
         // Stop the IPC pipe server
         if (_pipeServer != null)

@@ -713,6 +713,8 @@ public static class IpcMessageParser
                 ApplyRequest.RequestType => ParseApplyRequest(json),
                 LkgShowRequest.RequestType => Result<IpcRequest>.Success(new LkgShowRequest()),
                 LkgRevertRequest.RequestType => Result<IpcRequest>.Success(new LkgRevertRequest()),
+                WatchSetRequest.RequestType => ParseWatchSetRequest(json),
+                WatchStatusRequest.RequestType => Result<IpcRequest>.Success(new WatchStatusRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -784,6 +786,27 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid apply request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a watch-set request, extracting the policy path.
+    /// </summary>
+    private static Result<IpcRequest> ParseWatchSetRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<WatchSetRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse watch-set request.");
+            }
+            // Note: PolicyPath can be null/empty to disable watching
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid watch-set request JSON: {ex.Message}");
         }
     }
 }

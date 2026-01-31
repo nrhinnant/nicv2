@@ -18,7 +18,8 @@
       "Bash(grep:*)",
       "Bash(xargs:*)",
       "Bash(dotnet fsi:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(find:*)"
     ]
   }
 }

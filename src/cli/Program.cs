@@ -36,6 +36,9 @@ switch (command)
     case "lkg":
         return RunLkgCommand(subCommand);
 
+    case "watch":
+        return RunWatchCommand(subCommand, args.Length > 2 ? args[2] : null);
+
     case "enable":
     case "disable":
     case "logs":
@@ -76,6 +79,8 @@ static void PrintUsage()
     Console.WriteLine("  apply <file>       - Apply a policy file (outbound TCP rules only)");
     Console.WriteLine("  lkg show           - Show the stored LKG (Last Known Good) policy");
     Console.WriteLine("  lkg revert         - Apply the stored LKG policy");
+    Console.WriteLine("  watch set <file>   - Watch a policy file for changes (auto-reapply)");
+    Console.WriteLine("  watch status       - Show file watch status");
     Console.WriteLine("  enable             - Enable traffic control (not yet implemented)");
     Console.WriteLine("  disable            - Disable traffic control (not yet implemented)");
     Console.WriteLine("  logs               - Show logs (not yet implemented)");
@@ -717,4 +722,177 @@ static string FormatEndpoints(Rule rule)
     }
 
     return parts.Count > 0 ? string.Join(" ", parts) : "(any)";
+}
+
+static int RunWatchCommand(string? subCommand, string? policyPath)
+{
+    switch (subCommand)
+    {
+        case "set":
+            return RunWatchSetCommand(policyPath);
+        case "status":
+            return RunWatchStatusCommand();
+        default:
+            Console.Error.WriteLine("Usage: wfpctl watch <set <file>|status>");
+            return 1;
+    }
+}
+
+static int RunWatchSetCommand(string? policyPath)
+{
+    using var client = new PipeClient();
+
+    // Step 1: Connect to the service
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 2: If no path provided, disable watching
+    if (string.IsNullOrWhiteSpace(policyPath))
+    {
+        Console.WriteLine("Disabling file watch...");
+        var disableRequest = new WatchSetRequest { PolicyPath = null };
+        var disableResult = client.SendRequest<WatchSetResponse>(disableRequest);
+
+        if (disableResult.IsFailure)
+        {
+            Console.Error.WriteLine($"Error: {disableResult.Error.Message}");
+            return 1;
+        }
+
+        if (!disableResult.Value.Ok)
+        {
+            Console.Error.WriteLine($"Failed to disable watch: {disableResult.Value.Error ?? "Unknown error"}");
+            return 1;
+        }
+
+        Console.WriteLine("File watching disabled.");
+        return 0;
+    }
+
+    // Step 3: Get absolute path
+    string absolutePath;
+    try
+    {
+        absolutePath = Path.GetFullPath(policyPath);
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Error: Invalid file path: {ex.Message}");
+        return 1;
+    }
+
+    // Step 4: Check if file exists (pre-check)
+    if (!File.Exists(absolutePath))
+    {
+        Console.Error.WriteLine($"Error: File not found: {absolutePath}");
+        return 1;
+    }
+
+    // Step 5: Send watch-set request
+    Console.WriteLine($"Enabling file watch on: {absolutePath}");
+    var request = new WatchSetRequest { PolicyPath = absolutePath };
+    var result = client.SendRequest<WatchSetResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 6: Check response status
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"Watch set failed: {response.Error ?? "Unknown error"}");
+        return 1;
+    }
+
+    // Step 7: Display success information
+    Console.WriteLine();
+    Console.WriteLine("File watching enabled!");
+    Console.WriteLine($"  Watching:      {response.PolicyPath}");
+    Console.WriteLine($"  Initial apply: {(response.InitialApplySuccess ? "Success" : "Failed (fail-open)")}");
+
+    if (!string.IsNullOrEmpty(response.Warning))
+    {
+        Console.WriteLine($"  Warning:       {response.Warning}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("The policy will be automatically reapplied when the file changes.");
+    Console.WriteLine("Use 'wfpctl watch status' to check watch status.");
+    Console.WriteLine("Use 'wfpctl watch set' (no path) to disable watching.");
+
+    return 0;
+}
+
+static int RunWatchStatusCommand()
+{
+    using var client = new PipeClient();
+
+    // Step 1: Connect to the service
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 2: Send watch-status request
+    var request = new WatchStatusRequest();
+    var result = client.SendRequest<WatchStatusResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 3: Check response status
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"Watch status check failed: {response.Error ?? "Unknown error"}");
+        return 1;
+    }
+
+    // Step 4: Display results
+    Console.WriteLine("File Watch Status");
+    Console.WriteLine($"  Active:      {(response.Watching ? "Yes" : "No")}");
+
+    if (response.Watching && !string.IsNullOrEmpty(response.PolicyPath))
+    {
+        Console.WriteLine($"  Watching:    {response.PolicyPath}");
+    }
+
+    Console.WriteLine($"  Debounce:    {response.DebounceMs}ms");
+
+    if (response.Watching)
+    {
+        Console.WriteLine();
+        Console.WriteLine("Statistics:");
+        Console.WriteLine($"  Applies:     {response.ApplyCount}");
+        Console.WriteLine($"  Errors:      {response.ErrorCount}");
+
+        if (!string.IsNullOrEmpty(response.LastApplyTime))
+        {
+            Console.WriteLine($"  Last apply:  {response.LastApplyTime}");
+        }
+
+        if (!string.IsNullOrEmpty(response.LastError))
+        {
+            Console.WriteLine();
+            Console.WriteLine("Last Error:");
+            Console.WriteLine($"  Time:    {response.LastErrorTime}");
+            Console.WriteLine($"  Message: {response.LastError}");
+        }
+    }
+
+    return 0;
 }
