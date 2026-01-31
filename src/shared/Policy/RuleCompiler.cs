@@ -1,6 +1,7 @@
 // src/shared/Policy/RuleCompiler.cs
 // Compiles policy rules to WFP filter definitions
 // Phase 12: Compile Outbound TCP Rules
+// Phase 15: Added Inbound TCP Rule Support
 
 using System.Net;
 using WfpTrafficControl.Shared.Native;
@@ -47,6 +48,12 @@ public sealed class CompiledFilter
     /// Protocol number (6 = TCP).
     /// </summary>
     public byte Protocol { get; set; } = 6; // TCP
+
+    /// <summary>
+    /// Traffic direction: "inbound" or "outbound".
+    /// Determines which WFP layer the filter is added to.
+    /// </summary>
+    public string Direction { get; set; } = RuleDirection.Outbound;
 
     /// <summary>
     /// Remote IP address (host byte order).
@@ -149,6 +156,13 @@ public sealed record CompilationError(string RuleId, string Message);
 /// - Supports: process (full path)
 /// - Supports: action (allow/block)
 /// - Errors on: direction=inbound/both, protocol=udp/any, local endpoint, IPv6
+///
+/// Phase 15 Scope (Added Inbound TCP):
+/// - Supports: direction=inbound (TCP only)
+/// - Uses FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4 layer for inbound rules
+/// - remote.ip and remote.ports match the connecting client
+/// - process matches the listening application accepting the connection
+/// - Errors on: direction=both, protocol=udp/any
 /// </summary>
 public static class RuleCompiler
 {
@@ -229,10 +243,15 @@ public static class RuleCompiler
         // Parse ports - may create multiple filters for comma-separated ports
         var portSpecs = ParsePortSpecs(rule.Remote?.Ports);
 
+        // Determine the normalized direction
+        var direction = string.Equals(rule.Direction, RuleDirection.Inbound, StringComparison.OrdinalIgnoreCase)
+            ? RuleDirection.Inbound
+            : RuleDirection.Outbound;
+
         if (portSpecs.Count == 0)
         {
             // No port specified - create single filter matching any port
-            var filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, null, null, 0);
+            var filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, null, null, 0, direction);
             result.Filters.Add(filter);
         }
         else
@@ -245,12 +264,12 @@ public static class RuleCompiler
                 if (start == end)
                 {
                     // Single port
-                    filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, (ushort)start, null, null, portIndex);
+                    filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, (ushort)start, null, null, portIndex, direction);
                 }
                 else
                 {
                     // Port range
-                    filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, (ushort)start, (ushort)end, portIndex);
+                    filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, (ushort)start, (ushort)end, portIndex, direction);
                 }
                 result.Filters.Add(filter);
                 portIndex++;
@@ -266,10 +285,12 @@ public static class RuleCompiler
         var ruleId = rule.Id ?? "(unknown)";
         var hasErrors = false;
 
-        // Check direction - only outbound supported
-        if (!string.Equals(rule.Direction, RuleDirection.Outbound, StringComparison.OrdinalIgnoreCase))
+        // Check direction - outbound and inbound supported, "both" not supported
+        var isOutbound = string.Equals(rule.Direction, RuleDirection.Outbound, StringComparison.OrdinalIgnoreCase);
+        var isInbound = string.Equals(rule.Direction, RuleDirection.Inbound, StringComparison.OrdinalIgnoreCase);
+        if (!isOutbound && !isInbound)
         {
-            result.AddError(ruleId, $"Unsupported direction: '{rule.Direction}'. Only 'outbound' is supported in this version.");
+            result.AddError(ruleId, $"Unsupported direction: '{rule.Direction}'. Only 'outbound' and 'inbound' are supported in this version.");
             hasErrors = true;
         }
 
@@ -318,7 +339,8 @@ public static class RuleCompiler
         ushort? singlePort,
         ushort? rangeStart,
         ushort? rangeEnd,
-        int portIndex)
+        int portIndex,
+        string direction)
     {
         // Generate deterministic filter GUID from rule ID and port index
         var filterKey = GenerateFilterGuid(ruleId, portIndex);
@@ -331,7 +353,7 @@ public static class RuleCompiler
         }
 
         // Build description
-        var description = $"Compiled from rule '{ruleId}': {rule.Action} {rule.Protocol} outbound";
+        var description = $"Compiled from rule '{ruleId}': {rule.Action} {rule.Protocol} {direction}";
         if (remoteIp.HasValue)
         {
             var ipStr = IpToString(remoteIp.Value);
@@ -368,6 +390,7 @@ public static class RuleCompiler
             Weight = weight,
             RuleId = ruleId,
             Protocol = WfpConstants.ProtocolTcp,
+            Direction = direction,
             RemoteIpAddress = remoteIp,
             RemoteIpMask = remoteMask,
             RemotePort = singlePort,

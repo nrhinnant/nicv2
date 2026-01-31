@@ -980,6 +980,11 @@ public sealed class WfpEngine : IWfpEngine
                 ? FwpActionType.FWP_ACTION_BLOCK
                 : FwpActionType.FWP_ACTION_PERMIT;
 
+            // Select the appropriate WFP layer based on direction
+            var layerKey = string.Equals(compiled.Direction, RuleDirection.Inbound, StringComparison.OrdinalIgnoreCase)
+                ? WfpLayerGuids.FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4
+                : WfpLayerGuids.FWPM_LAYER_ALE_AUTH_CONNECT_V4;
+
             // Create the filter structure
             var filter = new FWPM_FILTER0
             {
@@ -992,7 +997,7 @@ public sealed class WfpEngine : IWfpEngine
                 flags = FwpmFilterFlags.FWPM_FILTER_FLAG_NONE,
                 providerKey = providerGuidHandle.AddrOfPinnedObject(),
                 providerData = new FWP_BYTE_BLOB { size = 0, data = IntPtr.Zero },
-                layerKey = WfpLayerGuids.FWPM_LAYER_ALE_AUTH_CONNECT_V4,
+                layerKey = layerKey,
                 subLayerKey = WfpConstants.SublayerGuid,
                 weight = new FWP_VALUE0
                 {

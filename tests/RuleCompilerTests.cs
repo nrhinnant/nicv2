@@ -73,7 +73,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_InboundDirection_ReturnsError()
+    public void Compile_InboundDirection_Succeeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -86,10 +86,9 @@ public class RuleCompilerTests
 
         var result = RuleCompiler.Compile(policy);
 
-        Assert.False(result.IsSuccess);
-        Assert.Single(result.Errors);
-        Assert.Equal("inbound-rule", result.Errors[0].RuleId);
-        Assert.Contains("Unsupported direction", result.Errors[0].Message);
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.Equal(RuleDirection.Inbound, result.Filters[0].Direction);
     }
 
     [Fact]
@@ -127,6 +126,156 @@ public class RuleCompilerTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Filters);
+        Assert.Equal(RuleDirection.Outbound, result.Filters[0].Direction);
+    }
+
+    // ========================================
+    // Inbound TCP Support Tests (Phase 15)
+    // ========================================
+
+    [Fact]
+    public void Compile_InboundWithRemoteIpAndPort_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "inbound-block",
+            Action = "block",
+            Direction = "inbound",
+            Protocol = "tcp",
+            Remote = new EndpointFilter { Ip = "192.168.1.100", Ports = "8080" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal(RuleDirection.Inbound, filter.Direction);
+        Assert.Equal(0xC0A80164u, filter.RemoteIpAddress); // 192.168.1.100
+        Assert.Equal((ushort)8080, filter.RemotePort);
+    }
+
+    [Fact]
+    public void Compile_InboundWithCidr_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "inbound-cidr",
+            Action = "block",
+            Direction = "inbound",
+            Protocol = "tcp",
+            Remote = new EndpointFilter { Ip = "10.0.0.0/8" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal(RuleDirection.Inbound, filter.Direction);
+        Assert.Equal(0x0A000000u, filter.RemoteIpAddress); // 10.0.0.0
+        Assert.Equal(0xFF000000u, filter.RemoteIpMask); // /8
+    }
+
+    [Fact]
+    public void Compile_InboundWithProcess_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "inbound-process",
+            Action = "allow",
+            Direction = "inbound",
+            Protocol = "tcp",
+            Process = @"C:\Program Files\MyApp\server.exe",
+            Remote = new EndpointFilter { Ports = "443" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal(RuleDirection.Inbound, filter.Direction);
+        Assert.Equal(@"C:\Program Files\MyApp\server.exe", filter.ProcessPath);
+        Assert.Equal(FilterAction.Allow, filter.Action);
+    }
+
+    [Fact]
+    public void Compile_InboundDescription_ContainsInbound()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "inbound-desc",
+            Action = "block",
+            Direction = "inbound",
+            Protocol = "tcp",
+            Remote = new EndpointFilter { Ip = "1.1.1.1", Ports = "443" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.Contains("inbound", result.Filters[0].Description.ToLower());
+        Assert.Contains("1.1.1.1", result.Filters[0].Description);
+    }
+
+    [Fact]
+    public void Compile_MixedInboundOutbound_CreatesFiltersWithCorrectDirection()
+    {
+        var policy = new Policy
+        {
+            Version = "1.0.0",
+            DefaultAction = "allow",
+            UpdatedAt = DateTime.UtcNow,
+            Rules = new List<Rule>
+            {
+                new Rule { Id = "outbound-1", Action = "block", Direction = "outbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "inbound-1", Action = "block", Direction = "inbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "outbound-2", Action = "allow", Direction = "outbound", Protocol = "tcp", Enabled = true }
+            }
+        };
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Filters.Count);
+
+        var outbound1 = result.Filters.First(f => f.RuleId == "outbound-1");
+        var inbound1 = result.Filters.First(f => f.RuleId == "inbound-1");
+        var outbound2 = result.Filters.First(f => f.RuleId == "outbound-2");
+
+        Assert.Equal(RuleDirection.Outbound, outbound1.Direction);
+        Assert.Equal(RuleDirection.Inbound, inbound1.Direction);
+        Assert.Equal(RuleDirection.Outbound, outbound2.Direction);
+    }
+
+    [Fact]
+    public void Compile_InboundWithPortRange_CreatesOneFilter()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "inbound-range",
+            Action = "block",
+            Direction = "inbound",
+            Protocol = "tcp",
+            Remote = new EndpointFilter { Ports = "8000-9000" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal(RuleDirection.Inbound, filter.Direction);
+        Assert.Null(filter.RemotePort);
+        Assert.Equal((ushort)8000, filter.RemotePortRangeStart);
+        Assert.Equal((ushort)9000, filter.RemotePortRangeEnd);
     }
 
     // ========================================
@@ -730,17 +879,18 @@ public class RuleCompilerTests
             UpdatedAt = DateTime.UtcNow,
             Rules = new List<Rule>
             {
-                new Rule { Id = "inbound-rule", Action = "block", Direction = "inbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "both-rule", Action = "block", Direction = "both", Protocol = "tcp", Enabled = true },
                 new Rule { Id = "udp-rule", Action = "block", Direction = "outbound", Protocol = "udp", Enabled = true },
-                new Rule { Id = "valid-rule", Action = "block", Direction = "outbound", Protocol = "tcp", Enabled = true }
+                new Rule { Id = "valid-outbound", Action = "block", Direction = "outbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "valid-inbound", Action = "block", Direction = "inbound", Protocol = "tcp", Enabled = true }
             }
         };
 
         var result = RuleCompiler.Compile(policy);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal(2, result.Errors.Count); // inbound and udp errors
-        Assert.Single(result.Filters); // valid rule still compiled
+        Assert.Equal(2, result.Errors.Count); // "both" direction and udp errors
+        Assert.Equal(2, result.Filters.Count); // valid outbound and inbound rules still compiled
     }
 
     // ========================================

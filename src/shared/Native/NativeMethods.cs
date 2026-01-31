@@ -414,6 +414,14 @@ internal static class WfpLayerGuids
     /// or sends the first UDP packet to a remote endpoint.
     /// </summary>
     public static readonly Guid FWPM_LAYER_ALE_AUTH_CONNECT_V4 = new("c38d57d1-05a7-4c33-904f-7fbceee60e82");
+
+    /// <summary>
+    /// FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4: Filters inbound IPv4 connection accepts.
+    /// This layer is evaluated when an application accepts an inbound TCP connection
+    /// or receives the first UDP packet from a remote endpoint.
+    /// The "remote" address/port refers to the connecting client.
+    /// </summary>
+    public static readonly Guid FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4 = new("e1cd9fe7-f4b5-4273-96c0-592e487b8650");
 }
 
 /// <summary>
