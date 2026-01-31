@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Ipc;
+using WfpTrafficControl.Shared.Lkg;
 using WfpTrafficControl.Shared.Native;
 using WfpTrafficControl.Shared.Policy;
 
@@ -343,6 +344,8 @@ public sealed class PipeServer : IDisposable
             RollbackRequest => ProcessRollbackRequest(),
             ValidateRequest validateRequest => ProcessValidateRequest(validateRequest),
             ApplyRequest applyRequest => ProcessApplyRequest(applyRequest),
+            LkgShowRequest => ProcessLkgShowRequest(),
+            LkgRevertRequest => ProcessLkgRevertRequest(),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -576,6 +579,18 @@ public sealed class PipeServer : IDisposable
             _logger.LogInformation("Policy applied successfully: {Created} filter(s) created, {Removed} filter(s) removed",
                 applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
 
+            // Step 9: Save as LKG (Last Known Good) policy
+            var lkgResult = LkgStore.Save(json, request.PolicyPath);
+            if (lkgResult.IsFailure)
+            {
+                _logger.LogWarning("Failed to save LKG policy (non-fatal): {Error}", lkgResult.Error);
+                // Don't fail the apply - LKG save failure is non-fatal
+            }
+            else
+            {
+                _logger.LogInformation("Policy saved as LKG at: {Path}", WfpConstants.GetLkgPolicyPath());
+            }
+
             return ApplyResponse.Success(
                 applyResult.Value.FiltersCreated,
                 applyResult.Value.FiltersRemoved,
@@ -588,6 +603,114 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during policy apply");
             return ApplyResponse.Failure($"Apply error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessLkgShowRequest()
+    {
+        _logger.LogInformation("Processing LKG show request");
+
+        try
+        {
+            var lkgPath = WfpConstants.GetLkgPolicyPath();
+            var metadataResult = LkgStore.GetMetadata();
+
+            if (metadataResult.IsFailure)
+            {
+                return LkgShowResponse.Failure(metadataResult.Error.Message);
+            }
+
+            var metadata = metadataResult.Value;
+
+            if (!metadata.Exists)
+            {
+                _logger.LogInformation("No LKG policy found at: {Path}", lkgPath);
+                return LkgShowResponse.NotFound(lkgPath);
+            }
+
+            if (metadata.IsCorrupt)
+            {
+                _logger.LogWarning("LKG policy is corrupt: {Error}", metadata.Error);
+                return LkgShowResponse.Corrupt(metadata.Error ?? "Unknown error", lkgPath);
+            }
+
+            _logger.LogInformation("LKG policy found: version={Version}, rules={RuleCount}, saved={SavedAt}",
+                metadata.PolicyVersion, metadata.RuleCount, metadata.SavedAt);
+
+            return LkgShowResponse.Found(
+                metadata.PolicyVersion,
+                metadata.RuleCount,
+                metadata.SavedAt ?? DateTime.MinValue,
+                metadata.SourcePath,
+                lkgPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during LKG show");
+            return LkgShowResponse.Failure($"LKG show error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessLkgRevertRequest()
+    {
+        _logger.LogInformation("Processing LKG revert request");
+
+        try
+        {
+            // Step 1: Load the LKG policy
+            var loadResult = LkgStore.Load();
+
+            if (!loadResult.Exists)
+            {
+                if (loadResult.Error != null)
+                {
+                    _logger.LogWarning("LKG policy is corrupt or invalid: {Error}", loadResult.Error);
+                    return LkgRevertResponse.Failure($"LKG policy is corrupt: {loadResult.Error}");
+                }
+                _logger.LogInformation("No LKG policy found");
+                return LkgRevertResponse.NotFound();
+            }
+
+            var policy = loadResult.Policy!;
+            var policyJson = loadResult.PolicyJson!;
+
+            _logger.LogInformation("LKG policy loaded: version={Version}, rules={RuleCount}",
+                policy.Version, policy.Rules.Count);
+
+            // Step 2: Compile the policy to WFP filters
+            var compilationResult = RuleCompiler.Compile(policy);
+            if (!compilationResult.IsSuccess)
+            {
+                _logger.LogWarning("LKG policy compilation failed with {ErrorCount} error(s)",
+                    compilationResult.Errors.Count);
+                return LkgRevertResponse.Failure($"LKG policy compilation failed");
+            }
+
+            _logger.LogInformation("LKG policy compiled: {FilterCount} filter(s), {SkippedCount} rule(s) skipped",
+                compilationResult.Filters.Count, compilationResult.SkippedRules);
+
+            // Step 3: Apply the compiled filters to WFP
+            var applyResult = _wfpEngine.ApplyFilters(compilationResult.Filters);
+            if (applyResult.IsFailure)
+            {
+                _logger.LogError("Failed to apply LKG filters to WFP: {Error}", applyResult.Error);
+                return LkgRevertResponse.Failure($"Failed to apply LKG filters: {applyResult.Error.Message}");
+            }
+
+            _logger.LogInformation("LKG policy reverted successfully: {Created} filter(s) created, {Removed} filter(s) removed",
+                applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
+
+            return LkgRevertResponse.Success(
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved,
+                compilationResult.SkippedRules,
+                policy.Version,
+                policy.Rules.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during LKG revert");
+            return LkgRevertResponse.Failure($"LKG revert error: {ex.Message}");
         }
     }
 

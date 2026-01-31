@@ -1,7 +1,9 @@
 using WfpTrafficControl.Service.Ipc;
 using WfpTrafficControl.Service.Wfp;
 using WfpTrafficControl.Shared;
+using WfpTrafficControl.Shared.Lkg;
 using WfpTrafficControl.Shared.Native;
+using WfpTrafficControl.Shared.Policy;
 
 namespace WfpTrafficControl.Service;
 
@@ -37,7 +39,88 @@ public class Worker : BackgroundService
         _pipeServer = new PipeServer(_loggerFactory.CreateLogger<PipeServer>(), version, _wfpEngine);
         _pipeServer.Start();
 
+        // Auto-apply LKG policy on startup if enabled
+        if (WfpConstants.AutoApplyLkgOnStartup)
+        {
+            ApplyLkgOnStartup();
+        }
+        else
+        {
+            _logger.LogDebug("Auto-apply LKG on startup is disabled");
+        }
+
         return base.StartAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Attempts to apply the LKG policy on service startup.
+    /// Implements fail-open behavior: if LKG is missing or corrupt, do nothing.
+    /// </summary>
+    private void ApplyLkgOnStartup()
+    {
+        _logger.LogInformation("Checking for LKG policy to auto-apply on startup");
+
+        try
+        {
+            // Load the LKG policy
+            var loadResult = LkgStore.Load();
+
+            if (!loadResult.Exists)
+            {
+                if (loadResult.Error != null)
+                {
+                    // LKG exists but is corrupt - fail open
+                    _logger.LogWarning(
+                        "LKG policy is corrupt or invalid (fail-open, not applying): {Error}",
+                        loadResult.Error);
+                }
+                else
+                {
+                    // No LKG exists - this is normal for first run
+                    _logger.LogInformation("No LKG policy found, starting with no policy (fail-open)");
+                }
+                return;
+            }
+
+            var policy = loadResult.Policy!;
+            _logger.LogInformation(
+                "LKG policy found: version={Version}, rules={RuleCount}",
+                policy.Version, policy.Rules.Count);
+
+            // Compile the policy
+            var compilationResult = RuleCompiler.Compile(policy);
+            if (!compilationResult.IsSuccess)
+            {
+                _logger.LogWarning(
+                    "LKG policy compilation failed (fail-open, not applying): {ErrorCount} error(s)",
+                    compilationResult.Errors.Count);
+                return;
+            }
+
+            _logger.LogInformation(
+                "LKG policy compiled: {FilterCount} filter(s), {SkippedCount} rule(s) skipped",
+                compilationResult.Filters.Count, compilationResult.SkippedRules);
+
+            // Apply the compiled filters
+            var applyResult = _wfpEngine.ApplyFilters(compilationResult.Filters);
+            if (applyResult.IsFailure)
+            {
+                _logger.LogWarning(
+                    "Failed to apply LKG policy on startup (fail-open): {Error}",
+                    applyResult.Error);
+                return;
+            }
+
+            _logger.LogInformation(
+                "LKG policy applied on startup: {Created} filter(s) created, {Removed} filter(s) removed",
+                applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
+        }
+        catch (Exception ex)
+        {
+            // Catch-all for unexpected errors - fail open
+            _logger.LogWarning(ex,
+                "Unexpected error during LKG auto-apply on startup (fail-open, not applying)");
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

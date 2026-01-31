@@ -101,6 +101,30 @@ public sealed class RollbackRequest : IpcRequest
 }
 
 /// <summary>
+/// LKG show request to display the stored LKG policy.
+/// Request: { "type": "lkg-show" }
+/// </summary>
+public sealed class LkgShowRequest : IpcRequest
+{
+    public const string RequestType = "lkg-show";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
+/// LKG revert request to apply the stored LKG policy.
+/// Request: { "type": "lkg-revert" }
+/// </summary>
+public sealed class LkgRevertRequest : IpcRequest
+{
+    public const string RequestType = "lkg-revert";
+
+    [JsonPropertyName("type")]
+    public override string Type => RequestType;
+}
+
+/// <summary>
 /// Base class for all IPC responses.
 /// </summary>
 public abstract class IpcResponse
@@ -398,6 +422,203 @@ public sealed class RollbackResponse : IpcResponse
 }
 
 /// <summary>
+/// Response to an LKG show request.
+/// Response: { "ok": true, "exists": true, "policyVersion": "1.0.0", ... }
+/// </summary>
+public sealed class LkgShowResponse : IpcResponse
+{
+    /// <summary>
+    /// Whether an LKG policy exists.
+    /// </summary>
+    [JsonPropertyName("exists")]
+    public bool Exists { get; set; }
+
+    /// <summary>
+    /// Whether the LKG file is corrupt.
+    /// </summary>
+    [JsonPropertyName("isCorrupt")]
+    public bool IsCorrupt { get; set; }
+
+    /// <summary>
+    /// Policy version from the LKG.
+    /// </summary>
+    [JsonPropertyName("policyVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PolicyVersion { get; set; }
+
+    /// <summary>
+    /// Number of rules in the LKG policy.
+    /// </summary>
+    [JsonPropertyName("ruleCount")]
+    public int RuleCount { get; set; }
+
+    /// <summary>
+    /// When the LKG was saved.
+    /// </summary>
+    [JsonPropertyName("savedAt")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? SavedAt { get; set; }
+
+    /// <summary>
+    /// Path to the original policy file.
+    /// </summary>
+    [JsonPropertyName("sourcePath")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? SourcePath { get; set; }
+
+    /// <summary>
+    /// Path where the LKG file is stored.
+    /// </summary>
+    [JsonPropertyName("lkgPath")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? LkgPath { get; set; }
+
+    /// <summary>
+    /// Creates a response indicating no LKG exists.
+    /// </summary>
+    public static LkgShowResponse NotFound(string lkgPath)
+    {
+        return new LkgShowResponse
+        {
+            Ok = true,
+            Exists = false,
+            LkgPath = lkgPath
+        };
+    }
+
+    /// <summary>
+    /// Creates a response for a valid LKG.
+    /// </summary>
+    public static LkgShowResponse Found(string? policyVersion, int ruleCount, DateTime savedAt, string? sourcePath, string lkgPath)
+    {
+        return new LkgShowResponse
+        {
+            Ok = true,
+            Exists = true,
+            PolicyVersion = policyVersion,
+            RuleCount = ruleCount,
+            SavedAt = savedAt.ToString("o"),
+            SourcePath = sourcePath,
+            LkgPath = lkgPath
+        };
+    }
+
+    /// <summary>
+    /// Creates a response for a corrupt LKG.
+    /// </summary>
+    public static LkgShowResponse Corrupt(string error, string lkgPath)
+    {
+        return new LkgShowResponse
+        {
+            Ok = true,
+            Exists = true,
+            IsCorrupt = true,
+            Error = error,
+            LkgPath = lkgPath
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed response.
+    /// </summary>
+    public static LkgShowResponse Failure(string error)
+    {
+        return new LkgShowResponse
+        {
+            Ok = false,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
+/// Response to an LKG revert request.
+/// Response: { "ok": true, "filtersCreated": 5, ... }
+/// </summary>
+public sealed class LkgRevertResponse : IpcResponse
+{
+    /// <summary>
+    /// Whether an LKG policy was found.
+    /// </summary>
+    [JsonPropertyName("lkgFound")]
+    public bool LkgFound { get; set; }
+
+    /// <summary>
+    /// Policy version from the applied LKG.
+    /// </summary>
+    [JsonPropertyName("policyVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PolicyVersion { get; set; }
+
+    /// <summary>
+    /// Number of rules in the LKG policy.
+    /// </summary>
+    [JsonPropertyName("totalRules")]
+    public int TotalRules { get; set; }
+
+    /// <summary>
+    /// Number of filters created during apply.
+    /// </summary>
+    [JsonPropertyName("filtersCreated")]
+    public int FiltersCreated { get; set; }
+
+    /// <summary>
+    /// Number of filters removed during apply.
+    /// </summary>
+    [JsonPropertyName("filtersRemoved")]
+    public int FiltersRemoved { get; set; }
+
+    /// <summary>
+    /// Number of rules skipped (e.g., inbound rules when only outbound is supported).
+    /// </summary>
+    [JsonPropertyName("rulesSkipped")]
+    public int RulesSkipped { get; set; }
+
+    /// <summary>
+    /// Creates a successful revert response.
+    /// </summary>
+    public static LkgRevertResponse Success(int filtersCreated, int filtersRemoved, int rulesSkipped, string? policyVersion, int totalRules)
+    {
+        return new LkgRevertResponse
+        {
+            Ok = true,
+            LkgFound = true,
+            PolicyVersion = policyVersion,
+            TotalRules = totalRules,
+            FiltersCreated = filtersCreated,
+            FiltersRemoved = filtersRemoved,
+            RulesSkipped = rulesSkipped
+        };
+    }
+
+    /// <summary>
+    /// Creates a response indicating no LKG exists.
+    /// </summary>
+    public static LkgRevertResponse NotFound()
+    {
+        return new LkgRevertResponse
+        {
+            Ok = false,
+            LkgFound = false,
+            Error = "No LKG policy found"
+        };
+    }
+
+    /// <summary>
+    /// Creates a failed response.
+    /// </summary>
+    public static LkgRevertResponse Failure(string error)
+    {
+        return new LkgRevertResponse
+        {
+            Ok = false,
+            LkgFound = true,
+            Error = error
+        };
+    }
+}
+
+/// <summary>
 /// Generic error response for any failed request.
 /// </summary>
 public sealed class ErrorResponse : IpcResponse
@@ -490,6 +711,8 @@ public static class IpcMessageParser
                 RollbackRequest.RequestType => Result<IpcRequest>.Success(new RollbackRequest()),
                 ValidateRequest.RequestType => ParseValidateRequest(json),
                 ApplyRequest.RequestType => ParseApplyRequest(json),
+                LkgShowRequest.RequestType => Result<IpcRequest>.Success(new LkgShowRequest()),
+                LkgRevertRequest.RequestType => Result<IpcRequest>.Success(new LkgRevertRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };

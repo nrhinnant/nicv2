@@ -33,6 +33,9 @@ switch (command)
     case "apply":
         return RunApplyCommand(args.Length > 1 ? args[1] : null);
 
+    case "lkg":
+        return RunLkgCommand(subCommand);
+
     case "enable":
     case "disable":
     case "logs":
@@ -71,6 +74,8 @@ static void PrintUsage()
     Console.WriteLine("  rollback           - Remove all filters (keeps provider/sublayer)");
     Console.WriteLine("  validate <file>    - Validate a policy JSON file");
     Console.WriteLine("  apply <file>       - Apply a policy file (outbound TCP rules only)");
+    Console.WriteLine("  lkg show           - Show the stored LKG (Last Known Good) policy");
+    Console.WriteLine("  lkg revert         - Apply the stored LKG policy");
     Console.WriteLine("  enable             - Enable traffic control (not yet implemented)");
     Console.WriteLine("  disable            - Disable traffic control (not yet implemented)");
     Console.WriteLine("  logs               - Show logs (not yet implemented)");
@@ -542,6 +547,143 @@ static int RunApplyCommand(string? filePath)
             Console.WriteLine($"  - {warning}");
         }
     }
+
+    Console.WriteLine();
+    Console.WriteLine("Use 'wfpctl rollback' to remove all filters.");
+
+    return 0;
+}
+
+static int RunLkgCommand(string? subCommand)
+{
+    switch (subCommand)
+    {
+        case "show":
+            return RunLkgShowCommand();
+        case "revert":
+            return RunLkgRevertCommand();
+        default:
+            Console.Error.WriteLine("Usage: wfpctl lkg <show|revert>");
+            return 1;
+    }
+}
+
+static int RunLkgShowCommand()
+{
+    using var client = new PipeClient();
+
+    // Step 1: Connect to the service
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 2: Send LKG show request
+    var request = new LkgShowRequest();
+    var result = client.SendRequest<LkgShowResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 3: Check response status
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"LKG show failed: {response.Error ?? "Unknown error"}");
+        return 1;
+    }
+
+    // Step 4: Display results
+    Console.WriteLine("LKG (Last Known Good) Policy");
+    Console.WriteLine($"  Path: {response.LkgPath}");
+    Console.WriteLine();
+
+    if (!response.Exists)
+    {
+        Console.WriteLine("  Status: No LKG policy saved");
+        Console.WriteLine();
+        Console.WriteLine("Apply a policy with 'wfpctl apply <file>' to save an LKG.");
+        return 0;
+    }
+
+    if (response.IsCorrupt)
+    {
+        Console.WriteLine("  Status: CORRUPT");
+        Console.WriteLine($"  Error:  {response.Error}");
+        Console.WriteLine();
+        Console.WriteLine("Apply a new policy to replace the corrupt LKG.");
+        return 1;
+    }
+
+    Console.WriteLine("  Status:  Valid");
+    Console.WriteLine($"  Version: {response.PolicyVersion ?? "unknown"}");
+    Console.WriteLine($"  Rules:   {response.RuleCount}");
+    Console.WriteLine($"  Saved:   {response.SavedAt}");
+    if (!string.IsNullOrEmpty(response.SourcePath))
+    {
+        Console.WriteLine($"  Source:  {response.SourcePath}");
+    }
+    Console.WriteLine();
+    Console.WriteLine("Use 'wfpctl lkg revert' to apply this policy.");
+
+    return 0;
+}
+
+static int RunLkgRevertCommand()
+{
+    using var client = new PipeClient();
+
+    // Step 1: Connect to the service
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Step 2: Send LKG revert request
+    Console.WriteLine("Reverting to LKG policy...");
+    var request = new LkgRevertRequest();
+    var result = client.SendRequest<LkgRevertResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    // Step 3: Check response status
+    if (!response.Ok)
+    {
+        if (!response.LkgFound)
+        {
+            Console.Error.WriteLine("No LKG policy found.");
+            Console.Error.WriteLine();
+            Console.Error.WriteLine("Apply a policy with 'wfpctl apply <file>' to save an LKG.");
+        }
+        else
+        {
+            Console.Error.WriteLine($"LKG revert failed: {response.Error ?? "Unknown error"}");
+        }
+        return 1;
+    }
+
+    // Step 4: Display success information
+    Console.WriteLine();
+    Console.WriteLine("LKG policy reverted successfully!");
+    Console.WriteLine($"  Policy version:  {response.PolicyVersion ?? "unknown"}");
+    Console.WriteLine($"  Total rules:     {response.TotalRules}");
+    Console.WriteLine($"  Filters created: {response.FiltersCreated}");
+    Console.WriteLine($"  Filters removed: {response.FiltersRemoved}");
+    Console.WriteLine($"  Rules skipped:   {response.RulesSkipped}");
 
     Console.WriteLine();
     Console.WriteLine("Use 'wfpctl rollback' to remove all filters.");

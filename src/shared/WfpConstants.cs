@@ -96,4 +96,42 @@ public static class WfpConstants
     /// TCP protocol number.
     /// </summary>
     public const byte ProtocolTcp = 6;
+
+    // ========================================
+    // LKG (Last Known Good) Policy Constants
+    // ========================================
+
+    /// <summary>
+    /// Directory name under ProgramData for storing application data.
+    /// Full path will be: %ProgramData%\WfpTrafficControl
+    /// </summary>
+    public const string DataDirectoryName = "WfpTrafficControl";
+
+    /// <summary>
+    /// File name for the LKG (Last Known Good) policy file.
+    /// </summary>
+    public const string LkgPolicyFileName = "lkg-policy.json";
+
+    /// <summary>
+    /// Whether to auto-apply the LKG policy on service startup.
+    /// Set to true to enable automatic policy restoration on service start.
+    /// </summary>
+    public const bool AutoApplyLkgOnStartup = false;
+
+    /// <summary>
+    /// Gets the full path to the application data directory.
+    /// </summary>
+    public static string GetDataDirectory()
+    {
+        var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        return Path.Combine(programData, DataDirectoryName);
+    }
+
+    /// <summary>
+    /// Gets the full path to the LKG policy file.
+    /// </summary>
+    public static string GetLkgPolicyPath()
+    {
+        return Path.Combine(GetDataDirectory(), LkgPolicyFileName);
+    }
 }
