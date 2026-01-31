@@ -53,3 +53,4 @@ C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\WfpTrafficCo
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\WfpTrafficControl.Service.runtimeconfig.json
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\WfpTrafficControl.Service.dll
 C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\bin\build-temp\WfpTrafficControl.Service.pdb
+C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2\src\service\bin\Debug\net8.0-windows\win-x64\appsettings.json

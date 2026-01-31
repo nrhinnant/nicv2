@@ -93,9 +93,14 @@ public static class WfpConstants
     public const ushort DemoBlockRemotePort = 443;
 
     /// <summary>
-    /// TCP protocol number.
+    /// TCP protocol number (IANA).
     /// </summary>
     public const byte ProtocolTcp = 6;
+
+    /// <summary>
+    /// UDP protocol number (IANA).
+    /// </summary>
+    public const byte ProtocolUdp = 17;
 
     // ========================================
     // LKG (Last Known Good) Policy Constants
@@ -112,11 +117,9 @@ public static class WfpConstants
     /// </summary>
     public const string LkgPolicyFileName = "lkg-policy.json";
 
-    /// <summary>
-    /// Whether to auto-apply the LKG policy on service startup.
-    /// Set to true to enable automatic policy restoration on service start.
-    /// </summary>
-    public const bool AutoApplyLkgOnStartup = false;
+    // Note: AutoApplyLkgOnStartup is now a runtime configuration setting.
+    // Set "WfpTrafficControl:AutoApplyLkgOnStartup" to true in appsettings.json to enable.
+    // Default is false (fail-open behavior for safety).
 
     /// <summary>
     /// Gets the full path to the application data directory.

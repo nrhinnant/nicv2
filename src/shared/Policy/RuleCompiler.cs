@@ -163,6 +163,13 @@ public sealed record CompilationError(string RuleId, string Message);
 /// - remote.ip and remote.ports match the connecting client
 /// - process matches the listening application accepting the connection
 /// - Errors on: direction=both, protocol=udp/any
+///
+/// Phase 16 Scope (Added Outbound UDP):
+/// - Supports: direction=outbound, protocol=udp
+/// - Uses same FWPM_LAYER_ALE_AUTH_CONNECT_V4 layer as outbound TCP
+/// - Supports: remote.ip (IPv4 only), remote.ports (single or range)
+/// - Supports: process (full path)
+/// - Errors on: direction=inbound + protocol=udp, protocol=any
 /// </summary>
 public static class RuleCompiler
 {
@@ -294,10 +301,18 @@ public static class RuleCompiler
             hasErrors = true;
         }
 
-        // Check protocol - only TCP supported
-        if (!string.Equals(rule.Protocol, RuleProtocol.Tcp, StringComparison.OrdinalIgnoreCase))
+        // Check protocol - TCP supported for both directions, UDP only for outbound
+        var isTcp = string.Equals(rule.Protocol, RuleProtocol.Tcp, StringComparison.OrdinalIgnoreCase);
+        var isUdp = string.Equals(rule.Protocol, RuleProtocol.Udp, StringComparison.OrdinalIgnoreCase);
+
+        if (!isTcp && !isUdp)
         {
-            result.AddError(ruleId, $"Unsupported protocol: '{rule.Protocol}'. Only 'tcp' is supported in this version.");
+            result.AddError(ruleId, $"Unsupported protocol: '{rule.Protocol}'. Only 'tcp' and 'udp' are supported in this version.");
+            hasErrors = true;
+        }
+        else if (isUdp && isInbound)
+        {
+            result.AddError(ruleId, "Inbound UDP rules are not supported in this version. Use protocol 'tcp' for inbound rules.");
             hasErrors = true;
         }
 
@@ -326,6 +341,19 @@ public static class RuleCompiler
         }
 
         return !hasErrors;
+    }
+
+    /// <summary>
+    /// Gets the protocol byte for a given protocol string.
+    /// </summary>
+    private static byte GetProtocolByte(string protocol)
+    {
+        if (string.Equals(protocol, RuleProtocol.Udp, StringComparison.OrdinalIgnoreCase))
+        {
+            return WfpConstants.ProtocolUdp;
+        }
+        // Default to TCP for any other value (already validated by ValidateRuleSupport)
+        return WfpConstants.ProtocolTcp;
     }
 
     /// <summary>
@@ -389,7 +417,7 @@ public static class RuleCompiler
                 : FilterAction.Allow,
             Weight = weight,
             RuleId = ruleId,
-            Protocol = WfpConstants.ProtocolTcp,
+            Protocol = GetProtocolByte(rule.Protocol),
             Direction = direction,
             RemoteIpAddress = remoteIp,
             RemoteIpMask = remoteMask,

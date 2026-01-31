@@ -283,13 +283,13 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_UdpProtocol_ReturnsError()
+    public void Compile_InboundUdpProtocol_ReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
-            Id = "udp-rule",
+            Id = "inbound-udp-rule",
             Action = "block",
-            Direction = "outbound",
+            Direction = "inbound",
             Protocol = "udp",
             Enabled = true
         });
@@ -298,7 +298,147 @@ public class RuleCompilerTests
 
         Assert.False(result.IsSuccess);
         Assert.Single(result.Errors);
-        Assert.Contains("Unsupported protocol", result.Errors[0].Message);
+        Assert.Contains("Inbound UDP rules are not supported", result.Errors[0].Message);
+    }
+
+    [Fact]
+    public void Compile_OutboundUdpProtocol_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "outbound-udp-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "udp",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.Equal((byte)17, result.Filters[0].Protocol); // UDP
+    }
+
+    [Fact]
+    public void Compile_OutboundUdpWithRemoteIpAndPort_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "udp-block-dns",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "udp",
+            Remote = new EndpointFilter { Ip = "8.8.8.8", Ports = "53" },
+            Enabled = true,
+            Priority = 100
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal("udp-block-dns", filter.RuleId);
+        Assert.Equal(FilterAction.Block, filter.Action);
+        Assert.Equal((byte)17, filter.Protocol); // UDP
+        Assert.Equal(0x08080808u, filter.RemoteIpAddress); // 8.8.8.8
+        Assert.Equal((ushort)53, filter.RemotePort);
+    }
+
+    [Fact]
+    public void Compile_OutboundUdpDescription_ContainsUdp()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "udp-desc",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "udp",
+            Remote = new EndpointFilter { Ip = "1.1.1.1", Ports = "53" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.Contains("udp", result.Filters[0].Description.ToLower());
+        Assert.Contains("outbound", result.Filters[0].Description.ToLower());
+    }
+
+    [Fact]
+    public void Compile_OutboundUdpWithCidr_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "udp-cidr",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "udp",
+            Remote = new EndpointFilter { Ip = "192.168.0.0/16" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal((byte)17, filter.Protocol); // UDP
+        Assert.Equal(0xC0A80000u, filter.RemoteIpAddress); // 192.168.0.0
+        Assert.Equal(0xFFFF0000u, filter.RemoteIpMask); // /16
+    }
+
+    [Fact]
+    public void Compile_OutboundUdpWithProcess_Succeeds()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "udp-process",
+            Action = "allow",
+            Direction = "outbound",
+            Protocol = "udp",
+            Process = @"C:\Windows\System32\svchost.exe",
+            Remote = new EndpointFilter { Ports = "53" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        var filter = result.Filters[0];
+        Assert.Equal((byte)17, filter.Protocol); // UDP
+        Assert.Equal(@"C:\Windows\System32\svchost.exe", filter.ProcessPath);
+        Assert.Equal(FilterAction.Allow, filter.Action);
+    }
+
+    [Fact]
+    public void Compile_MixedTcpUdpOutbound_CreatesBothFilters()
+    {
+        var policy = new Policy
+        {
+            Version = "1.0.0",
+            DefaultAction = "allow",
+            UpdatedAt = DateTime.UtcNow,
+            Rules = new List<Rule>
+            {
+                new Rule { Id = "tcp-rule", Action = "block", Direction = "outbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "udp-rule", Action = "block", Direction = "outbound", Protocol = "udp", Enabled = true }
+            }
+        };
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Filters.Count);
+
+        var tcpFilter = result.Filters.First(f => f.RuleId == "tcp-rule");
+        var udpFilter = result.Filters.First(f => f.RuleId == "udp-rule");
+
+        Assert.Equal((byte)6, tcpFilter.Protocol);  // TCP
+        Assert.Equal((byte)17, udpFilter.Protocol); // UDP
     }
 
     [Fact]
@@ -880,8 +1020,9 @@ public class RuleCompilerTests
             Rules = new List<Rule>
             {
                 new Rule { Id = "both-rule", Action = "block", Direction = "both", Protocol = "tcp", Enabled = true },
-                new Rule { Id = "udp-rule", Action = "block", Direction = "outbound", Protocol = "udp", Enabled = true },
-                new Rule { Id = "valid-outbound", Action = "block", Direction = "outbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "inbound-udp-rule", Action = "block", Direction = "inbound", Protocol = "udp", Enabled = true },
+                new Rule { Id = "valid-outbound-tcp", Action = "block", Direction = "outbound", Protocol = "tcp", Enabled = true },
+                new Rule { Id = "valid-outbound-udp", Action = "block", Direction = "outbound", Protocol = "udp", Enabled = true },
                 new Rule { Id = "valid-inbound", Action = "block", Direction = "inbound", Protocol = "tcp", Enabled = true }
             }
         };
@@ -889,8 +1030,8 @@ public class RuleCompilerTests
         var result = RuleCompiler.Compile(policy);
 
         Assert.False(result.IsSuccess);
-        Assert.Equal(2, result.Errors.Count); // "both" direction and udp errors
-        Assert.Equal(2, result.Filters.Count); // valid outbound and inbound rules still compiled
+        Assert.Equal(2, result.Errors.Count); // "both" direction and inbound udp errors
+        Assert.Equal(3, result.Filters.Count); // valid outbound tcp, outbound udp, and inbound tcp rules compiled
     }
 
     // ========================================

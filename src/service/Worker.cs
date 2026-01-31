@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using WfpTrafficControl.Service.Ipc;
 using WfpTrafficControl.Service.Wfp;
 using WfpTrafficControl.Shared;
@@ -15,13 +16,15 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IConfiguration _configuration;
     private readonly IWfpEngine _wfpEngine;
     private PipeServer? _pipeServer;
 
-    public Worker(ILogger<Worker> logger, ILoggerFactory loggerFactory)
+    public Worker(ILogger<Worker> logger, ILoggerFactory loggerFactory, IConfiguration configuration)
     {
         _logger = logger;
         _loggerFactory = loggerFactory;
+        _configuration = configuration;
         _wfpEngine = new WfpEngine(_loggerFactory.CreateLogger<WfpEngine>());
     }
 
@@ -39,14 +42,17 @@ public class Worker : BackgroundService
         _pipeServer = new PipeServer(_loggerFactory.CreateLogger<PipeServer>(), version, _wfpEngine);
         _pipeServer.Start();
 
-        // Auto-apply LKG policy on startup if enabled
-        if (WfpConstants.AutoApplyLkgOnStartup)
+        // Auto-apply LKG policy on startup if enabled via configuration.
+        // Default is false (fail-open) - operator must explicitly enable this.
+        // Set "WfpTrafficControl:AutoApplyLkgOnStartup" to true in appsettings.json to enable.
+        var autoApplyLkg = _configuration.GetValue<bool>("WfpTrafficControl:AutoApplyLkgOnStartup", false);
+        if (autoApplyLkg)
         {
             ApplyLkgOnStartup();
         }
         else
         {
-            _logger.LogDebug("Auto-apply LKG on startup is disabled");
+            _logger.LogDebug("Auto-apply LKG on startup is disabled (default fail-open behavior)");
         }
 
         return base.StartAsync(cancellationToken);
