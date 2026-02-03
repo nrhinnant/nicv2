@@ -26,7 +26,10 @@ public class Worker : BackgroundService
         _logger = logger;
         _loggerFactory = loggerFactory;
         _configuration = configuration;
-        _wfpEngine = new WfpEngine(_loggerFactory.CreateLogger<WfpEngine>());
+
+        // Create WfpInterop for production use (wraps native P/Invoke calls)
+        var wfpInterop = new WfpInterop(_loggerFactory.CreateLogger<WfpInterop>());
+        _wfpEngine = new WfpEngine(_loggerFactory.CreateLogger<WfpEngine>(), wfpInterop);
     }
 
     public override Task StartAsync(CancellationToken cancellationToken)

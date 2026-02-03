@@ -19,7 +19,8 @@
       "Bash(xargs:*)",
       "Bash(dotnet fsi:*)",
       "Bash(findstr:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(dotnet clean:*)"
     ]
   }
 }
