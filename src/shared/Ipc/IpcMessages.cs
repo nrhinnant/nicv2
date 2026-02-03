@@ -14,6 +14,15 @@ public abstract class IpcRequest
     /// </summary>
     [JsonPropertyName("type")]
     public abstract string Type { get; }
+
+    /// <summary>
+    /// The protocol version of the client.
+    /// Optional for backward compatibility, but strongly recommended.
+    /// Server will validate this against supported versions.
+    /// </summary>
+    [JsonPropertyName("protocolVersion")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int ProtocolVersion { get; set; }
 }
 
 /// <summary>
@@ -141,6 +150,13 @@ public abstract class IpcResponse
     [JsonPropertyName("error")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Error { get; set; }
+
+    /// <summary>
+    /// The protocol version of the server.
+    /// Always included in responses so clients can detect version mismatches.
+    /// </summary>
+    [JsonPropertyName("protocolVersion")]
+    public int ProtocolVersion { get; set; } = WfpConstants.IpcProtocolVersion;
 }
 
 /// <summary>
@@ -653,6 +669,23 @@ public sealed class ErrorResponse : IpcResponse
     /// Creates an error response for missing request type.
     /// </summary>
     public static ErrorResponse MissingRequestType() => new("Missing or invalid 'type' field in request.");
+
+    /// <summary>
+    /// Creates an error response for protocol version mismatch.
+    /// </summary>
+    public static ErrorResponse ProtocolVersionMismatch(int clientVersion, int minVersion, int maxVersion) =>
+        new($"Protocol version mismatch. Client version: {clientVersion}, supported range: {minVersion}-{maxVersion}. Please update the CLI.");
+
+    /// <summary>
+    /// Creates an error response for request too large.
+    /// </summary>
+    public static ErrorResponse RequestTooLarge(int size, int maxSize) =>
+        new($"Request too large: {size} bytes exceeds maximum of {maxSize} bytes.");
+
+    /// <summary>
+    /// Creates an error response for request timeout.
+    /// </summary>
+    public static ErrorResponse RequestTimeout() => new("Request timed out.");
 }
 
 /// <summary>
@@ -679,7 +712,7 @@ public static class IpcMessageParser
 
         try
         {
-            // First, parse as a generic JSON document to extract the type
+            // First, parse as a generic JSON document to extract the type and protocol version
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
@@ -700,7 +733,15 @@ public static class IpcMessageParser
 
             var requestType = typeElement.GetString();
 
-            return requestType switch
+            // Extract protocol version (optional, defaults to 0 for backward compatibility)
+            int protocolVersion = 0;
+            if (root.TryGetProperty("protocolVersion", out var versionElement) &&
+                versionElement.ValueKind == JsonValueKind.Number)
+            {
+                protocolVersion = versionElement.GetInt32();
+            }
+
+            var result = requestType switch
             {
                 PingRequest.RequestType => Result<IpcRequest>.Success(new PingRequest()),
                 BootstrapRequest.RequestType => Result<IpcRequest>.Success(new BootstrapRequest()),
@@ -719,6 +760,14 @@ public static class IpcMessageParser
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
+
+            // Set protocol version on successfully parsed requests
+            if (result.IsSuccess && result.Value != null)
+            {
+                result.Value.ProtocolVersion = protocolVersion;
+            }
+
+            return result;
         }
         catch (JsonException ex)
         {
@@ -829,5 +878,48 @@ public static class IpcMessageParser
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid audit-logs request JSON: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Validates the protocol version of a request.
+    /// Returns null if valid, or an error response if invalid.
+    /// </summary>
+    /// <param name="request">The request to validate.</param>
+    /// <returns>An ErrorResponse if version is incompatible, null otherwise.</returns>
+    public static ErrorResponse? ValidateProtocolVersion(IpcRequest request)
+    {
+        // Version 0 means client didn't send a version (backward compatibility)
+        // Log a warning but allow for now
+        if (request.ProtocolVersion == 0)
+        {
+            return null; // Allow for backward compatibility
+        }
+
+        // Check if version is within supported range
+        if (request.ProtocolVersion < WfpConstants.IpcMinProtocolVersion ||
+            request.ProtocolVersion > WfpConstants.IpcProtocolVersion)
+        {
+            return ErrorResponse.ProtocolVersionMismatch(
+                request.ProtocolVersion,
+                WfpConstants.IpcMinProtocolVersion,
+                WfpConstants.IpcProtocolVersion);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Validates message size against the maximum allowed size.
+    /// Returns null if valid, or an error response if too large.
+    /// </summary>
+    /// <param name="size">The size of the message in bytes.</param>
+    /// <returns>An ErrorResponse if too large, null otherwise.</returns>
+    public static ErrorResponse? ValidateMessageSize(int size)
+    {
+        if (size <= 0 || size > WfpConstants.IpcMaxMessageSize)
+        {
+            return ErrorResponse.RequestTooLarge(size, WfpConstants.IpcMaxMessageSize);
+        }
+        return null;
     }
 }

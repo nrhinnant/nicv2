@@ -122,6 +122,38 @@ public static class WfpConstants
     /// </summary>
     public const string AuditLogFileName = "audit.log";
 
+    // ========================================
+    // IPC Protocol Constants
+    // ========================================
+
+    /// <summary>
+    /// Current IPC protocol version.
+    /// Increment when making breaking changes to the IPC message format.
+    /// Clients and servers should validate this matches to ensure compatibility.
+    /// </summary>
+    public const int IpcProtocolVersion = 1;
+
+    /// <summary>
+    /// Minimum supported IPC protocol version.
+    /// Requests with versions below this will be rejected.
+    /// </summary>
+    public const int IpcMinProtocolVersion = 1;
+
+    /// <summary>
+    /// Maximum message size for IPC requests/responses (64 KB).
+    /// </summary>
+    public const int IpcMaxMessageSize = 64 * 1024;
+
+    /// <summary>
+    /// Read timeout for IPC operations in milliseconds (30 seconds).
+    /// </summary>
+    public const int IpcReadTimeoutMs = 30_000;
+
+    /// <summary>
+    /// Connect timeout for IPC client in milliseconds (5 seconds).
+    /// </summary>
+    public const int IpcConnectTimeoutMs = 5_000;
+
     // Note: AutoApplyLkgOnStartup is now a runtime configuration setting.
     // Set "WfpTrafficControl:AutoApplyLkgOnStartup" to true in appsettings.json to enable.
     // Default is false (fail-open behavior for safety).

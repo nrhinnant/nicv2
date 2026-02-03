@@ -12,20 +12,6 @@ namespace WfpTrafficControl.Cli;
 /// </summary>
 public sealed class PipeClient : IDisposable
 {
-    /// <summary>
-    /// Timeout for connecting to the pipe in milliseconds.
-    /// </summary>
-    private const int ConnectTimeoutMs = 5_000;
-
-    /// <summary>
-    /// Timeout for reading from the pipe in milliseconds.
-    /// </summary>
-    private const int ReadTimeoutMs = 30_000;
-
-    /// <summary>
-    /// Maximum response size in bytes (64 KB).
-    /// </summary>
-    private const int MaxResponseSize = 64 * 1024;
 
     private readonly NamedPipeClientStream _pipeClient;
     private bool _disposed;
@@ -53,7 +39,7 @@ public sealed class PipeClient : IDisposable
     {
         try
         {
-            _pipeClient.Connect(ConnectTimeoutMs);
+            _pipeClient.Connect(WfpConstants.IpcConnectTimeoutMs);
             return Result<bool>.Success(true);
         }
         catch (TimeoutException)
@@ -110,11 +96,14 @@ public sealed class PipeClient : IDisposable
 
     private async Task<Result<TResponse>> SendRequestAsync<TResponse>(IpcRequest request) where TResponse : IpcResponse
     {
-        using var cts = new CancellationTokenSource(ReadTimeoutMs);
+        using var cts = new CancellationTokenSource(WfpConstants.IpcReadTimeoutMs);
         var cancellationToken = cts.Token;
 
         try
         {
+            // Set protocol version before serializing
+            request.ProtocolVersion = WfpConstants.IpcProtocolVersion;
+
             // Serialize the request
             var json = JsonSerializer.Serialize(request, request.GetType(), JsonOptions);
             var messageBytes = Encoding.UTF8.GetBytes(json);
@@ -136,7 +125,7 @@ public sealed class PipeClient : IDisposable
             }
 
             var responseLength = BitConverter.ToInt32(responseLengthBytes, 0);
-            if (responseLength <= 0 || responseLength > MaxResponseSize)
+            if (responseLength <= 0 || responseLength > WfpConstants.IpcMaxMessageSize)
             {
                 return Result<TResponse>.Failure(
                     ErrorCodes.InvalidArgument,

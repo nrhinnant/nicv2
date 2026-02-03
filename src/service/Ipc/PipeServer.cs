@@ -1,4 +1,5 @@
 using System.IO.Pipes;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -28,16 +29,6 @@ public sealed class PipeServer : IDisposable
     private bool _disposed;
 
     /// <summary>
-    /// Maximum message size in bytes (64 KB).
-    /// </summary>
-    private const int MaxMessageSize = 64 * 1024;
-
-    /// <summary>
-    /// Timeout for reading from the pipe in milliseconds.
-    /// </summary>
-    private const int ReadTimeoutMs = 30_000;
-
-    /// <summary>
     /// Well-known SID for LocalSystem account.
     /// </summary>
     private static readonly SecurityIdentifier LocalSystemSid = new(WellKnownSidType.LocalSystemSid, null);
@@ -46,6 +37,29 @@ public sealed class PipeServer : IDisposable
     /// Well-known SID for Administrators group.
     /// </summary>
     private static readonly SecurityIdentifier AdministratorsSid = new(WellKnownSidType.BuiltinAdministratorsSid, null);
+
+    /// <summary>
+    /// Creates a PipeSecurity object that restricts access to Administrators and LocalSystem only.
+    /// This provides OS-level access control in addition to application-level authorization checks.
+    /// </summary>
+    private static PipeSecurity CreatePipeSecurity()
+    {
+        var security = new PipeSecurity();
+
+        // Allow LocalSystem (the service account) full control
+        security.AddAccessRule(new PipeAccessRule(
+            LocalSystemSid,
+            PipeAccessRights.FullControl,
+            AccessControlType.Allow));
+
+        // Allow Administrators full control (for CLI access)
+        security.AddAccessRule(new PipeAccessRule(
+            AdministratorsSid,
+            PipeAccessRights.FullControl,
+            AccessControlType.Allow));
+
+        return security;
+    }
 
     public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine, PolicyFileWatcher fileWatcher, IAuditLogWriter? auditLog = null)
     {
@@ -104,20 +118,26 @@ public sealed class PipeServer : IDisposable
 
     private async Task ListenLoopAsync(CancellationToken cancellationToken)
     {
+        // Create pipe security ACL once (reused for each connection)
+        var pipeSecurity = CreatePipeSecurity();
+
         while (!cancellationToken.IsCancellationRequested)
         {
             NamedPipeServerStream? pipeServer = null;
 
             try
             {
-                // Create a new pipe server for each connection
-                // Using PipeAccessRights to require ReadWrite access
-                pipeServer = new NamedPipeServerStream(
+                // Create a new pipe server for each connection with security ACL
+                // This restricts access at the OS level to Administrators and LocalSystem
+                pipeServer = NamedPipeServerStreamAcl.Create(
                     WfpConstants.PipeName,
                     PipeDirection.InOut,
                     1, // maxNumberOfServerInstances - one at a time (sequential)
                     PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous);
+                    PipeOptions.Asynchronous,
+                    inBufferSize: WfpConstants.IpcMaxMessageSize,
+                    outBufferSize: WfpConstants.IpcMaxMessageSize,
+                    pipeSecurity);
 
                 _logger.LogDebug("Waiting for client connection on {PipeName}", WfpConstants.PipeName);
 
@@ -186,10 +206,26 @@ public sealed class PipeServer : IDisposable
                 return;
             }
 
-            // Step 3: Process the request
+            // Step 3: Validate protocol version
+            var versionError = IpcMessageParser.ValidateProtocolVersion(request);
+            if (versionError != null)
+            {
+                _logger.LogWarning("Protocol version mismatch: client={ClientVersion}, supported={MinVersion}-{MaxVersion}",
+                    request.ProtocolVersion, WfpConstants.IpcMinProtocolVersion, WfpConstants.IpcProtocolVersion);
+                await SendResponseAsync(pipeServer, versionError, cancellationToken);
+                return;
+            }
+
+            // Log warning for clients not sending protocol version (backward compatibility)
+            if (request.ProtocolVersion == 0)
+            {
+                _logger.LogDebug("Client did not send protocol version (backward compatibility mode)");
+            }
+
+            // Step 4: Process the request
             var response = ProcessRequest(request);
 
-            // Step 4: Send the response
+            // Step 5: Send the response
             await SendResponseAsync(pipeServer, response, cancellationToken);
         }
         catch (OperationCanceledException)
@@ -267,7 +303,7 @@ public sealed class PipeServer : IDisposable
         {
             // Create a timeout for the read operation
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(ReadTimeoutMs);
+            timeoutCts.CancelAfter(WfpConstants.IpcReadTimeoutMs);
 
             // Read length prefix (4 bytes, little-endian)
             var lengthBuffer = new byte[4];
@@ -280,11 +316,12 @@ public sealed class PipeServer : IDisposable
 
             var messageLength = BitConverter.ToInt32(lengthBuffer, 0);
 
-            // Validate message length
-            if (messageLength <= 0 || messageLength > MaxMessageSize)
+            // Validate message length using centralized validation
+            var sizeError = IpcMessageParser.ValidateMessageSize(messageLength);
+            if (sizeError != null)
             {
                 _logger.LogWarning("Invalid message length: {MessageLength}", messageLength);
-                await SendResponseAsync(pipeServer, ErrorResponse.InvalidJson($"Invalid message length: {messageLength}"), cancellationToken);
+                await SendResponseAsync(pipeServer, sizeError, cancellationToken);
                 return null;
             }
 
