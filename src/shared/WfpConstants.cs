@@ -117,6 +117,11 @@ public static class WfpConstants
     /// </summary>
     public const string LkgPolicyFileName = "lkg-policy.json";
 
+    /// <summary>
+    /// File name for the audit log file (JSON Lines format).
+    /// </summary>
+    public const string AuditLogFileName = "audit.log";
+
     // Note: AutoApplyLkgOnStartup is now a runtime configuration setting.
     // Set "WfpTrafficControl:AutoApplyLkgOnStartup" to true in appsettings.json to enable.
     // Default is false (fail-open behavior for safety).
@@ -136,5 +141,13 @@ public static class WfpConstants
     public static string GetLkgPolicyPath()
     {
         return Path.Combine(GetDataDirectory(), LkgPolicyFileName);
+    }
+
+    /// <summary>
+    /// Gets the full path to the audit log file.
+    /// </summary>
+    public static string GetAuditLogPath()
+    {
+        return Path.Combine(GetDataDirectory(), AuditLogFileName);
     }
 }

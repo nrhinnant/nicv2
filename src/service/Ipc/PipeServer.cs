@@ -3,6 +3,7 @@ using System.Security.Principal;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using WfpTrafficControl.Shared;
+using WfpTrafficControl.Shared.Audit;
 using WfpTrafficControl.Shared.Ipc;
 using WfpTrafficControl.Shared.Lkg;
 using WfpTrafficControl.Shared.Native;
@@ -20,6 +21,8 @@ public sealed class PipeServer : IDisposable
     private readonly string _serviceVersion;
     private readonly IWfpEngine _wfpEngine;
     private readonly PolicyFileWatcher _fileWatcher;
+    private readonly IAuditLogWriter _auditLog;
+    private readonly AuditLogReader _auditLogReader;
     private readonly CancellationTokenSource _cts;
     private Task? _listenerTask;
     private bool _disposed;
@@ -44,12 +47,14 @@ public sealed class PipeServer : IDisposable
     /// </summary>
     private static readonly SecurityIdentifier AdministratorsSid = new(WellKnownSidType.BuiltinAdministratorsSid, null);
 
-    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine, PolicyFileWatcher fileWatcher)
+    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine, PolicyFileWatcher fileWatcher, IAuditLogWriter? auditLog = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serviceVersion = serviceVersion ?? throw new ArgumentNullException(nameof(serviceVersion));
         _wfpEngine = wfpEngine ?? throw new ArgumentNullException(nameof(wfpEngine));
         _fileWatcher = fileWatcher ?? throw new ArgumentNullException(nameof(fileWatcher));
+        _auditLog = auditLog ?? new AuditLogWriter();
+        _auditLogReader = new AuditLogReader(_auditLog.LogPath);
         _cts = new CancellationTokenSource();
     }
 
@@ -350,6 +355,7 @@ public sealed class PipeServer : IDisposable
             LkgRevertRequest => ProcessLkgRevertRequest(),
             WatchSetRequest watchSetRequest => ProcessWatchSetRequest(watchSetRequest),
             WatchStatusRequest => ProcessWatchStatusRequest(),
+            AuditLogsRequest auditLogsRequest => ProcessAuditLogsRequest(auditLogsRequest),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -377,6 +383,7 @@ public sealed class PipeServer : IDisposable
     private IpcResponse ProcessTeardownRequest()
     {
         _logger.LogInformation("Processing teardown request");
+        _auditLog.Write(AuditLogEntry.TeardownStarted(AuditSource.Cli));
 
         // Check what exists before removal for reporting
         var providerExistedBefore = _wfpEngine.ProviderExists();
@@ -386,12 +393,15 @@ public sealed class PipeServer : IDisposable
         if (result.IsFailure)
         {
             _logger.LogError("Teardown failed: {Error}", result.Error);
+            _auditLog.Write(AuditLogEntry.TeardownFailed(AuditSource.Cli, "WFP_ERROR", result.Error.Message));
             return TeardownResponse.Failure(result.Error.Message);
         }
 
-        return TeardownResponse.Success(
-            providerExistedBefore.IsSuccess && providerExistedBefore.Value,
-            sublayerExistedBefore.IsSuccess && sublayerExistedBefore.Value);
+        var providerRemoved = providerExistedBefore.IsSuccess && providerExistedBefore.Value;
+        var sublayerRemoved = sublayerExistedBefore.IsSuccess && sublayerExistedBefore.Value;
+
+        _auditLog.Write(AuditLogEntry.TeardownFinished(AuditSource.Cli, providerRemoved, sublayerRemoved));
+        return TeardownResponse.Success(providerRemoved, sublayerRemoved);
     }
 
     private IpcResponse ProcessDemoBlockEnableRequest()
@@ -452,15 +462,18 @@ public sealed class PipeServer : IDisposable
     private IpcResponse ProcessRollbackRequest()
     {
         _logger.LogInformation("Processing rollback request (panic rollback)");
+        _auditLog.Write(AuditLogEntry.RollbackStarted(AuditSource.Cli));
 
         var result = _wfpEngine.RemoveAllFilters();
         if (result.IsFailure)
         {
             _logger.LogError("Rollback failed: {Error}", result.Error);
+            _auditLog.Write(AuditLogEntry.RollbackFailed(AuditSource.Cli, "WFP_ERROR", result.Error.Message));
             return RollbackResponse.Failure(result.Error.Message);
         }
 
         _logger.LogInformation("Rollback completed, removed {FilterCount} filter(s)", result.Value);
+        _auditLog.Write(AuditLogEntry.RollbackFinished(AuditSource.Cli, result.Value));
         return RollbackResponse.Success(result.Value);
     }
 
@@ -501,12 +514,14 @@ public sealed class PipeServer : IDisposable
     private IpcResponse ProcessApplyRequest(ApplyRequest request)
     {
         _logger.LogInformation("Processing apply request for policy: {PolicyPath}", request.PolicyPath);
+        _auditLog.Write(AuditLogEntry.ApplyStarted(AuditSource.Cli, request.PolicyPath));
 
         try
         {
             // Step 1: Validate the path
             if (string.IsNullOrWhiteSpace(request.PolicyPath))
             {
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "INVALID_PATH", "Policy path is required"));
                 return ApplyResponse.Failure("Policy path is required");
             }
 
@@ -514,12 +529,14 @@ public sealed class PipeServer : IDisposable
             if (request.PolicyPath.Contains(".."))
             {
                 _logger.LogWarning("Rejected policy path with traversal: {Path}", request.PolicyPath);
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "PATH_TRAVERSAL", "Policy path cannot contain '..'"));
                 return ApplyResponse.Failure("Policy path cannot contain '..' (path traversal)");
             }
 
             // Step 2: Check if file exists
             if (!File.Exists(request.PolicyPath))
             {
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_NOT_FOUND", $"Policy file not found: {request.PolicyPath}"));
                 return ApplyResponse.Failure($"Policy file not found: {request.PolicyPath}");
             }
 
@@ -527,6 +544,7 @@ public sealed class PipeServer : IDisposable
             var fileInfo = new FileInfo(request.PolicyPath);
             if (fileInfo.Length > PolicyValidator.MaxPolicyFileSize)
             {
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_TOO_LARGE", "Policy file exceeds maximum size"));
                 return ApplyResponse.Failure($"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
             }
 
@@ -539,6 +557,7 @@ public sealed class PipeServer : IDisposable
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to read policy file: {Path}", request.PolicyPath);
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_READ_ERROR", ex.Message));
                 return ApplyResponse.Failure($"Failed to read policy file: {ex.Message}");
             }
 
@@ -547,6 +566,7 @@ public sealed class PipeServer : IDisposable
             if (!validationResult.IsValid)
             {
                 _logger.LogWarning("Policy validation failed with {ErrorCount} error(s)", validationResult.Errors.Count);
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "VALIDATION_FAILED", validationResult.GetSummary()));
                 return ApplyResponse.Failure($"Policy validation failed: {validationResult.GetSummary()}");
             }
 
@@ -554,6 +574,7 @@ public sealed class PipeServer : IDisposable
             var policy = Policy.FromJson(json);
             if (policy == null)
             {
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "PARSE_ERROR", "Failed to parse policy after validation"));
                 return ApplyResponse.Failure("Failed to parse policy after validation");
             }
 
@@ -566,6 +587,7 @@ public sealed class PipeServer : IDisposable
             {
                 _logger.LogWarning("Policy compilation failed with {ErrorCount} error(s)",
                     compilationResult.Errors.Count);
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "COMPILATION_FAILED", "Policy compilation failed"));
                 return ApplyResponse.CompilationFailed(compilationResult);
             }
 
@@ -577,6 +599,7 @@ public sealed class PipeServer : IDisposable
             if (applyResult.IsFailure)
             {
                 _logger.LogError("Failed to apply filters to WFP: {Error}", applyResult.Error);
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "WFP_ERROR", applyResult.Error.Message));
                 return ApplyResponse.Failure($"Failed to apply filters: {applyResult.Error.Message}");
             }
 
@@ -595,6 +618,14 @@ public sealed class PipeServer : IDisposable
                 _logger.LogInformation("Policy saved as LKG at: {Path}", WfpConstants.GetLkgPolicyPath());
             }
 
+            _auditLog.Write(AuditLogEntry.ApplyFinished(
+                AuditSource.Cli,
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved,
+                compilationResult.SkippedRules,
+                policy.Version,
+                policy.Rules.Count));
+
             return ApplyResponse.Success(
                 applyResult.Value.FiltersCreated,
                 applyResult.Value.FiltersRemoved,
@@ -606,6 +637,7 @@ public sealed class PipeServer : IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception during policy apply");
+            _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "EXCEPTION", ex.Message));
             return ApplyResponse.Failure($"Apply error: {ex.Message}");
         }
     }
@@ -658,6 +690,7 @@ public sealed class PipeServer : IDisposable
     private IpcResponse ProcessLkgRevertRequest()
     {
         _logger.LogInformation("Processing LKG revert request");
+        _auditLog.Write(AuditLogEntry.LkgRevertStarted(AuditSource.Cli));
 
         try
         {
@@ -669,9 +702,11 @@ public sealed class PipeServer : IDisposable
                 if (loadResult.Error != null)
                 {
                     _logger.LogWarning("LKG policy is corrupt or invalid: {Error}", loadResult.Error);
+                    _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "CORRUPT_LKG", loadResult.Error));
                     return LkgRevertResponse.Failure($"LKG policy is corrupt: {loadResult.Error}");
                 }
                 _logger.LogInformation("No LKG policy found");
+                _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "NO_LKG", "No LKG policy found"));
                 return LkgRevertResponse.NotFound();
             }
 
@@ -687,6 +722,7 @@ public sealed class PipeServer : IDisposable
             {
                 _logger.LogWarning("LKG policy compilation failed with {ErrorCount} error(s)",
                     compilationResult.Errors.Count);
+                _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "COMPILATION_FAILED", "LKG policy compilation failed"));
                 return LkgRevertResponse.Failure($"LKG policy compilation failed");
             }
 
@@ -698,11 +734,20 @@ public sealed class PipeServer : IDisposable
             if (applyResult.IsFailure)
             {
                 _logger.LogError("Failed to apply LKG filters to WFP: {Error}", applyResult.Error);
+                _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "WFP_ERROR", applyResult.Error.Message));
                 return LkgRevertResponse.Failure($"Failed to apply LKG filters: {applyResult.Error.Message}");
             }
 
             _logger.LogInformation("LKG policy reverted successfully: {Created} filter(s) created, {Removed} filter(s) removed",
                 applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
+
+            _auditLog.Write(AuditLogEntry.LkgRevertFinished(
+                AuditSource.Cli,
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved,
+                compilationResult.SkippedRules,
+                policy.Version,
+                policy.Rules.Count));
 
             return LkgRevertResponse.Success(
                 applyResult.Value.FiltersCreated,
@@ -714,6 +759,7 @@ public sealed class PipeServer : IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception during LKG revert");
+            _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "EXCEPTION", ex.Message));
             return LkgRevertResponse.Failure($"LKG revert error: {ex.Message}");
         }
     }
@@ -785,6 +831,57 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during watch-status");
             return WatchStatusResponse.Failure($"Watch-status error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessAuditLogsRequest(AuditLogsRequest request)
+    {
+        _logger.LogDebug("Processing audit-logs request");
+
+        try
+        {
+            List<AuditLogEntry> entries;
+
+            // Query entries based on request parameters
+            if (request.Tail > 0)
+            {
+                entries = _auditLogReader.ReadTail(request.Tail);
+            }
+            else if (request.SinceMinutes > 0)
+            {
+                entries = _auditLogReader.ReadSince(request.SinceMinutes);
+            }
+            else
+            {
+                // Default to last 20 entries
+                entries = _auditLogReader.ReadTail(20);
+            }
+
+            var totalCount = _auditLogReader.GetEntryCount();
+
+            // Convert to DTOs
+            var dtos = entries.Select(e => new AuditLogEntryDto
+            {
+                Timestamp = e.Timestamp,
+                Event = e.Event,
+                Source = e.Source,
+                Status = e.Status,
+                ErrorCode = e.ErrorCode,
+                ErrorMessage = e.ErrorMessage,
+                PolicyFile = e.Details?.PolicyFile,
+                PolicyVersion = e.Details?.PolicyVersion,
+                FiltersCreated = e.Details?.FiltersCreated ?? 0,
+                FiltersRemoved = e.Details?.FiltersRemoved ?? 0,
+                RulesSkipped = e.Details?.RulesSkipped ?? 0,
+                TotalRules = e.Details?.TotalRules ?? 0
+            }).ToList();
+
+            return AuditLogsResponse.Success(dtos, totalCount, _auditLogReader.LogPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during audit-logs request");
+            return AuditLogsResponse.Failure($"Failed to read audit logs: {ex.Message}");
         }
     }
 

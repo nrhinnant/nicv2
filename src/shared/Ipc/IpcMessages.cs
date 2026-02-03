@@ -715,6 +715,7 @@ public static class IpcMessageParser
                 LkgRevertRequest.RequestType => Result<IpcRequest>.Success(new LkgRevertRequest()),
                 WatchSetRequest.RequestType => ParseWatchSetRequest(json),
                 WatchStatusRequest.RequestType => Result<IpcRequest>.Success(new WatchStatusRequest()),
+                AuditLogsRequest.RequestType => ParseAuditLogsRequest(json),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -807,6 +808,26 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid watch-set request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses an audit-logs request, extracting the query parameters.
+    /// </summary>
+    private static Result<IpcRequest> ParseAuditLogsRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<AuditLogsRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse audit-logs request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid audit-logs request JSON: {ex.Message}");
         }
     }
 }

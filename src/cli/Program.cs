@@ -39,9 +39,11 @@ switch (command)
     case "watch":
         return RunWatchCommand(subCommand, args.Length > 2 ? args[2] : null);
 
+    case "logs":
+        return RunLogsCommand(args.Skip(1).ToArray());
+
     case "enable":
     case "disable":
-    case "logs":
         Console.WriteLine($"Command '{command}' is not yet implemented.");
         return 1;
 
@@ -81,9 +83,11 @@ static void PrintUsage()
     Console.WriteLine("  lkg revert         - Apply the stored LKG policy");
     Console.WriteLine("  watch set <file>   - Watch a policy file for changes (auto-reapply)");
     Console.WriteLine("  watch status       - Show file watch status");
+    Console.WriteLine("  logs               - Show recent audit log entries");
+    Console.WriteLine("  logs --tail <N>    - Show last N audit log entries (default: 20)");
+    Console.WriteLine("  logs --since <min> - Show audit log entries from last N minutes");
     Console.WriteLine("  enable             - Enable traffic control (not yet implemented)");
     Console.WriteLine("  disable            - Disable traffic control (not yet implemented)");
-    Console.WriteLine("  logs               - Show logs (not yet implemented)");
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --help, -h     Show this help message");
@@ -895,4 +899,175 @@ static int RunWatchStatusCommand()
     }
 
     return 0;
+}
+
+static int RunLogsCommand(string[] args)
+{
+    // Parse arguments
+    int tail = 0;
+    int sinceMinutes = 0;
+
+    for (int i = 0; i < args.Length; i++)
+    {
+        switch (args[i].ToLowerInvariant())
+        {
+            case "--tail":
+            case "-t":
+                if (i + 1 < args.Length && int.TryParse(args[i + 1], out var tailValue) && tailValue > 0)
+                {
+                    tail = tailValue;
+                    i++;
+                }
+                else
+                {
+                    Console.Error.WriteLine("Error: --tail requires a positive integer value.");
+                    return 1;
+                }
+                break;
+
+            case "--since":
+            case "-s":
+                if (i + 1 < args.Length && int.TryParse(args[i + 1], out var sinceValue) && sinceValue > 0)
+                {
+                    sinceMinutes = sinceValue;
+                    i++;
+                }
+                else
+                {
+                    Console.Error.WriteLine("Error: --since requires a positive integer value (minutes).");
+                    return 1;
+                }
+                break;
+
+            default:
+                Console.Error.WriteLine($"Error: Unknown argument: {args[i]}");
+                Console.Error.WriteLine("Usage: wfpctl logs [--tail <N>] [--since <minutes>]");
+                return 1;
+        }
+    }
+
+    // Default to tail 20 if no arguments provided
+    if (tail == 0 && sinceMinutes == 0)
+    {
+        tail = 20;
+    }
+
+    // Connect to service
+    using var client = new PipeClient();
+    var connectResult = client.Connect();
+    if (connectResult.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {connectResult.Error.Message}");
+        return 1;
+    }
+
+    // Send request
+    var request = new AuditLogsRequest
+    {
+        Tail = tail,
+        SinceMinutes = sinceMinutes
+    };
+    var result = client.SendRequest<AuditLogsResponse>(request);
+
+    if (result.IsFailure)
+    {
+        Console.Error.WriteLine($"Error: {result.Error.Message}");
+        return 1;
+    }
+
+    var response = result.Value;
+
+    if (!response.Ok)
+    {
+        Console.Error.WriteLine($"Failed to retrieve audit logs: {response.Error ?? "Unknown error"}");
+        return 1;
+    }
+
+    // Display results
+    Console.WriteLine("Audit Log Entries");
+    Console.WriteLine($"  Log file: {response.LogPath}");
+    Console.WriteLine($"  Showing:  {response.Count} of {response.TotalCount} entries");
+    Console.WriteLine();
+
+    if (response.Entries.Count == 0)
+    {
+        Console.WriteLine("  No audit log entries found.");
+        return 0;
+    }
+
+    // Display entries (newest first)
+    foreach (var entry in response.Entries)
+    {
+        DisplayAuditEntry(entry);
+    }
+
+    return 0;
+}
+
+static void DisplayAuditEntry(AuditLogEntryDto entry)
+{
+    // Format timestamp for display (convert from ISO 8601)
+    var timestamp = entry.Timestamp;
+    if (DateTimeOffset.TryParse(entry.Timestamp, out var dt))
+    {
+        timestamp = dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    // Determine status indicator
+    var statusIndicator = entry.Status switch
+    {
+        "success" => "[OK]",
+        "failure" => "[FAIL]",
+        _ => "    "
+    };
+
+    // Build the main line
+    Console.WriteLine($"{timestamp} {statusIndicator} {entry.Event}");
+
+    // Show source if present
+    if (!string.IsNullOrEmpty(entry.Source))
+    {
+        Console.WriteLine($"    Source: {entry.Source}");
+    }
+
+    // Show details based on event type
+    if (entry.Event.EndsWith("-started"))
+    {
+        if (!string.IsNullOrEmpty(entry.PolicyFile))
+        {
+            Console.WriteLine($"    Policy: {entry.PolicyFile}");
+        }
+    }
+    else if (entry.Event.EndsWith("-finished"))
+    {
+        if (entry.Status == "success")
+        {
+            // Show success details
+            var details = new List<string>();
+            if (entry.FiltersCreated > 0) details.Add($"created={entry.FiltersCreated}");
+            if (entry.FiltersRemoved > 0) details.Add($"removed={entry.FiltersRemoved}");
+            if (entry.RulesSkipped > 0) details.Add($"skipped={entry.RulesSkipped}");
+            if (entry.TotalRules > 0) details.Add($"rules={entry.TotalRules}");
+            if (!string.IsNullOrEmpty(entry.PolicyVersion)) details.Add($"version={entry.PolicyVersion}");
+
+            if (details.Count > 0)
+            {
+                Console.WriteLine($"    {string.Join(", ", details)}");
+            }
+        }
+        else if (entry.Status == "failure")
+        {
+            // Show error details
+            if (!string.IsNullOrEmpty(entry.ErrorCode))
+            {
+                Console.WriteLine($"    Error: [{entry.ErrorCode}] {entry.ErrorMessage}");
+            }
+            else if (!string.IsNullOrEmpty(entry.ErrorMessage))
+            {
+                Console.WriteLine($"    Error: {entry.ErrorMessage}");
+            }
+        }
+    }
+
+    Console.WriteLine();
 }
