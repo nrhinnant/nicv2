@@ -20,7 +20,8 @@
       "Bash(dotnet fsi:*)",
       "Bash(findstr:*)",
       "Bash(find:*)",
-      "Bash(dotnet clean:*)"
+      "Bash(dotnet clean:*)",
+      "Bash(ls:*)"
     ]
   }
 }
