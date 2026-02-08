@@ -209,12 +209,28 @@ See Phase 5 (Test Development) for details.
 
 ## Security Considerations
 
-- Service runs as LocalSystem by default (required for future WFP operations)
+- Service runs as LocalSystem by default (required for WFP operations)
+- **Elevation check**: On startup, the service verifies it has Administrator privileges before any WFP operations or IPC server initialization. If not elevated, the service logs a CRITICAL error and exits immediately (exit code 1)
 - All management scripts require Administrator privileges
 - Service does not expose any network endpoints
 - No external dependencies or network calls
 
 ## Troubleshooting
+
+### Service exits with "must run with Administrator privileges" error
+
+The service performs an elevation check on startup. If running without Administrator privileges:
+- A CRITICAL error is logged: "Service must run with Administrator privileges to access Windows Filtering Platform"
+- The service exits immediately with exit code 1
+- No WFP operations or IPC server are started
+
+**Solutions:**
+1. When running as a Windows Service, ensure it runs as LocalSystem (default) or another Administrator account
+2. When running in console mode, start PowerShell/cmd as Administrator:
+   ```powershell
+   # Right-click PowerShell → Run as Administrator
+   dotnet run --project src/service/Service.csproj
+   ```
 
 ### Service fails to start
 

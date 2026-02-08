@@ -1,3 +1,4 @@
+using System.Security.Principal;
 using Microsoft.Extensions.Configuration;
 using WfpTrafficControl.Service.Ipc;
 using WfpTrafficControl.Service.Wfp;
@@ -34,6 +35,20 @@ public class Worker : BackgroundService
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
+        // Check elevation BEFORE any WFP operations or IPC server start.
+        // WFP APIs require Administrator privileges; running without them would
+        // cause cryptic ERROR_ACCESS_DENIED failures later.
+        if (!IsRunningAsAdministrator())
+        {
+            _logger.LogCritical(
+                "Service must run with Administrator privileges to access Windows Filtering Platform");
+
+            // Throw to prevent the service from starting. The Generic Host will
+            // catch this, log the error, and exit with a non-zero exit code.
+            throw new InvalidOperationException(
+                "Service must run with Administrator privileges to access Windows Filtering Platform");
+        }
+
         var version = GetVersion();
 
         _logger.LogInformation(
@@ -210,5 +225,16 @@ public class Worker : BackgroundService
         var assembly = typeof(Worker).Assembly;
         var version = assembly.GetName().Version;
         return version?.ToString(3) ?? "0.0.0";
+    }
+
+    /// <summary>
+    /// Checks if the current process is running with Administrator privileges.
+    /// </summary>
+    /// <returns>True if running as Administrator, false otherwise.</returns>
+    private static bool IsRunningAsAdministrator()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var principal = new WindowsPrincipal(identity);
+        return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
 }
