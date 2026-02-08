@@ -24,6 +24,7 @@ public sealed class PipeServer : IDisposable
     private readonly PolicyFileWatcher _fileWatcher;
     private readonly IAuditLogWriter _auditLog;
     private readonly AuditLogReader _auditLogReader;
+    private readonly RateLimiter _rateLimiter;
     private readonly CancellationTokenSource _cts;
     private Task? _listenerTask;
     private bool _disposed;
@@ -61,7 +62,7 @@ public sealed class PipeServer : IDisposable
         return security;
     }
 
-    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine, PolicyFileWatcher fileWatcher, IAuditLogWriter? auditLog = null)
+    public PipeServer(ILogger<PipeServer> logger, string serviceVersion, IWfpEngine wfpEngine, PolicyFileWatcher fileWatcher, IAuditLogWriter? auditLog = null, RateLimiter? rateLimiter = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _serviceVersion = serviceVersion ?? throw new ArgumentNullException(nameof(serviceVersion));
@@ -69,6 +70,7 @@ public sealed class PipeServer : IDisposable
         _fileWatcher = fileWatcher ?? throw new ArgumentNullException(nameof(fileWatcher));
         _auditLog = auditLog ?? new AuditLogWriter();
         _auditLogReader = new AuditLogReader(_auditLog.LogPath);
+        _rateLimiter = rateLimiter ?? new RateLimiter();
         _cts = new CancellationTokenSource();
     }
 
@@ -222,10 +224,19 @@ public sealed class PipeServer : IDisposable
                 _logger.LogDebug("Client did not send protocol version (backward compatibility mode)");
             }
 
-            // Step 4: Process the request
+            // Step 4: Check rate limit
+            var clientUserName = pipeServer.GetImpersonationUserName();
+            if (!_rateLimiter.TryAcquire(clientUserName))
+            {
+                _logger.LogWarning("Rate limit exceeded for client: {ClientUserName}", clientUserName);
+                await SendResponseAsync(pipeServer, new ErrorResponse("Rate limit exceeded. Please wait before retrying."), cancellationToken);
+                return;
+            }
+
+            // Step 5: Process the request
             var response = ProcessRequest(request);
 
-            // Step 5: Send the response
+            // Step 6: Send the response
             await SendResponseAsync(pipeServer, response, cancellationToken);
         }
         catch (OperationCanceledException)
