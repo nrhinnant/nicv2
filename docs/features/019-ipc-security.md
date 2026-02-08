@@ -186,3 +186,5 @@ No WFP artifacts are affected by this feature.
 2. **Version rejection**: Rejected versions still receive a response with the server's version information. This is intentional to help users diagnose version mismatches.
 
 3. **Size limits**: The 64 KB limit is generous for policy files but prevents obvious abuse. Larger policies should be rejected at the policy validation layer.
+
+4. **TOCTOU (Time-of-Check-Time-of-Use) Protection**: The `ProcessApplyRequest()` method reads policy files using a single atomic `File.ReadAllBytes()` call. This eliminates the race window that would exist if file existence, size, and content were checked separately. The file size is validated from the byte array length after the read, ensuring the same data that was read is what gets validated and applied.

@@ -570,26 +570,19 @@ public sealed class PipeServer : IDisposable
                 return ApplyResponse.Failure("Policy path cannot contain '..' (path traversal)");
             }
 
-            // Step 2: Check if file exists
-            if (!File.Exists(request.PolicyPath))
+            // Step 2: Read file content atomically
+            // TOCTOU FIX: We perform a single atomic read using File.ReadAllBytes() instead of
+            // separate File.Exists() and FileInfo checks followed by File.ReadAllText().
+            // This eliminates the race window where the file could be modified between check and read.
+            byte[] fileBytes;
+            try
+            {
+                fileBytes = File.ReadAllBytes(request.PolicyPath);
+            }
+            catch (FileNotFoundException)
             {
                 _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_NOT_FOUND", $"Policy file not found: {request.PolicyPath}"));
                 return ApplyResponse.Failure($"Policy file not found: {request.PolicyPath}");
-            }
-
-            // Step 3: Check file size
-            var fileInfo = new FileInfo(request.PolicyPath);
-            if (fileInfo.Length > PolicyValidator.MaxPolicyFileSize)
-            {
-                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_TOO_LARGE", "Policy file exceeds maximum size"));
-                return ApplyResponse.Failure($"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
-            }
-
-            // Step 4: Read file content
-            string json;
-            try
-            {
-                json = File.ReadAllText(request.PolicyPath);
             }
             catch (Exception ex)
             {
@@ -597,6 +590,16 @@ public sealed class PipeServer : IDisposable
                 _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_READ_ERROR", ex.Message));
                 return ApplyResponse.Failure($"Failed to read policy file: {ex.Message}");
             }
+
+            // Step 3: Check file size (from bytes already read)
+            if (fileBytes.Length > PolicyValidator.MaxPolicyFileSize)
+            {
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_TOO_LARGE", "Policy file exceeds maximum size"));
+                return ApplyResponse.Failure($"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
+            }
+
+            // Step 4: Convert bytes to string
+            string json = Encoding.UTF8.GetString(fileBytes);
 
             // Step 5: Validate the policy
             var validationResult = PolicyValidator.ValidateJson(json);
