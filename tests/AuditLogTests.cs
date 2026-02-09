@@ -459,6 +459,114 @@ public class NullAuditLogWriterTests
 }
 
 /// <summary>
+/// Unit tests for AuditLogWriter ACL protection behavior.
+/// </summary>
+/// <remarks>
+/// These tests verify that ACL protection works correctly and doesn't break
+/// normal audit log operations. Since tests don't run as LocalSystem, the
+/// ACL protection is skipped, which is the expected behavior.
+/// </remarks>
+public class AuditLogWriterAclTests : IDisposable
+{
+    private readonly string _testLogPath;
+    private readonly AuditLogWriter _writer;
+
+    public AuditLogWriterAclTests()
+    {
+        _testLogPath = Path.Combine(Path.GetTempPath(), $"audit_acl_test_{Guid.NewGuid()}.log");
+        _writer = new AuditLogWriter(_testLogPath);
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (File.Exists(_testLogPath))
+            {
+                File.Delete(_testLogPath);
+            }
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
+    }
+
+    [Fact]
+    public void Write_FileRemainsAccessible_WhenNotLocalSystem()
+    {
+        // When not running as LocalSystem, ACL protection is skipped
+        // File should remain fully accessible to the current user
+        _writer.Write(AuditLogEntry.ApplyStarted("cli"));
+
+        // Verify file is readable
+        var content = File.ReadAllText(_testLogPath);
+        Assert.NotEmpty(content);
+
+        // Verify file is writable (can append more)
+        _writer.Write(AuditLogEntry.ApplyFinished("cli", 1, 0, 0, "1.0", 1));
+        var lines = File.ReadAllLines(_testLogPath);
+        Assert.Equal(2, lines.Length);
+
+        // Verify file is deletable
+        File.Delete(_testLogPath);
+        Assert.False(File.Exists(_testLogPath));
+    }
+
+    [Fact]
+    public void Write_MultipleWrites_DoNotReapplyAcl()
+    {
+        // ACL should only be applied once (on first write)
+        // Subsequent writes should not attempt to reapply
+        for (int i = 0; i < 10; i++)
+        {
+            _writer.Write(AuditLogEntry.ApplyStarted("cli"));
+        }
+
+        // If ACL was reapplied each time and failed, we'd see issues
+        var lines = File.ReadAllLines(_testLogPath);
+        Assert.Equal(10, lines.Length);
+    }
+
+    [Fact]
+    public void Write_NewWriterInstance_WorksAfterFirstInstanceWrote()
+    {
+        // First writer creates file
+        _writer.Write(AuditLogEntry.ApplyStarted("cli"));
+
+        // Second writer instance should be able to append
+        var writer2 = new AuditLogWriter(_testLogPath);
+        writer2.Write(AuditLogEntry.RollbackStarted("cli"));
+
+        var lines = File.ReadAllLines(_testLogPath);
+        Assert.Equal(2, lines.Length);
+    }
+
+    [Fact]
+    public async Task Write_ConcurrentWrites_AllSucceed()
+    {
+        // Test that concurrent writes from multiple threads work correctly
+        var tasks = new Task[5];
+        for (int i = 0; i < 5; i++)
+        {
+            int iteration = i;
+            tasks[i] = Task.Run(() =>
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    _writer.Write(AuditLogEntry.ApplyStarted($"cli-{iteration}"));
+                }
+            });
+        }
+
+        await Task.WhenAll(tasks);
+
+        var lines = File.ReadAllLines(_testLogPath);
+        Assert.Equal(50, lines.Length);
+    }
+}
+
+/// <summary>
 /// Unit tests for AuditLogsRequest IPC message parsing.
 /// </summary>
 public class AuditLogsMessageTests

@@ -1,12 +1,47 @@
+using System.Security.AccessControl;
+using System.Security.Principal;
+
 namespace WfpTrafficControl.Shared.Audit;
 
 /// <summary>
 /// Thread-safe audit log writer that appends JSON Lines to the audit log file.
 /// </summary>
+/// <remarks>
+/// <para><strong>Security Model:</strong></para>
+/// <para>
+/// This writer applies protective ACLs to the audit log file to prevent tampering.
+/// Once the ACL is applied, the file has the following permissions:
+/// </para>
+/// <list type="bullet">
+///   <item><description>LocalSystem: Full Control (the service account)</description></item>
+///   <item><description>Administrators: Read + AppendData only (cannot delete or overwrite existing entries)</description></item>
+///   <item><description>Users: No access</description></item>
+/// </list>
+/// <para>
+/// This append-only model ensures that audit log entries cannot be tampered with or deleted
+/// by administrators, while still allowing them to read logs and allowing the service to
+/// perform log rotation if needed.
+/// </para>
+/// <para>
+/// ACL protection is applied on the first successful write and is non-fatal if it fails
+/// (the log continues to work, just without protection).
+/// </para>
+/// </remarks>
 public sealed class AuditLogWriter : IAuditLogWriter
 {
     private readonly string _logPath;
     private readonly object _writeLock = new();
+    private bool _aclApplied;
+
+    /// <summary>
+    /// Well-known SID for LocalSystem account.
+    /// </summary>
+    private static readonly SecurityIdentifier LocalSystemSid = new(WellKnownSidType.LocalSystemSid, null);
+
+    /// <summary>
+    /// Well-known SID for Administrators group.
+    /// </summary>
+    private static readonly SecurityIdentifier AdministratorsSid = new(WellKnownSidType.BuiltinAdministratorsSid, null);
 
     /// <summary>
     /// Creates a new audit log writer using the default audit log path.
@@ -83,6 +118,124 @@ public sealed class AuditLogWriter : IAuditLogWriter
                 FileShare.Read);
             using var writer = new StreamWriter(stream);
             writer.WriteLine(line);
+
+            // Apply ACL protection on first successful write
+            if (!_aclApplied && File.Exists(_logPath))
+            {
+                EnsureLogFileAcl();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Applies protective ACLs to the audit log file to prevent tampering.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This method configures the file with an append-only security model for administrators:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><description>LocalSystem: Full Control (service account needs complete access)</description></item>
+    ///   <item><description>Administrators: Read + AppendData only (can view logs, add new entries, but cannot modify or delete existing entries)</description></item>
+    ///   <item><description>Users: No access (implicit deny by not granting any rights)</description></item>
+    /// </list>
+    /// <para>
+    /// The method disables ACL inheritance to prevent the file from inheriting broader
+    /// permissions from the parent directory. This ensures our restrictive permissions
+    /// cannot be bypassed via inherited rules.
+    /// </para>
+    /// <para>
+    /// ACLs are only applied when running as LocalSystem (the service account). When running
+    /// as any other account (e.g., during testing or development), ACL protection is skipped
+    /// to avoid breaking normal file access patterns.
+    /// </para>
+    /// <para>
+    /// If ACL application fails (e.g., insufficient privileges, file locked), a warning
+    /// is logged but the operation continues. Audit logging remains functional without
+    /// the protection as a defense-in-depth measure.
+    /// </para>
+    /// </remarks>
+    private void EnsureLogFileAcl()
+    {
+        if (_aclApplied)
+        {
+            return;
+        }
+
+        try
+        {
+            // Only apply ACLs when running as LocalSystem (the service account)
+            // This prevents issues when running tests or during development
+            using var currentIdentity = WindowsIdentity.GetCurrent();
+            if (currentIdentity.User == null || !currentIdentity.User.Equals(LocalSystemSid))
+            {
+                // Not running as LocalSystem - skip ACL protection
+                _aclApplied = true;
+                return;
+            }
+
+            // Get the current file security
+            var fileInfo = new FileInfo(_logPath);
+            var fileSecurity = fileInfo.GetAccessControl();
+
+            // Disable inheritance and remove all inherited rules
+            // This ensures we have full control over the permissions
+            fileSecurity.SetAccessRuleProtection(isProtected: true, preserveInheritance: false);
+
+            // Remove all existing access rules to start fresh
+            var existingRules = fileSecurity.GetAccessRules(
+                includeExplicit: true,
+                includeInherited: true,
+                targetType: typeof(SecurityIdentifier));
+
+            foreach (FileSystemAccessRule rule in existingRules)
+            {
+                fileSecurity.RemoveAccessRule(rule);
+            }
+
+            // Grant LocalSystem full control (the service account)
+            fileSecurity.AddAccessRule(new FileSystemAccessRule(
+                LocalSystemSid,
+                FileSystemRights.FullControl,
+                AccessControlType.Allow));
+
+            // Grant Administrators read and append-only access
+            // FileSystemRights.Read allows reading the file contents
+            // FileSystemRights.AppendData allows adding to the end (but not modifying existing content)
+            // FileSystemRights.Synchronize is required for synchronous I/O operations (standard Windows requirement)
+            // Note: We intentionally do NOT grant WriteData (overwrite), Delete, or ChangePermissions
+            fileSecurity.AddAccessRule(new FileSystemAccessRule(
+                AdministratorsSid,
+                FileSystemRights.Read | FileSystemRights.AppendData | FileSystemRights.Synchronize,
+                AccessControlType.Allow));
+
+            // Users get no access (no rule = no access since we removed all rules)
+
+            // Apply the security descriptor to the file
+            fileInfo.SetAccessControl(fileSecurity);
+
+            _aclApplied = true;
+
+            // Log success (best effort - we're in the audit writer so we can't use it recursively)
+            Console.WriteLine($"[AuditLogWriter] ACL protection applied to audit log: {_logPath}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Non-fatal: log warning but continue
+            Console.WriteLine($"[AuditLogWriter] WARNING: Failed to apply ACL protection to audit log (insufficient privileges): {ex.Message}");
+            _aclApplied = true; // Don't retry on every write
+        }
+        catch (IOException ex)
+        {
+            // Non-fatal: log warning but continue (file might be locked)
+            Console.WriteLine($"[AuditLogWriter] WARNING: Failed to apply ACL protection to audit log (I/O error): {ex.Message}");
+            _aclApplied = true; // Don't retry on every write
+        }
+        catch (Exception ex)
+        {
+            // Non-fatal: catch all other errors
+            Console.WriteLine($"[AuditLogWriter] WARNING: Failed to apply ACL protection to audit log: {ex.Message}");
+            _aclApplied = true; // Don't retry on every write
         }
     }
 }

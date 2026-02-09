@@ -184,6 +184,7 @@ Or with time-based filtering:
 **AuditLogWriter** (`src/shared/Audit/AuditLogWriter.cs`)
 - Thread-safe file append
 - Automatic directory creation
+- ACL protection for append-only access (when running as LocalSystem)
 - Graceful error handling (never crashes service)
 
 **AuditLogReader** (`src/shared/Audit/AuditLogReader.cs`)
@@ -207,6 +208,43 @@ del C:\ProgramData\WfpTrafficControl\audit.log
 2. **No Secrets**: Control-plane logging contains no sensitive data (no IPs, ports, or credentials)
 3. **Admin-Only Access**: IPC commands require local administrator privileges
 4. **Fail-Safe**: Audit log write failures do not crash the service or fail the operation
+5. **ACL Protection**: Append-only ACLs prevent log tampering (see below)
+
+### ACL Protection (Append-Only)
+
+When running as LocalSystem (the service account), the audit log file is protected with restrictive ACLs:
+
+| Principal | Rights | Purpose |
+|-----------|--------|---------|
+| LocalSystem | Full Control | Service needs complete access for writing and log rotation |
+| Administrators | Read + AppendData | Can view logs and add entries, but cannot modify or delete existing entries |
+| Users | No access | Unprivileged users cannot access audit logs |
+
+**Behavior:**
+- ACLs are applied on the first write to the audit log file
+- Inheritance from the parent directory is disabled
+- If ACL application fails, logging continues without protection (defense in depth, non-fatal)
+- ACLs are only applied when running as LocalSystem (skipped during development/testing)
+
+**Verification:**
+```powershell
+icacls "%ProgramData%\WfpTrafficControl\audit.log"
+```
+
+Expected output (when service is running as LocalSystem):
+```
+C:\ProgramData\WfpTrafficControl\audit.log
+    NT AUTHORITY\SYSTEM:(F)
+    BUILTIN\Administrators:(R,AD,S)
+Successfully processed 1 files; Failed processing 0 files
+```
+
+Legend: `F`=Full, `R`=Read, `AD`=AppendData, `S`=Synchronize
+
+**Limitations:**
+- LocalSystem still has Full Control and can delete/modify logs (necessary for rotation)
+- Administrators can take ownership and reset ACLs (Windows design limitation)
+- Protection only applies when running as LocalSystem
 
 ## Known Limitations
 
