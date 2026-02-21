@@ -33,6 +33,23 @@ Goal: Black-box verification that applied policies actually block or allow traff
 
 **Key metrics.** Pass/fail per test case. Time from `wfpctl apply` to first blocked connection (enforcement latency).
 
+**Implementation status.** `scripts/Test-RuleEnforcement.ps1` is implemented as a fully parameterized script:
+
+```powershell
+# Outbound TCP block (default):
+.\scripts\Test-RuleEnforcement.ps1 -Direction outbound -Protocol tcp
+
+# Outbound UDP block (DNS):
+.\scripts\Test-RuleEnforcement.ps1 -Direction outbound -Protocol udp -RemoteIp 8.8.8.8 -RemotePort 53
+
+# Inbound TCP block:
+.\scripts\Test-RuleEnforcement.ps1 -Direction inbound -Protocol tcp -RemotePort 19876
+
+# Inbound UDP is gracefully skipped (not supported by ALE RECV_ACCEPT layer)
+```
+
+Supports outbound TCP, outbound UDP (Resolve-DnsName for port 53, UDP socket for other ports), inbound TCP (with TcpListener), and reports enforcement latency. Usable standalone or as a building block for orchestration scripts.
+
 ### 1.2 Resolve-DnsName (PowerShell Built-in) — Must-Have
 
 **What it is.** `Resolve-DnsName -Name example.com -Server 8.8.8.8 -DnsOnly` forces a UDP query to a specific server. Already used in `Test-UdpBlock.ps1`.
@@ -81,6 +98,14 @@ $scan.nmaprun.host.ports.port | ForEach-Object {
 **Integration.** Add a `scripts/Test-ProcessPath.ps1` script.
 
 **Key metrics.** Exit code (0 = success, 28 = timeout). Total connection time.
+
+**Implementation status.** `scripts/Test-ProcessPath.ps1` is implemented:
+
+```powershell
+.\scripts\Test-ProcessPath.ps1
+```
+
+Locates curl.exe automatically (`C:\Windows\System32\curl.exe` or PATH fallback), applies a two-rule policy (block all + allow curl.exe at higher priority), verifies curl.exe can connect while Test-NetConnection is blocked, then rolls back and verifies restoration. Seven test steps total.
 
 ### 1.5 nping (Bundled with nmap) — Nice-to-Have
 
