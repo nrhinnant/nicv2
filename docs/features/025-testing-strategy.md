@@ -86,6 +86,23 @@ $scan.nmaprun.host.ports.port | ForEach-Object {
 
 **Key metrics.** Port state (open/closed/filtered) per rule. Diff between expected and actual state table.
 
+**Implementation status.** `scripts/Test-NmapMatrix.ps1` is implemented with four test groups:
+
+```powershell
+# Basic run (requires second VM):
+.\scripts\Test-NmapMatrix.ps1 -TargetIp 192.168.1.20
+
+# Skip nping tests:
+.\scripts\Test-NmapMatrix.ps1 -TargetIp 192.168.1.20 -SkipNping
+```
+
+- **GROUP 1:** Outbound TCP block on exact ports (80, 443, 8080) — verifies blocked state, then rollback and restoration.
+- **GROUP 2:** Port range block (8000-9000) — verifies boundary ports 7999/9001 are not filtered while 8000/8500/9000 are.
+- **GROUP 3:** Protocol/direction bypass (negative-space, covers Category 3.1) — verifies TCP-only rule doesn't bleed to UDP or other ports.
+- **GROUP 4:** nping port boundary probing (optional, requires nping on PATH).
+
+Prints a summary table with per-test expected/actual/pass-fail results.
+
 ### 1.4 curl / Invoke-WebRequest — Must-Have
 
 **What it is.** Standard HTTP client. Exercises a real application-layer connection and can be paired with process-path matching tests. `curl.exe` ships with Windows 10 1803+.
@@ -214,6 +231,8 @@ Goal: Verify the firewall cannot be bypassed and that the IPC surface is properl
 A firewall that blocks more than intended is a reliability bug; one that blocks less is a security bug. Both sides must be tested.
 
 **Integration.** Add as "negative space" cases in `Test-NmapMatrix.ps1`.
+
+**Implementation status.** Implemented as GROUP 3 in `scripts/Test-NmapMatrix.ps1`. Tests: (1) UDP send not blocked when only TCP is blocked, (2) TCP to a different port not blocked, (3) TCP to the blocked port is blocked. Uses nping for UDP when available, UdpClient fallback otherwise. nmap `-sT` for TCP verification.
 
 ### 3.2 IPC Security Verification — Must-Have
 
@@ -466,7 +485,7 @@ Run before any demonstration or manual validation:
 
 ### Tier 2 — Before Significant Commits (Weekly or Per-Phase)
 
-5. `scripts/Test-NmapMatrix.ps1` (new) — full rule enforcement matrix
+5. `scripts/Test-NmapMatrix.ps1` — full rule enforcement matrix (4 groups: exact port block, port range, protocol/direction bypass, nping boundary)
 6. `scripts/Test-LargePolicyStress.ps1` (new) — 500-rule compile and apply
 7. `scripts/Test-RapidApply.ps1` (new) — 600 applies in 60 seconds
 8. `scripts/Test-ProcessPath.ps1` (new) — process-path matching with curl
