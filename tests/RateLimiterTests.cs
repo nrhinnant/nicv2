@@ -17,15 +17,17 @@ public class RateLimiterTests
 
         Assert.Equal(RateLimiter.DefaultMaxTokens, limiter.MaxTokens);
         Assert.Equal(RateLimiter.DefaultWindowSeconds, limiter.WindowSeconds);
+        Assert.Equal(RateLimiter.DefaultGlobalMaxTokens, limiter.GlobalMaxTokens);
     }
 
     [Fact]
     public void Constructor_WithCustomValues_SetsCorrectly()
     {
-        var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 30);
+        var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 30, globalMaxTokens: 50);
 
         Assert.Equal(5, limiter.MaxTokens);
         Assert.Equal(30, limiter.WindowSeconds);
+        Assert.Equal(50, limiter.GlobalMaxTokens);
     }
 
     [Fact]
@@ -50,6 +52,24 @@ public class RateLimiterTests
     public void Constructor_WithNegativeWindowSeconds_ThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(windowSeconds: -1));
+    }
+
+    [Fact]
+    public void Constructor_WithZeroGlobalMaxTokens_ThrowsArgumentOutOfRangeException()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(globalMaxTokens: 0));
+    }
+
+    [Fact]
+    public void Constructor_WithNegativeGlobalMaxTokens_ThrowsArgumentOutOfRangeException()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(globalMaxTokens: -1));
+    }
+
+    [Fact]
+    public void Constructor_WithGlobalMaxTokensLessThanMaxTokens_ThrowsArgumentOutOfRangeException()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(maxTokens: 100, globalMaxTokens: 50));
     }
 
     #endregion
@@ -274,12 +294,102 @@ public class RateLimiterTests
 
     #endregion
 
+    #region Global Rate Limiting Tests
+
+    [Fact]
+    public void TryAcquire_GlobalLimit_EnforcedAcrossAllClients()
+    {
+        // Set per-client limit to 10, global limit to 15
+        // This means 2 clients with 10 tokens each would need 20, but only 15 are globally available
+        var limiter = new RateLimiter(maxTokens: 10, windowSeconds: 60, globalMaxTokens: 15);
+
+        int user1Success = 0;
+        int user2Success = 0;
+
+        // User 1 takes 10 tokens (all of their per-user limit)
+        for (int i = 0; i < 15; i++)
+        {
+            if (limiter.TryAcquire("user1")) user1Success++;
+        }
+
+        // User 2 tries to take 10 tokens, but only 5 global tokens remain
+        for (int i = 0; i < 15; i++)
+        {
+            if (limiter.TryAcquire("user2")) user2Success++;
+        }
+
+        Assert.Equal(10, user1Success); // User 1 gets all 10 per-user tokens
+        Assert.Equal(5, user2Success);  // User 2 only gets 5 (global limit hit)
+    }
+
+    [Fact]
+    public void GetGlobalTokensRemaining_ReturnsCorrectValue()
+    {
+        var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 60, globalMaxTokens: 10);
+
+        Assert.Equal(10, limiter.GetGlobalTokensRemaining());
+
+        limiter.TryAcquire("user1");
+        Assert.Equal(9, limiter.GetGlobalTokensRemaining());
+
+        limiter.TryAcquire("user2");
+        Assert.Equal(8, limiter.GetGlobalTokensRemaining());
+    }
+
+    [Fact]
+    public void Reset_ClearsGlobalState()
+    {
+        var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 60, globalMaxTokens: 10);
+
+        // Consume some global tokens
+        for (int i = 0; i < 5; i++)
+        {
+            limiter.TryAcquire($"user{i}");
+        }
+
+        Assert.Equal(5, limiter.GetGlobalTokensRemaining());
+
+        // Reset
+        limiter.Reset();
+
+        // Global tokens should be restored
+        Assert.Equal(10, limiter.GetGlobalTokensRemaining());
+    }
+
+    [Fact]
+    public void TryAcquire_GlobalLimitReached_BlocksAllClients()
+    {
+        // Use 3 clients with per-user limit of 5 each (15 total potential)
+        // But global limit is 8, so not all can get their full quota
+        var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 60, globalMaxTokens: 8);
+
+        // User1 takes all 5 tokens (5 global consumed)
+        for (int i = 0; i < 5; i++)
+        {
+            Assert.True(limiter.TryAcquire("user1"));
+        }
+        Assert.False(limiter.TryAcquire("user1")); // user1 per-user exhausted
+
+        // User2 takes 3 tokens (8 global consumed total)
+        for (int i = 0; i < 3; i++)
+        {
+            Assert.True(limiter.TryAcquire("user2"));
+        }
+
+        // Global limit reached - all users blocked
+        Assert.False(limiter.TryAcquire("user2")); // user2 blocked (global exhausted)
+        Assert.False(limiter.TryAcquire("user3")); // new user3 blocked too
+        Assert.False(limiter.TryAcquire("user1")); // user1 still blocked
+    }
+
+    #endregion
+
     #region Thread Safety Tests
 
     [Fact]
     public async Task TryAcquire_ConcurrentAccess_ThreadSafe()
     {
-        var limiter = new RateLimiter(maxTokens: 100, windowSeconds: 60);
+        var limiter = new RateLimiter(maxTokens: 100, windowSeconds: 60, globalMaxTokens: 200);
         var client = "concurrent_user";
         int successCount = 0;
 
@@ -308,7 +418,8 @@ public class RateLimiterTests
     [Fact]
     public async Task TryAcquire_ConcurrentDifferentClients_NoInterference()
     {
-        var limiter = new RateLimiter(maxTokens: 10, windowSeconds: 60);
+        // Set globalMaxTokens high enough for 5 clients x 10 tokens each = 50 total
+        var limiter = new RateLimiter(maxTokens: 10, windowSeconds: 60, globalMaxTokens: 100);
         var results = new int[5]; // Track success count per client
 
         var tasks = new Task[5];
@@ -346,6 +457,7 @@ public class RateLimiterTests
     {
         Assert.Equal(10, RateLimiter.DefaultMaxTokens);
         Assert.Equal(10, RateLimiter.DefaultWindowSeconds);
+        Assert.Equal(30, RateLimiter.DefaultGlobalMaxTokens);
     }
 
     #endregion
@@ -365,7 +477,7 @@ public class RateLimiterTests
     [Fact]
     public void TryAcquire_LargeTokenLimit_WorksCorrectly()
     {
-        var limiter = new RateLimiter(maxTokens: 10000, windowSeconds: 1);
+        var limiter = new RateLimiter(maxTokens: 10000, windowSeconds: 1, globalMaxTokens: 20000);
 
         for (int i = 0; i < 10000; i++)
         {

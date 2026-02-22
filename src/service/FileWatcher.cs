@@ -494,18 +494,25 @@ public sealed class PolicyFileWatcher : IDisposable
         {
             try
             {
-                // Read file bytes first, then check size to avoid TOCTOU race
-                // (file could be replaced between size check and read)
-                var bytes = File.ReadAllBytes(path);
+                // SECURITY FIX: Check file size BEFORE reading into memory using FileStream
+                // This prevents memory exhaustion attacks via oversized policy files.
+                // The file handle provides atomic size check and read.
+                using var stream = new FileStream(
+                    path,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read);
 
-                if (bytes.Length > PolicyValidator.MaxPolicyFileSize)
+                // Check size BEFORE allocating memory
+                if (stream.Length > PolicyValidator.MaxPolicyFileSize)
                 {
                     return Result<string>.Failure(ErrorCodes.InvalidArgument,
-                        $"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB, actual: {bytes.Length / 1024} KB)");
+                        $"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB, actual: {stream.Length / 1024} KB)");
                 }
 
-                // Convert to string using UTF-8
-                var content = System.Text.Encoding.UTF8.GetString(bytes);
+                // Now safe to read - file is within size limits
+                using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+                var content = reader.ReadToEnd();
                 return Result<string>.Success(content);
             }
             catch (IOException ex) when (attempt < FileReadRetryCount - 1)

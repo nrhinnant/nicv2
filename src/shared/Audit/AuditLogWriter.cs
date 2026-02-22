@@ -32,8 +32,27 @@ public sealed class AuditLogWriter : IAuditLogWriter
 {
     private readonly string _logPath;
     private readonly object _writeLock = new();
+    private readonly long _maxFileSize;
+    private readonly int _maxRotatedFiles;
     private bool _aclApplied;
     private long _failedWriteCount;
+    private long _rotationCount;
+    private int _writesSinceLastSizeCheck;
+
+    /// <summary>
+    /// Default maximum file size before rotation (10 MB).
+    /// </summary>
+    public const long DefaultMaxFileSize = 10 * 1024 * 1024;
+
+    /// <summary>
+    /// Default number of rotated log files to keep.
+    /// </summary>
+    public const int DefaultMaxRotatedFiles = 5;
+
+    /// <summary>
+    /// Number of writes between file size checks (optimization to avoid checking on every write).
+    /// </summary>
+    private const int WritesBetweenSizeChecks = 50;
 
     /// <summary>
     /// Well-known SID for LocalSystem account.
@@ -57,8 +76,27 @@ public sealed class AuditLogWriter : IAuditLogWriter
     /// Creates a new audit log writer with a custom log path.
     /// </summary>
     public AuditLogWriter(string logPath)
+        : this(logPath, DefaultMaxFileSize, DefaultMaxRotatedFiles)
+    {
+    }
+
+    /// <summary>
+    /// Creates a new audit log writer with custom rotation settings.
+    /// </summary>
+    /// <param name="logPath">Path to the audit log file.</param>
+    /// <param name="maxFileSize">Maximum file size in bytes before rotation (default: 10 MB).</param>
+    /// <param name="maxRotatedFiles">Maximum number of rotated files to keep (default: 5).</param>
+    public AuditLogWriter(string logPath, long maxFileSize, int maxRotatedFiles)
     {
         _logPath = logPath ?? throw new ArgumentNullException(nameof(logPath));
+
+        if (maxFileSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxFileSize), "Must be positive");
+        if (maxRotatedFiles < 0)
+            throw new ArgumentOutOfRangeException(nameof(maxRotatedFiles), "Cannot be negative");
+
+        _maxFileSize = maxFileSize;
+        _maxRotatedFiles = maxRotatedFiles;
     }
 
     /// <summary>
@@ -71,6 +109,21 @@ public sealed class AuditLogWriter : IAuditLogWriter
     /// Useful for diagnostics and monitoring.
     /// </summary>
     public long FailedWriteCount => Interlocked.Read(ref _failedWriteCount);
+
+    /// <summary>
+    /// Gets the number of log rotations performed since this writer was created.
+    /// </summary>
+    public long RotationCount => Interlocked.Read(ref _rotationCount);
+
+    /// <summary>
+    /// Gets the maximum file size before rotation.
+    /// </summary>
+    public long MaxFileSize => _maxFileSize;
+
+    /// <summary>
+    /// Gets the maximum number of rotated files to keep.
+    /// </summary>
+    public int MaxRotatedFiles => _maxRotatedFiles;
 
     /// <summary>
     /// Writes an audit log entry to the log file.
@@ -112,6 +165,7 @@ public sealed class AuditLogWriter : IAuditLogWriter
 
     /// <summary>
     /// Writes a line to the audit log file with proper locking.
+    /// Performs log rotation if the file exceeds the maximum size.
     /// </summary>
     private void WriteLineToFile(string line)
     {
@@ -122,6 +176,14 @@ public sealed class AuditLogWriter : IAuditLogWriter
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
+            }
+
+            // Check for rotation periodically (not on every write for performance)
+            _writesSinceLastSizeCheck++;
+            if (_writesSinceLastSizeCheck >= WritesBetweenSizeChecks)
+            {
+                _writesSinceLastSizeCheck = 0;
+                CheckAndRotateIfNeeded();
             }
 
             // Append the line with a newline character
@@ -139,6 +201,100 @@ public sealed class AuditLogWriter : IAuditLogWriter
             {
                 EnsureLogFileAcl();
             }
+        }
+    }
+
+    /// <summary>
+    /// Checks if the log file exceeds the maximum size and rotates if needed.
+    /// Must be called while holding _writeLock.
+    /// </summary>
+    private void CheckAndRotateIfNeeded()
+    {
+        try
+        {
+            if (!File.Exists(_logPath))
+            {
+                return;
+            }
+
+            var fileInfo = new FileInfo(_logPath);
+            if (fileInfo.Length < _maxFileSize)
+            {
+                return;
+            }
+
+            RotateLogFiles();
+        }
+        catch (Exception ex)
+        {
+            // Non-fatal: log rotation failure should not break audit logging
+            Debug.WriteLine($"[AuditLogWriter] WARNING: Failed to check/rotate log file: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Rotates log files by renaming current to .1, .1 to .2, etc.
+    /// Deletes the oldest file if it exceeds _maxRotatedFiles.
+    /// Must be called while holding _writeLock.
+    /// </summary>
+    private void RotateLogFiles()
+    {
+        try
+        {
+            // Delete the oldest rotated file if it exists and we're at max
+            var oldestPath = $"{_logPath}.{_maxRotatedFiles}";
+            if (File.Exists(oldestPath))
+            {
+                File.Delete(oldestPath);
+            }
+
+            // Shift existing rotated files: .4 -> .5, .3 -> .4, etc.
+            for (int i = _maxRotatedFiles - 1; i >= 1; i--)
+            {
+                var sourcePath = $"{_logPath}.{i}";
+                var destPath = $"{_logPath}.{i + 1}";
+
+                if (File.Exists(sourcePath))
+                {
+                    // Delete destination if it exists (shouldn't happen but be safe)
+                    if (File.Exists(destPath))
+                    {
+                        File.Delete(destPath);
+                    }
+                    File.Move(sourcePath, destPath);
+                }
+            }
+
+            // Rotate current file to .1
+            var rotatedPath = $"{_logPath}.1";
+            if (File.Exists(rotatedPath))
+            {
+                File.Delete(rotatedPath);
+            }
+            File.Move(_logPath, rotatedPath);
+
+            // Reset ACL flag so it gets applied to the new file
+            _aclApplied = false;
+
+            Interlocked.Increment(ref _rotationCount);
+            Debug.WriteLine($"[AuditLogWriter] Log file rotated: {_logPath} -> {rotatedPath}");
+        }
+        catch (Exception ex)
+        {
+            // Non-fatal: log rotation failure should not break audit logging
+            Debug.WriteLine($"[AuditLogWriter] WARNING: Failed to rotate log files: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Forces a log rotation check and rotation if needed.
+    /// Useful for testing or manual rotation triggers.
+    /// </summary>
+    public void ForceRotationCheck()
+    {
+        lock (_writeLock)
+        {
+            CheckAndRotateIfNeeded();
         }
     }
 

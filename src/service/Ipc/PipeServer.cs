@@ -224,12 +224,24 @@ public sealed class PipeServer : IDisposable
                 _logger.LogDebug("Client did not send protocol version (backward compatibility mode)");
             }
 
-            // Step 4: Check rate limit
+            // Step 4: Check rate limit (both per-user and global)
             var clientUserName = pipeServer.GetImpersonationUserName();
             if (!_rateLimiter.TryAcquire(clientUserName))
             {
-                _logger.LogWarning("Rate limit exceeded for client: {ClientUserName}", clientUserName);
-                await SendResponseAsync(pipeServer, new ErrorResponse("Rate limit exceeded. Please wait before retrying."), cancellationToken);
+                // Check if it's a global limit hit (when global tokens are at 0 but client might have tokens)
+                var globalTokens = _rateLimiter.GetGlobalTokensRemaining();
+                var clientTokens = _rateLimiter.GetTokensRemaining(clientUserName);
+
+                if (globalTokens <= 0)
+                {
+                    _logger.LogWarning("Global rate limit exceeded (client: {ClientUserName})", clientUserName);
+                    await SendResponseAsync(pipeServer, new ErrorResponse("Service rate limit exceeded. Too many requests across all users. Please wait before retrying."), cancellationToken);
+                }
+                else
+                {
+                    _logger.LogWarning("Per-user rate limit exceeded for client: {ClientUserName}", clientUserName);
+                    await SendResponseAsync(pipeServer, new ErrorResponse("Rate limit exceeded for your user. Please wait before retrying."), cancellationToken);
+                }
                 return;
             }
 
@@ -581,14 +593,28 @@ public sealed class PipeServer : IDisposable
                 return ApplyResponse.Failure("Policy path cannot contain '..' (path traversal)");
             }
 
-            // Step 2: Read file content atomically
-            // TOCTOU FIX: We perform a single atomic read using File.ReadAllBytes() instead of
-            // separate File.Exists() and FileInfo checks followed by File.ReadAllText().
-            // This eliminates the race window where the file could be modified between check and read.
-            byte[] fileBytes;
+            // Step 2: Read file content with size check BEFORE loading into memory
+            // SECURITY FIX: Check file size via FileStream.Length before reading to prevent
+            // memory exhaustion attacks. The file handle provides atomic size check and read.
+            string json;
             try
             {
-                fileBytes = File.ReadAllBytes(request.PolicyPath);
+                using var stream = new FileStream(
+                    request.PolicyPath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read);
+
+                // Check file size BEFORE reading into memory
+                if (stream.Length > PolicyValidator.MaxPolicyFileSize)
+                {
+                    _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_TOO_LARGE", "Policy file exceeds maximum size"));
+                    return ApplyResponse.Failure($"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB, actual: {stream.Length / 1024} KB)");
+                }
+
+                // Now safe to read - file is within size limits
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                json = reader.ReadToEnd();
             }
             catch (FileNotFoundException)
             {
@@ -602,17 +628,7 @@ public sealed class PipeServer : IDisposable
                 return ApplyResponse.Failure($"Failed to read policy file: {ex.Message}");
             }
 
-            // Step 3: Check file size (from bytes already read)
-            if (fileBytes.Length > PolicyValidator.MaxPolicyFileSize)
-            {
-                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "FILE_TOO_LARGE", "Policy file exceeds maximum size"));
-                return ApplyResponse.Failure($"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
-            }
-
-            // Step 4: Convert bytes to string
-            string json = Encoding.UTF8.GetString(fileBytes);
-
-            // Step 5: Validate the policy
+            // Step 3: Validate the policy
             var validationResult = PolicyValidator.ValidateJson(json);
             if (!validationResult.IsValid)
             {
@@ -621,7 +637,7 @@ public sealed class PipeServer : IDisposable
                 return ApplyResponse.Failure($"Policy validation failed: {validationResult.GetSummary()}");
             }
 
-            // Step 6: Parse the policy
+            // Step 4: Parse the policy
             var policy = Policy.FromJson(json);
             if (policy == null)
             {
@@ -632,7 +648,7 @@ public sealed class PipeServer : IDisposable
             _logger.LogInformation("Policy loaded: version={Version}, rules={RuleCount}",
                 policy.Version, policy.Rules.Count);
 
-            // Step 7: Compile the policy to WFP filters
+            // Step 5: Compile the policy to WFP filters
             var compilationResult = RuleCompiler.Compile(policy);
             if (!compilationResult.IsSuccess)
             {
@@ -645,7 +661,7 @@ public sealed class PipeServer : IDisposable
             _logger.LogInformation("Policy compiled: {FilterCount} filter(s), {SkippedCount} rule(s) skipped",
                 compilationResult.Filters.Count, compilationResult.SkippedRules);
 
-            // Step 8: Apply the compiled filters to WFP
+            // Step 6: Apply the compiled filters to WFP
             var applyResult = _wfpEngine.ApplyFilters(compilationResult.Filters);
             if (applyResult.IsFailure)
             {
@@ -657,7 +673,7 @@ public sealed class PipeServer : IDisposable
             _logger.LogInformation("Policy applied successfully: {Created} filter(s) created, {Removed} filter(s) removed",
                 applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
 
-            // Step 9: Save as LKG (Last Known Good) policy
+            // Step 7: Save as LKG (Last Known Good) policy
             var lkgResult = LkgStore.Save(json, request.PolicyPath);
             if (lkgResult.IsFailure)
             {
