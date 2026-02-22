@@ -564,6 +564,132 @@ public class AuditLogWriterAclTests : IDisposable
         var lines = File.ReadAllLines(_testLogPath);
         Assert.Equal(50, lines.Length);
     }
+
+    [Fact]
+    public async Task Write_ConcurrentWritesFromMultipleInstances_TracksFailures()
+    {
+        // Use a dedicated file for this test to avoid interference
+        var testPath = Path.Combine(Path.GetTempPath(), $"audit_multi_{Guid.NewGuid():N}.log");
+        try
+        {
+            // Test concurrent writes from multiple AuditLogWriter instances
+            // Note: Multiple instances have separate write locks, so file-level contention may occur.
+            // This test verifies that write failures are tracked and that most writes succeed.
+            var writers = new AuditLogWriter[3];
+            for (int i = 0; i < writers.Length; i++)
+            {
+                writers[i] = new AuditLogWriter(testPath);
+            }
+
+            var tasks = new Task[writers.Length];
+            for (int i = 0; i < writers.Length; i++)
+            {
+                int writerIndex = i;
+                tasks[i] = Task.Run(() =>
+                {
+                    for (int j = 0; j < 10; j++)
+                    {
+                        writers[writerIndex].Write(AuditLogEntry.ApplyStarted($"writer-{writerIndex}"));
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            var lines = File.ReadAllLines(testPath);
+            var totalFailures = writers.Sum(w => w.FailedWriteCount);
+
+            // Verify: lines written + failures = total attempted writes
+            Assert.Equal(30, lines.Length + totalFailures);
+
+            // Most writes should succeed
+            Assert.True(lines.Length >= 15, $"Expected at least 15 successful writes, got {lines.Length}");
+        }
+        finally
+        {
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    [Fact]
+    public void Write_FailedWriteCount_InitiallyZero()
+    {
+        Assert.Equal(0, _writer.FailedWriteCount);
+    }
+
+    [Fact]
+    public void Write_ToInvalidPath_IncrementsFailedWriteCount()
+    {
+        // Create a writer with an invalid path (contains invalid characters)
+        var invalidPath = "Z:\\<invalid>\\path\\audit.log";
+        var badWriter = new AuditLogWriter(invalidPath);
+
+        // Try to write - should fail but not throw
+        badWriter.Write(AuditLogEntry.ApplyStarted("test"));
+
+        // FailedWriteCount should increment
+        Assert.True(badWriter.FailedWriteCount >= 1);
+    }
+
+    [Fact]
+    public async Task Write_HighConcurrency_NoDataLoss()
+    {
+        // Use a dedicated file for this stress test
+        var testPath = Path.Combine(Path.GetTempPath(), $"audit_stress_{Guid.NewGuid():N}.log");
+        var stressWriter = new AuditLogWriter(testPath);
+        try
+        {
+            // Stress test with high concurrency
+            const int tasksCount = 10;
+            const int writesPerTask = 50;
+            var tasks = new Task[tasksCount];
+
+            for (int i = 0; i < tasksCount; i++)
+            {
+                int iteration = i;
+                tasks[i] = Task.Run(() =>
+                {
+                    for (int j = 0; j < writesPerTask; j++)
+                    {
+                        stressWriter.Write(AuditLogEntry.ApplyStarted($"stress-{iteration}-{j}"));
+                    }
+                });
+            }
+
+            await Task.WhenAll(tasks);
+
+            var lines = File.ReadAllLines(testPath);
+            Assert.Equal(tasksCount * writesPerTask, lines.Length);
+            Assert.Equal(0, stressWriter.FailedWriteCount);
+        }
+        finally
+        {
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    [Fact]
+    public void Write_WhileFileLockedByReader_StillSucceeds()
+    {
+        // Write initial entry
+        _writer.Write(AuditLogEntry.ApplyStarted("initial"));
+
+        // Open file for reading (shared read access)
+        using (var reader = new FileStream(_testLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        {
+            // Writer should still be able to write while reader holds file
+            _writer.Write(AuditLogEntry.ApplyStarted("while-reading"));
+        }
+
+        var lines = File.ReadAllLines(_testLogPath);
+        Assert.Equal(2, lines.Length);
+    }
 }
 
 /// <summary>

@@ -555,6 +555,172 @@ public class PolicyFileWatcherInvalidPolicyTests : IDisposable
 }
 
 /// <summary>
+/// Tests for PolicyFileWatcher rapid change coalescing.
+/// These tests verify that multiple rapid file changes are coalesced into a single apply.
+/// </summary>
+public class PolicyFileWatcherCoalescingTests : IDisposable
+{
+    private readonly MockWfpEngineForPipeServer _mockEngine;
+    private readonly PolicyFileWatcher _watcher;
+    private readonly string _testDirectory;
+
+    public PolicyFileWatcherCoalescingTests()
+    {
+        _mockEngine = new MockWfpEngineForPipeServer();
+        _watcher = new PolicyFileWatcher(
+            NullLogger<PolicyFileWatcher>.Instance,
+            _mockEngine);
+        _testDirectory = Path.Combine(Path.GetTempPath(), $"FileWatcherCoalesce_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_testDirectory);
+
+        // Use minimum debounce for faster tests
+        _watcher.SetDebounceMs(PolicyFileWatcher.MinDebounceMs);
+    }
+
+    public void Dispose()
+    {
+        _watcher.Dispose();
+        try
+        {
+            if (Directory.Exists(_testDirectory))
+            {
+                Directory.Delete(_testDirectory, recursive: true);
+            }
+        }
+        catch { /* Ignore cleanup errors */ }
+    }
+
+    [Fact]
+    public async Task RapidChanges_Coalesce_IntoSingleApply()
+    {
+        // Arrange
+        var policyPath = Path.Combine(_testDirectory, "coalesce-test.json");
+        File.WriteAllText(policyPath, """{"version":"1.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""");
+        _watcher.StartWatching(policyPath);
+        var initialApplyCount = _mockEngine.ApplyFiltersCallCount;
+
+        // Act - make multiple rapid changes (faster than debounce time)
+        for (int i = 0; i < 5; i++)
+        {
+            File.WriteAllText(policyPath, $"{{\"version\":\"{i + 2}.0.0\",\"defaultAction\":\"allow\",\"updatedAt\":\"2024-01-15T10:30:00Z\",\"rules\":[]}}");
+            await Task.Delay(10); // Much faster than debounce
+        }
+
+        // Wait for debounce to complete
+        await Task.Delay(PolicyFileWatcher.MinDebounceMs + 300);
+
+        // Assert - should have coalesced into fewer applies than changes
+        var finalApplyCount = _mockEngine.ApplyFiltersCallCount - initialApplyCount;
+        Assert.True(finalApplyCount < 5, $"Expected coalescing: {finalApplyCount} applies for 5 rapid changes");
+    }
+
+    [Fact]
+    public async Task DisposeWhileDebouncing_DoesNotThrow()
+    {
+        // Arrange
+        var policyPath = Path.Combine(_testDirectory, "dispose-debounce.json");
+        File.WriteAllText(policyPath, """{"version":"1.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""");
+        _watcher.StartWatching(policyPath);
+
+        // Trigger a change that starts the debounce timer
+        File.WriteAllText(policyPath, """{"version":"2.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""");
+
+        // Act - dispose while debounce timer is pending
+        await Task.Delay(PolicyFileWatcher.MinDebounceMs / 2);
+        var exception = Record.Exception(() => _watcher.Dispose());
+
+        // Assert - should not throw
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void SetDebounceMs_WhileWatching_TakesEffectOnNextChange()
+    {
+        // Arrange
+        var policyPath = Path.Combine(_testDirectory, "change-debounce.json");
+        File.WriteAllText(policyPath, """{"version":"1.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""");
+        _watcher.StartWatching(policyPath);
+
+        // Act - change debounce while watching
+        var newDebounce = PolicyFileWatcher.MinDebounceMs * 2;
+        _watcher.SetDebounceMs(newDebounce);
+
+        // Assert
+        Assert.Equal(newDebounce, _watcher.DebounceMs);
+    }
+}
+
+/// <summary>
+/// Tests for PolicyFileWatcher file access retry behavior.
+/// </summary>
+public class PolicyFileWatcherFileAccessTests : IDisposable
+{
+    private readonly MockWfpEngineForPipeServer _mockEngine;
+    private readonly PolicyFileWatcher _watcher;
+    private readonly string _testDirectory;
+
+    public PolicyFileWatcherFileAccessTests()
+    {
+        _mockEngine = new MockWfpEngineForPipeServer();
+        _watcher = new PolicyFileWatcher(
+            NullLogger<PolicyFileWatcher>.Instance,
+            _mockEngine);
+        _testDirectory = Path.Combine(Path.GetTempPath(), $"FileWatcherAccess_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_testDirectory);
+    }
+
+    public void Dispose()
+    {
+        _watcher.Dispose();
+        try
+        {
+            if (Directory.Exists(_testDirectory))
+            {
+                Directory.Delete(_testDirectory, recursive: true);
+            }
+        }
+        catch { /* Ignore cleanup errors */ }
+    }
+
+    [Fact]
+    public async Task FileLockedBriefly_EventuallySucceeds()
+    {
+        // Arrange
+        var policyPath = Path.Combine(_testDirectory, "locked-test.json");
+        var validPolicy = """{"version":"1.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""";
+        File.WriteAllText(policyPath, validPolicy);
+        _watcher.SetDebounceMs(PolicyFileWatcher.MinDebounceMs);
+        _watcher.StartWatching(policyPath);
+        var initialApplyCount = _mockEngine.ApplyFiltersCallCount;
+
+        // Act - lock file briefly, then release and update
+        using (var lockStream = new FileStream(policyPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            // File is locked - trigger would normally happen here
+            await Task.Delay(50);
+        }
+        // File is now unlocked - write update
+        File.WriteAllText(policyPath, """{"version":"2.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""");
+
+        // Wait for debounce
+        await Task.Delay(PolicyFileWatcher.MinDebounceMs + 200);
+
+        // Assert - should eventually apply
+        Assert.True(_mockEngine.ApplyFiltersCallCount > initialApplyCount);
+    }
+
+    [Fact]
+    public void StartWatching_DirectoryNotFound_ReturnsFailure()
+    {
+        // Act
+        var result = _watcher.StartWatching(@"C:\NonExistent\Directory\policy.json");
+
+        // Assert
+        Assert.True(result.IsFailure);
+    }
+}
+
+/// <summary>
 /// Tests for PolicyFileWatcher Dispose behavior.
 /// </summary>
 public class PolicyFileWatcherDisposeTests

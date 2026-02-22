@@ -959,6 +959,239 @@ public class RuleCompilerTests
         Assert.NotEqual(result.Filters[0].FilterKey, result.Filters[1].FilterKey);
     }
 
+    [Fact]
+    public void Compile_DifferentRemoteIp_GeneratesDifferentGuid()
+    {
+        // Content-based GUID: different IP should produce different GUID
+        var policy1 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Remote = new EndpointFilter { Ip = "1.1.1.1" },
+            Enabled = true
+        });
+
+        var policy2 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Remote = new EndpointFilter { Ip = "8.8.8.8" },
+            Enabled = true
+        });
+
+        var result1 = RuleCompiler.Compile(policy1);
+        var result2 = RuleCompiler.Compile(policy2);
+
+        Assert.True(result1.IsSuccess);
+        Assert.True(result2.IsSuccess);
+        Assert.NotEqual(result1.Filters[0].FilterKey, result2.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_DifferentAction_GeneratesDifferentGuid()
+    {
+        // Content-based GUID: different action should produce different GUID
+        var policy1 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var policy2 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "allow",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var result1 = RuleCompiler.Compile(policy1);
+        var result2 = RuleCompiler.Compile(policy2);
+
+        Assert.True(result1.IsSuccess);
+        Assert.True(result2.IsSuccess);
+        Assert.NotEqual(result1.Filters[0].FilterKey, result2.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_DifferentProtocol_GeneratesDifferentGuid()
+    {
+        // Content-based GUID: different protocol should produce different GUID
+        var policy1 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var policy2 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "udp",
+            Enabled = true
+        });
+
+        var result1 = RuleCompiler.Compile(policy1);
+        var result2 = RuleCompiler.Compile(policy2);
+
+        Assert.True(result1.IsSuccess);
+        Assert.True(result2.IsSuccess);
+        Assert.NotEqual(result1.Filters[0].FilterKey, result2.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_DifferentDirection_GeneratesDifferentGuid()
+    {
+        // Content-based GUID: different direction should produce different GUID
+        var policy1 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var policy2 = CreatePolicy(new Rule
+        {
+            Id = "same-rule",
+            Action = "block",
+            Direction = "inbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var result1 = RuleCompiler.Compile(policy1);
+        var result2 = RuleCompiler.Compile(policy2);
+
+        Assert.True(result1.IsSuccess);
+        Assert.True(result2.IsSuccess);
+        Assert.NotEqual(result1.Filters[0].FilterKey, result2.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_GuidStability_AcrossCompilations()
+    {
+        // Verify deterministic GUID generation across multiple compilation calls
+        var guids = new HashSet<Guid>();
+
+        for (int i = 0; i < 10; i++)
+        {
+            var policy = CreatePolicy(new Rule
+            {
+                Id = "stable-rule",
+                Action = "block",
+                Direction = "outbound",
+                Protocol = "tcp",
+                Remote = new EndpointFilter { Ip = "1.2.3.4", Ports = "443" },
+                Enabled = true
+            });
+
+            var result = RuleCompiler.Compile(policy);
+            Assert.True(result.IsSuccess);
+            guids.Add(result.Filters[0].FilterKey);
+        }
+
+        // All compilations should produce the same GUID
+        Assert.Single(guids);
+    }
+
+    [Fact]
+    public void Compile_UnicodeRuleId_GeneratesValidGuid()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "规则-αβγ-日本語",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.NotEqual(Guid.Empty, result.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_LongRuleId_GeneratesValidGuid()
+    {
+        var longId = new string('a', 1000);
+        var policy = CreatePolicy(new Rule
+        {
+            Id = longId,
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.NotEqual(Guid.Empty, result.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_SpecialCharRuleId_GeneratesValidGuid()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "rule!@#$%^&*()_+-=[]{}|;':\",./<>?",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "tcp",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Filters);
+        Assert.NotEqual(Guid.Empty, result.Filters[0].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_SimilarRules_GenerateUniqueGuids()
+    {
+        // Test collision resistance for similar but not identical rules
+        var policy = new Policy
+        {
+            Version = "1.0.0",
+            DefaultAction = "allow",
+            UpdatedAt = DateTime.UtcNow,
+            Rules = new List<Rule>
+            {
+                new Rule { Id = "rule-1", Action = "block", Direction = "outbound", Protocol = "tcp", Remote = new EndpointFilter { Ports = "443" }, Enabled = true },
+                new Rule { Id = "rule-2", Action = "block", Direction = "outbound", Protocol = "tcp", Remote = new EndpointFilter { Ports = "443" }, Enabled = true },
+                new Rule { Id = "rule-3", Action = "block", Direction = "outbound", Protocol = "tcp", Remote = new EndpointFilter { Ports = "443" }, Enabled = true }
+            }
+        };
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(3, result.Filters.Count);
+
+        var guids = result.Filters.Select(f => f.FilterKey).ToHashSet();
+        Assert.Equal(3, guids.Count); // All GUIDs should be unique
+    }
+
     // ========================================
     // Display Name/Description Tests
     // ========================================
