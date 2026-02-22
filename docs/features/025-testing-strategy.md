@@ -422,14 +422,15 @@ Goal: Establish precise performance baselines for the hot paths in policy compil
 
 ### 5.1 Project Structure
 
+**Implementation status.** The benchmarks project is implemented and included in the solution.
+
 ```
 /benchmarks
-    Benchmarks.csproj              # net8.0, Release only
-    Program.cs                     # BenchmarkRunner entry point
-    RuleCompilerBenchmarks.cs
-    FilterDiffBenchmarks.cs
-    PolicyValidatorBenchmarks.cs
-    README.md                      # How to run
+    Benchmarks.csproj              # net8.0, BenchmarkDotNet 0.14.0, refs Shared only
+    Program.cs                     # BenchmarkSwitcher entry point (supports --filter)
+    RuleCompilerBenchmarks.cs      # 7 benchmarks (scale + code-path variants)
+    FilterDiffBenchmarks.cs        # 5 benchmarks (empty, idempotent, partial, full-change)
+    PolicyValidatorBenchmarks.cs   # 3 benchmarks (valid, large, all-invalid)
 ```
 
 **Running:**
@@ -437,8 +438,12 @@ Goal: Establish precise performance baselines for the hot paths in policy compil
 cd benchmarks
 dotnet run -c Release -- --filter *RuleCompiler*
 dotnet run -c Release -- --filter *FilterDiff*
-dotnet run -c Release -- --exporters JSON   # machine-readable output
+dotnet run -c Release -- --filter *PolicyValidator*
+dotnet run -c Release                              # run all benchmarks
+dotnet run -c Release -- --exporters JSON          # machine-readable output
 ```
+
+**Note:** BenchmarkDotNet requires Release configuration for reliable results. Debug builds produce warnings and unreliable timing. The benchmarks project targets `net8.0` (not `net8.0-windows`) and does not reference the Service project, so it can build cross-platform.
 
 ### 5.2 RuleCompiler.Compile Benchmarks — Must-Have
 
@@ -484,7 +489,7 @@ Primary target: `FilterDiffComputer.ComputeDiff()` in [src/shared/Policy/FilterD
 | `Validate_PolicyWith50Rules` | Moderate size |
 | `Validate_AllRulesInvalid` | Error accumulation path |
 
-### 5.5 IPC Serialization Benchmarks — Nice-to-Have
+### 5.5 IPC Serialization Benchmarks — Nice-to-Have (Not Implemented)
 
 | Benchmark | Description |
 |-----------|-------------|
@@ -493,6 +498,8 @@ Primary target: `FilterDiffComputer.ComputeDiff()` in [src/shared/Policy/FilterD
 | `RoundTrip_Request_Response` | Full serialize/deserialize cycle |
 
 **Why this matters.** IPC is on the critical path for every CLI command. `System.Text.Json` is fast, but measuring it establishes a regression baseline.
+
+**Implementation note.** Not implemented in the current benchmarks project. IPC types live in the Service project which has Windows-only dependencies (`net8.0-windows`). Adding a Service reference would break cross-platform builds. These benchmarks can be added if the IPC models are moved to Shared or a separate project.
 
 ---
 
