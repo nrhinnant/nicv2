@@ -1,0 +1,13 @@
+<Configuration>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\Users\nrhin\OneDrive\Documents\Github Repos\nicv2</HostFolder>
+      <SandboxFolder>C:\Project</SandboxFolder>
+      <ReadOnly>false</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+  <MemoryInMB>4096</MemoryInMB>
+  <LogonCommand>
+    <Command>powershell -ExecutionPolicy Bypass -NoExit -Command "cd C:\Project; Write-Host 'WFP Test Sandbox Ready' -ForegroundColor Cyan; Write-Host ''; Write-Host 'Run validation:  .\scripts\Test-TestRunner.ps1' -ForegroundColor Yellow; Write-Host 'Build project:   dotnet build' -ForegroundColor Yellow; Write-Host 'Run tests:       .\scripts\Run-Tests.ps1' -ForegroundColor Yellow; Write-Host ''"</Command>
+  </LogonCommand>
+</Configuration>
