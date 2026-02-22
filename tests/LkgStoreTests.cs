@@ -8,9 +8,34 @@ using Xunit;
 namespace WfpTrafficControl.Tests;
 
 /// <summary>
+/// Test collection to ensure LkgStore tests run sequentially (shared file state).
+/// </summary>
+[CollectionDefinition("LkgStore Sequential", DisableParallelization = true)]
+public class LkgStoreTestCollection : ICollectionFixture<LkgStoreTestFixture> { }
+
+/// <summary>
+/// Shared fixture for LkgStore tests - ensures clean state.
+/// </summary>
+public class LkgStoreTestFixture : IDisposable
+{
+    public LkgStoreTestFixture()
+    {
+        // Ensure clean state before test collection runs
+        LkgStore.Delete();
+    }
+
+    public void Dispose()
+    {
+        // Clean up after test collection
+        LkgStore.Delete();
+    }
+}
+
+/// <summary>
 /// Unit tests for LKG (Last Known Good) policy persistence.
 /// Phase 14: LKG Persistence and Fail-Open Behavior
 /// </summary>
+[Collection("LkgStore Sequential")]
 public class LkgStoreTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -487,6 +512,7 @@ public class LkgStoreTests : IDisposable
 /// <summary>
 /// Integration tests for LKG IPC messages.
 /// </summary>
+[Collection("LkgStore Sequential")]
 public class LkgIpcMessageTests
 {
     [Fact]
@@ -559,5 +585,470 @@ public class LkgIpcMessageTests
 
         Assert.Contains("\"ok\":false", json);
         Assert.Contains("\"lkgFound\":false", json);
+    }
+}
+
+/// <summary>
+/// Tests for LkgStore concurrent access behavior.
+/// Verifies thread-safety and atomic operation guarantees.
+/// </summary>
+[Collection("LkgStore Sequential")]
+public class LkgStoreConcurrentAccessTests : IDisposable
+{
+    public LkgStoreConcurrentAccessTests()
+    {
+        // Ensure clean state
+        LkgStore.Delete();
+    }
+
+    public void Dispose()
+    {
+        LkgStore.Delete();
+    }
+
+    private static string CreateValidPolicyJson(string version = "1.0.0", int ruleCount = 1)
+    {
+        var rules = new List<string>();
+        for (int i = 0; i < ruleCount; i++)
+        {
+            rules.Add($$"""
+                {
+                    "id": "test-rule-{{i}}",
+                    "action": "block",
+                    "direction": "outbound",
+                    "protocol": "tcp",
+                    "remote": { "ip": "1.1.1.{{i + 1}}", "ports": "443" },
+                    "priority": {{100 + i}},
+                    "enabled": true
+                }
+                """);
+        }
+
+        return $$"""
+            {
+                "version": "{{version}}",
+                "defaultAction": "allow",
+                "updatedAt": "2024-01-15T10:30:00Z",
+                "rules": [{{string.Join(",", rules)}}]
+            }
+            """;
+    }
+
+    // ========================================
+    // Concurrent Read Tests
+    // ========================================
+
+    [Fact]
+    public async Task ConcurrentReads_AllSucceed()
+    {
+        // Arrange - save a policy first
+        var policyJson = CreateValidPolicyJson(version: "1.0.0", ruleCount: 3);
+        LkgStore.Save(policyJson);
+
+        // Act - perform many concurrent reads
+        var tasks = Enumerable.Range(0, 20).Select(_ => Task.Run(() =>
+        {
+            var result = LkgStore.Load();
+            return result;
+        })).ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert - all reads should succeed with the same data
+        Assert.All(results, result =>
+        {
+            Assert.True(result.Exists);
+            Assert.NotNull(result.Policy);
+            Assert.Equal("1.0.0", result.Policy!.Version);
+            Assert.Equal(3, result.Policy.Rules.Count);
+        });
+    }
+
+    [Fact]
+    public async Task ConcurrentReads_NoExceptions()
+    {
+        // Arrange
+        var policyJson = CreateValidPolicyJson();
+        LkgStore.Save(policyJson);
+
+        // Act - perform many concurrent reads
+        var exceptions = new List<Exception>();
+        var tasks = Enumerable.Range(0, 50).Select(_ => Task.Run(() =>
+        {
+            try
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    LkgStore.Load();
+                    LkgStore.Exists();
+                    LkgStore.GetMetadata();
+                }
+            }
+            catch (Exception ex)
+            {
+                lock (exceptions)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert - no exceptions should occur
+        Assert.Empty(exceptions);
+    }
+
+    // ========================================
+    // Concurrent Write Tests
+    // ========================================
+
+    [Fact]
+    public async Task ConcurrentSaves_AtLeastOneSucceeds_NoCorruption()
+    {
+        // Arrange
+        var versions = Enumerable.Range(1, 10).Select(i => $"{i}.0.0").ToArray();
+
+        // Act - save different versions concurrently
+        var tasks = versions.Select(version => Task.Run(() =>
+        {
+            var policyJson = CreateValidPolicyJson(version: version);
+            return LkgStore.Save(policyJson);
+        })).ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert - at least one save should succeed (concurrent writes may fail due to file locking)
+        Assert.True(results.Any(r => r.IsSuccess), "At least one save should succeed");
+
+        // Final state should be valid (one of the versions) - no corruption
+        var loadResult = LkgStore.Load();
+        Assert.True(loadResult.Exists);
+        Assert.NotNull(loadResult.Policy);
+        Assert.Contains(loadResult.Policy!.Version, versions);
+        Assert.Null(loadResult.Error); // No checksum errors (no corruption)
+    }
+
+    [Fact]
+    public async Task ConcurrentSaves_NoFileCorruption()
+    {
+        // Arrange
+        var iterations = 20;
+        var exceptions = new List<Exception>();
+
+        // Act - rapid concurrent saves
+        var tasks = Enumerable.Range(0, iterations).Select(i => Task.Run(() =>
+        {
+            try
+            {
+                var policyJson = CreateValidPolicyJson(version: $"1.0.{i}", ruleCount: (i % 5) + 1);
+                var result = LkgStore.Save(policyJson);
+                return result.IsSuccess;
+            }
+            catch (Exception ex)
+            {
+                lock (exceptions)
+                {
+                    exceptions.Add(ex);
+                }
+                return false;
+            }
+        })).ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert - no exceptions during concurrent saves
+        Assert.Empty(exceptions);
+
+        // File should be in a valid state after all operations
+        var loadResult = LkgStore.Load();
+        Assert.True(loadResult.Exists);
+        Assert.NotNull(loadResult.Policy);
+        // Checksum should be valid (Load would fail with checksum error otherwise)
+        Assert.Null(loadResult.Error);
+    }
+
+    // ========================================
+    // Concurrent Read/Write Tests
+    // ========================================
+
+    [Fact]
+    public async Task ConcurrentReadAndWrite_NoCorruption()
+    {
+        // Arrange - save initial policy
+        var initialPolicy = CreateValidPolicyJson(version: "1.0.0");
+        LkgStore.Save(initialPolicy);
+
+        var exceptions = new List<Exception>();
+        var readResults = new List<LkgLoadResult>();
+
+        // Act - concurrent reads and writes
+        var writerTask = Task.Run(async () =>
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                try
+                {
+                    var policyJson = CreateValidPolicyJson(version: $"2.0.{i}");
+                    LkgStore.Save(policyJson);
+                    await Task.Delay(5); // Small delay to simulate real workload
+                }
+                catch (Exception ex)
+                {
+                    lock (exceptions)
+                    {
+                        exceptions.Add(ex);
+                    }
+                }
+            }
+        });
+
+        var readerTasks = Enumerable.Range(0, 10).Select(_ => Task.Run(async () =>
+        {
+            for (int i = 0; i < 30; i++)
+            {
+                try
+                {
+                    var result = LkgStore.Load();
+                    lock (readResults)
+                    {
+                        readResults.Add(result);
+                    }
+                    await Task.Delay(2);
+                }
+                catch (Exception ex)
+                {
+                    lock (exceptions)
+                    {
+                        exceptions.Add(ex);
+                    }
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(new[] { writerTask }.Concat(readerTasks));
+
+        // Assert - no unexpected exceptions
+        Assert.Empty(exceptions);
+
+        // All reads should either succeed (valid policy) or fail cleanly (no corruption/crash)
+        Assert.All(readResults, result =>
+        {
+            // Either we read a valid policy, or file was mid-write and we got NotFound/error
+            // We should never get a partial/corrupted read (would cause checksum error)
+            if (result.Exists)
+            {
+                Assert.NotNull(result.Policy);
+                // If we got a policy, it should be complete and valid (no checksum errors)
+                Assert.Null(result.Error);
+                // Version should be in valid semver format (either 1.0.0 or 2.0.x)
+                Assert.Matches(@"^\d+\.\d+\.\d+$", result.Policy!.Version);
+            }
+        });
+    }
+
+    // ========================================
+    // Concurrent Delete Tests
+    // ========================================
+
+    [Fact]
+    public async Task ConcurrentDeletes_NoExceptions()
+    {
+        // Arrange
+        var policyJson = CreateValidPolicyJson();
+        LkgStore.Save(policyJson);
+
+        var exceptions = new List<Exception>();
+
+        // Act - multiple concurrent deletes
+        var tasks = Enumerable.Range(0, 10).Select(_ => Task.Run(() =>
+        {
+            try
+            {
+                LkgStore.Delete();
+            }
+            catch (Exception ex)
+            {
+                lock (exceptions)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert
+        Assert.Empty(exceptions);
+        Assert.False(LkgStore.Exists());
+    }
+
+    [Fact]
+    public async Task ConcurrentDeleteAndSave_NoExceptions()
+    {
+        // Arrange
+        var exceptions = new List<Exception>();
+
+        // Act - concurrent saves and deletes
+        var tasks = Enumerable.Range(0, 20).Select(i => Task.Run(() =>
+        {
+            try
+            {
+                if (i % 2 == 0)
+                {
+                    var policyJson = CreateValidPolicyJson(version: $"1.0.{i}");
+                    LkgStore.Save(policyJson);
+                }
+                else
+                {
+                    LkgStore.Delete();
+                }
+            }
+            catch (Exception ex)
+            {
+                lock (exceptions)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert - no exceptions should occur
+        Assert.Empty(exceptions);
+
+        // Final state should be deterministic (either exists or not)
+        var exists = LkgStore.Exists();
+        if (exists)
+        {
+            var result = LkgStore.Load();
+            Assert.True(result.Exists);
+            Assert.NotNull(result.Policy);
+        }
+    }
+
+    // ========================================
+    // Stress Tests
+    // ========================================
+
+    [Fact]
+    public async Task MixedConcurrentOperations_NoExceptions()
+    {
+        // Arrange - initial policy
+        var initialPolicy = CreateValidPolicyJson();
+        LkgStore.Save(initialPolicy);
+
+        var exceptions = new List<Exception>();
+        var operationCount = 100;
+
+        // Act - mix of all operations
+        var tasks = Enumerable.Range(0, operationCount).Select(i => Task.Run(() =>
+        {
+            try
+            {
+                switch (i % 5)
+                {
+                    case 0: // Save
+                        var policyJson = CreateValidPolicyJson(version: $"1.{i}.0");
+                        LkgStore.Save(policyJson);
+                        break;
+                    case 1: // Load
+                        LkgStore.Load();
+                        break;
+                    case 2: // Exists
+                        LkgStore.Exists();
+                        break;
+                    case 3: // GetMetadata
+                        LkgStore.GetMetadata();
+                        break;
+                    case 4: // Delete (less frequent)
+                        if (i % 10 == 4) // Only 1 in 10 operations is delete
+                        {
+                            LkgStore.Delete();
+                        }
+                        else
+                        {
+                            LkgStore.Load();
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                lock (exceptions)
+                {
+                    exceptions.Add(ex);
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert - all operations should complete without throwing
+        Assert.Empty(exceptions);
+    }
+
+    [Fact]
+    public async Task RapidSaveLoadCycles_MaintainsIntegrity()
+    {
+        // Arrange
+        var cycleCount = 50;
+        var integrityErrors = new List<string>(); // Only track corruption/integrity issues
+        var successfulSaves = 0;
+        var successfulLoads = 0;
+
+        // Act - rapid save/load cycles in parallel
+        var tasks = Enumerable.Range(0, 10).Select(taskId => Task.Run(() =>
+        {
+            for (int i = 0; i < cycleCount; i++)
+            {
+                try
+                {
+                    var version = $"{taskId}.{i}.0";
+                    var policyJson = CreateValidPolicyJson(version: version);
+
+                    // Save - may fail due to concurrent access (expected, not an integrity error)
+                    var saveResult = LkgStore.Save(policyJson);
+                    if (saveResult.IsSuccess)
+                    {
+                        Interlocked.Increment(ref successfulSaves);
+                    }
+                    // Save failures due to "file in use" are expected in concurrent scenarios
+
+                    // Load and verify
+                    var loadResult = LkgStore.Load();
+                    if (loadResult.Exists && loadResult.Policy != null)
+                    {
+                        Interlocked.Increment(ref successfulLoads);
+                        // If we got the same version we saved, great
+                        // If we got a different version, another thread saved - that's fine
+                        // What matters is that the data is valid (no checksum/integrity errors)
+                        if (loadResult.Error != null)
+                        {
+                            lock (integrityErrors)
+                            {
+                                integrityErrors.Add($"Load returned integrity error: {loadResult.Error}");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lock (integrityErrors)
+                    {
+                        integrityErrors.Add($"Unexpected exception: {ex.Message}");
+                    }
+                }
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        // Assert - no integrity/corruption errors
+        Assert.Empty(integrityErrors);
+        // Some operations should have succeeded
+        Assert.True(successfulSaves > 0, "At least some saves should succeed");
+        Assert.True(successfulLoads > 0, "At least some loads should succeed");
     }
 }

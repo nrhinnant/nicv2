@@ -639,3 +639,340 @@ public class WfpEngineFakeBootstrapTests
         Assert.False(_fake.SublayerExistsValue);
     }
 }
+
+/// <summary>
+/// Tests for WFP transaction failure and rollback scenarios.
+/// Verifies that transactions are properly aborted when operations fail mid-transaction.
+/// </summary>
+public class WfpEngineTransactionFailureTests
+{
+    private readonly FakeWfpInterop _fake;
+    private readonly FakeWfpNativeTransaction _fakeTransaction;
+    private readonly WfpEngine _engine;
+
+    public WfpEngineTransactionFailureTests()
+    {
+        _fake = new FakeWfpInterop();
+        _fakeTransaction = new FakeWfpNativeTransaction();
+        _engine = new WfpEngine(NullLogger<WfpEngine>.Instance, _fake, _fakeTransaction);
+    }
+
+    private static CompiledFilter CreateFilter(string ruleId)
+    {
+        var input = $"{ruleId}:0";
+        var hash = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(input));
+        hash[6] = (byte)((hash[6] & 0x0F) | 0x40);
+        hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
+        var filterKey = new Guid(hash);
+
+        return new CompiledFilter
+        {
+            FilterKey = filterKey,
+            DisplayName = $"Test Filter: {ruleId}",
+            RuleId = ruleId,
+            Protocol = WfpConstants.ProtocolTcp,
+            Direction = RuleDirection.Outbound
+        };
+    }
+
+    // ========================================
+    // Transaction Begin Failure Tests
+    // ========================================
+
+    [Fact]
+    public void ApplyFilters_BeginTransactionFails_ReturnsError()
+    {
+        // Arrange
+        _fakeTransaction.BeginError = 0x80320017; // FWP_E_SESSION_ABORTED
+        var filters = new List<CompiledFilter> { CreateFilter("rule1") };
+
+        // Act
+        var result = _engine.ApplyFilters(filters);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(0, _fake.AddFilterCallCount); // No filters should be added
+        Assert.Equal(0, _fake.FilterCount); // No filters in store
+    }
+
+    [Fact]
+    public void RemoveAllFilters_BeginTransactionFails_ReturnsError()
+    {
+        // Arrange
+        _fake.AddExistingFilter(Guid.NewGuid(), 100);
+        _fakeTransaction.BeginError = 0x80320017;
+
+        // Act
+        var result = _engine.RemoveAllFilters();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(1, _fake.FilterCount); // Filter should still exist
+        Assert.Equal(0, _fake.DeleteFilterByIdCallCount); // No delete calls
+    }
+
+    [Fact]
+    public void EnsureProviderAndSublayerExist_BeginTransactionFails_ReturnsError()
+    {
+        // Arrange
+        _fake.ProviderExistsValue = false;
+        _fake.SublayerExistsValue = false;
+        _fakeTransaction.BeginError = 0x80320017;
+
+        // Act
+        var result = _engine.EnsureProviderAndSublayerExist();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.False(_fake.ProviderExistsValue); // Provider not created
+        Assert.False(_fake.SublayerExistsValue); // Sublayer not created
+    }
+
+    // ========================================
+    // Transaction Commit Failure Tests
+    // ========================================
+
+    [Fact]
+    public void ApplyFilters_CommitFails_ReturnsError()
+    {
+        // Arrange
+        _fakeTransaction.CommitError = 0x80320017; // FWP_E_SESSION_ABORTED
+        var filters = new List<CompiledFilter> { CreateFilter("rule1") };
+
+        // Act
+        var result = _engine.ApplyFilters(filters);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        // Note: In a real scenario, Windows would roll back. Our fake doesn't simulate that.
+        Assert.Equal(1, _fakeTransaction.CommitCallCount);
+    }
+
+    [Fact]
+    public void RemoveAllFilters_CommitFails_ReturnsError()
+    {
+        // Arrange
+        _fake.AddExistingFilter(Guid.NewGuid(), 100);
+        _fakeTransaction.CommitError = 0x80320017;
+
+        // Act
+        var result = _engine.RemoveAllFilters();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(1, _fakeTransaction.CommitCallCount);
+    }
+
+    // ========================================
+    // Transaction Abort Verification Tests
+    // ========================================
+
+    [Fact]
+    public void ApplyFilters_PartialAddFailure_TransactionAborted()
+    {
+        // Arrange - set up failure on filter add
+        var filters = new List<CompiledFilter>
+        {
+            CreateFilter("rule1"),
+            CreateFilter("rule2"),
+            CreateFilter("rule3")
+        };
+
+        // We can't easily make the second add fail with current FakeWfpInterop,
+        // so we test the single failure case
+        _fake.AddFilterError = new Error(ErrorCodes.WfpError, "Add filter failed");
+
+        // Act
+        var result = _engine.ApplyFilters(filters);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(1, _fakeTransaction.AbortCallCount); // Transaction should be aborted via Dispose
+    }
+
+    [Fact]
+    public void ApplyFilters_DeleteFailureDuringReconcile_TransactionAborted()
+    {
+        // Arrange - existing filter that needs to be removed
+        var existingKey = CreateFilter("old-rule").FilterKey;
+        _fake.AddExistingFilter(existingKey, 100);
+        _fake.DeleteFilterByKeyError = new Error(ErrorCodes.WfpError, "Delete failed");
+
+        var filters = new List<CompiledFilter> { CreateFilter("new-rule") };
+
+        // Act
+        var result = _engine.ApplyFilters(filters);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(1, _fakeTransaction.AbortCallCount);
+    }
+
+    [Fact]
+    public void RemoveAllFilters_DeleteFailure_TransactionAborted()
+    {
+        // Arrange
+        _fake.AddExistingFilter(Guid.NewGuid(), 100);
+        _fake.AddExistingFilter(Guid.NewGuid(), 101);
+        _fake.DeleteFilterByIdError = new Error(ErrorCodes.WfpError, "Delete failed");
+
+        // Act
+        var result = _engine.RemoveAllFilters();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(1, _fakeTransaction.AbortCallCount);
+    }
+
+    // ========================================
+    // Transaction State Verification
+    // ========================================
+
+    [Fact]
+    public void ApplyFilters_Success_TransactionCommittedNotAborted()
+    {
+        // Arrange
+        var filters = new List<CompiledFilter> { CreateFilter("rule1") };
+
+        // Act
+        var result = _engine.ApplyFilters(filters);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        // ApplyFilters calls EnsureProviderAndSublayerExist (1 transaction) + main apply (1 transaction)
+        Assert.Equal(2, _fakeTransaction.CommitCallCount);
+        Assert.Equal(0, _fakeTransaction.AbortCallCount);
+    }
+
+    [Fact]
+    public void RemoveAllFilters_Success_TransactionCommittedNotAborted()
+    {
+        // Arrange
+        _fake.AddExistingFilter(Guid.NewGuid(), 100);
+
+        // Act
+        var result = _engine.RemoveAllFilters();
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, _fakeTransaction.CommitCallCount);
+        Assert.Equal(0, _fakeTransaction.AbortCallCount);
+    }
+
+    [Fact]
+    public void EnsureProviderAndSublayerExist_Success_TransactionCommittedNotAborted()
+    {
+        // Arrange
+        _fake.ProviderExistsValue = false;
+        _fake.SublayerExistsValue = false;
+
+        // Act
+        var result = _engine.EnsureProviderAndSublayerExist();
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal(1, _fakeTransaction.CommitCallCount);
+        Assert.Equal(0, _fakeTransaction.AbortCallCount);
+    }
+
+    // ========================================
+    // Open Engine Failure Tests
+    // ========================================
+
+    [Fact]
+    public void ApplyFilters_OpenEngineFails_ReturnsError()
+    {
+        // Arrange
+        _fake.OpenEngineError = new Error(ErrorCodes.WfpError, "Cannot open WFP engine");
+        var filters = new List<CompiledFilter> { CreateFilter("rule1") };
+
+        // Act
+        var result = _engine.ApplyFilters(filters);
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(0, _fakeTransaction.BeginCallCount); // Transaction not started
+        Assert.Equal(0, _fake.AddFilterCallCount); // No operations attempted
+    }
+
+    [Fact]
+    public void RemoveAllFilters_OpenEngineFails_ReturnsError()
+    {
+        // Arrange
+        _fake.OpenEngineError = new Error(ErrorCodes.WfpError, "Cannot open WFP engine");
+
+        // Act
+        var result = _engine.RemoveAllFilters();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(0, _fakeTransaction.BeginCallCount);
+    }
+
+    [Fact]
+    public void EnsureProviderAndSublayerExist_OpenEngineFails_ReturnsError()
+    {
+        // Arrange
+        _fake.OpenEngineError = new Error(ErrorCodes.WfpError, "Cannot open WFP engine");
+
+        // Act
+        var result = _engine.EnsureProviderAndSublayerExist();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(0, _fakeTransaction.BeginCallCount);
+    }
+
+    // ========================================
+    // Sublayer Failure Tests (Bootstrap Dependencies)
+    // ========================================
+
+    [Fact]
+    public void EnsureProviderAndSublayerExist_SublayerFails_TransactionAborted()
+    {
+        // Arrange
+        _fake.ProviderExistsValue = false;
+        _fake.SublayerExistsValue = false;
+        _fake.AddSublayerError = new Error(ErrorCodes.WfpError, "Sublayer creation failed");
+
+        // Act
+        var result = _engine.EnsureProviderAndSublayerExist();
+
+        // Assert
+        Assert.True(result.IsFailure);
+        Assert.Equal(1, _fake.AddProviderCallCount); // Provider was attempted
+        Assert.Equal(1, _fake.AddSublayerCallCount); // Sublayer was attempted
+        Assert.Equal(1, _fakeTransaction.AbortCallCount); // Transaction aborted
+    }
+
+    // ========================================
+    // Demo Block Filter Transaction Tests
+    // ========================================
+
+    [Fact]
+    public void AddDemoBlockFilter_CommitFails_ReturnsError()
+    {
+        // Arrange
+        _fakeTransaction.CommitError = 0x80320017;
+
+        // Act
+        var result = _engine.AddDemoBlockFilter();
+
+        // Assert
+        Assert.True(result.IsFailure);
+    }
+
+    [Fact]
+    public void RemoveDemoBlockFilter_CommitFails_ReturnsError()
+    {
+        // Arrange
+        _fake.AddExistingFilter(WfpConstants.DemoBlockFilterGuid, 100);
+        _fakeTransaction.CommitError = 0x80320017;
+
+        // Act
+        var result = _engine.RemoveDemoBlockFilter();
+
+        // Assert
+        Assert.True(result.IsFailure);
+    }
+}
