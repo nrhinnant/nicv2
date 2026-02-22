@@ -321,7 +321,12 @@ public sealed class WfpEngine : IWfpEngine
             {
                 _logger.LogDebug("Demo block filter already exists, skipping creation");
                 // Still commit the empty transaction for consistency
-                transaction.Commit();
+                var earlyCommitResult = transaction.Commit();
+                if (earlyCommitResult.IsFailure)
+                {
+                    _logger.LogError("Failed to commit transaction: {Error}", earlyCommitResult.Error);
+                    return earlyCommitResult;
+                }
                 return Result.Success();
             }
 

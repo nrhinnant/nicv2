@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
@@ -32,6 +33,7 @@ public sealed class AuditLogWriter : IAuditLogWriter
     private readonly string _logPath;
     private readonly object _writeLock = new();
     private bool _aclApplied;
+    private long _failedWriteCount;
 
     /// <summary>
     /// Well-known SID for LocalSystem account.
@@ -65,9 +67,20 @@ public sealed class AuditLogWriter : IAuditLogWriter
     public string LogPath => _logPath;
 
     /// <summary>
+    /// Gets the number of failed write attempts since this writer was created.
+    /// Useful for diagnostics and monitoring.
+    /// </summary>
+    public long FailedWriteCount => Interlocked.Read(ref _failedWriteCount);
+
+    /// <summary>
     /// Writes an audit log entry to the log file.
     /// Thread-safe and handles directory creation and disk errors gracefully.
     /// </summary>
+    /// <remarks>
+    /// Write failures are logged via <see cref="Debug.WriteLine"/> and tracked
+    /// in <see cref="FailedWriteCount"/>. The method never throws to ensure
+    /// audit logging doesn't crash the service.
+    /// </remarks>
     public void Write(AuditLogEntry entry)
     {
         if (entry == null)
@@ -80,18 +93,20 @@ public sealed class AuditLogWriter : IAuditLogWriter
             var json = entry.ToJson();
             WriteLineToFile(json);
         }
-        catch (IOException)
+        catch (IOException ex)
         {
-            // Log write failure - don't crash the service
-            // Callers can log this if they have access to a logger
+            Interlocked.Increment(ref _failedWriteCount);
+            Debug.WriteLine($"[AuditLogWriter] ERROR: Failed to write audit log entry (I/O error): {ex.Message}");
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
-            // Log write failure - don't crash the service
+            Interlocked.Increment(ref _failedWriteCount);
+            Debug.WriteLine($"[AuditLogWriter] ERROR: Failed to write audit log entry (access denied): {ex.Message}");
         }
-        catch
+        catch (Exception ex)
         {
-            // Catch all other errors to ensure audit logging never crashes the service
+            Interlocked.Increment(ref _failedWriteCount);
+            Debug.WriteLine($"[AuditLogWriter] ERROR: Failed to write audit log entry: {ex.GetType().Name}: {ex.Message}");
         }
     }
 

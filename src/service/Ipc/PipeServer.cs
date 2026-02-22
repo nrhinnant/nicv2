@@ -969,7 +969,19 @@ public sealed class PipeServer : IDisposable
         }
 
         _disposed = true;
-        _cts.Cancel();
+
+        // Ensure listener task is stopped before disposing
+        // This is sync-over-async but acceptable in Dispose to ensure clean shutdown
+        try
+        {
+            StopAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            // Log but don't throw from Dispose
+            _logger.LogWarning(ex, "Error stopping pipe server during disposal");
+        }
+
         _cts.Dispose();
     }
 }

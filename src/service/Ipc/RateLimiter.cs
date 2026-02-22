@@ -58,8 +58,10 @@ public sealed class RateLimiter
     {
         if (string.IsNullOrEmpty(clientIdentity))
         {
-            // No identity means we can't track - allow by default for safety
-            return true;
+            // SECURITY: Fail-closed - empty identity cannot bypass rate limiting.
+            // Callers MUST provide a valid client identity for rate tracking.
+            // Returning false prevents any bypass via null/empty identity.
+            return false;
         }
 
         var now = GetCurrentTimestamp();

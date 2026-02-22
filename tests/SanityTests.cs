@@ -8,13 +8,13 @@ public class SanityTests
     [Fact]
     public void ProjectName_IsNotEmpty()
     {
-        Assert.False(string.IsNullOrEmpty(Placeholder.ProjectName));
+        Assert.False(string.IsNullOrEmpty(WfpConstants.ProjectName));
     }
 
     [Fact]
     public void ProjectName_HasExpectedValue()
     {
-        Assert.Equal("WfpTrafficControl", Placeholder.ProjectName);
+        Assert.Equal("WfpTrafficControl", WfpConstants.ProjectName);
     }
 }
 

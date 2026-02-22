@@ -179,11 +179,6 @@ public static class RuleCompiler
     private const ulong BaseWeight = 1000;
 
     /// <summary>
-    /// Namespace GUID for generating deterministic filter GUIDs from rule IDs.
-    /// </summary>
-    private static readonly Guid FilterNamespaceGuid = new("A1B2C3D4-E5F6-4A5B-8C9D-0E1F2A3B4C5D");
-
-    /// <summary>
     /// Compiles a policy to WFP filter definitions.
     /// Only enabled rules with supported features are compiled.
     /// </summary>
@@ -370,8 +365,12 @@ public static class RuleCompiler
         int portIndex,
         string direction)
     {
-        // Generate deterministic filter GUID from rule ID and port index
-        var filterKey = GenerateFilterGuid(ruleId, portIndex);
+        // Generate deterministic filter GUID from rule ID, port index, AND content
+        // This ensures that if rule content changes, the GUID changes, causing the diff
+        // to correctly identify the filter as needing removal and re-addition.
+        var filterKey = GenerateFilterGuid(
+            ruleId, portIndex, rule.Action, rule.Protocol, direction,
+            remoteIp, remoteMask, singlePort, rangeStart, rangeEnd, rule.Process);
 
         // Build display name
         var displayName = $"WfpTrafficControl: {ruleId}";
@@ -429,12 +428,57 @@ public static class RuleCompiler
     }
 
     /// <summary>
-    /// Generates a deterministic GUID from rule ID and port index.
+    /// Generates a deterministic GUID from rule ID, port index, and content fields.
+    /// Including content fields ensures that rule modifications (e.g., changing action
+    /// from allow to block) produce a different GUID, triggering proper diff detection.
     /// </summary>
-    private static Guid GenerateFilterGuid(string ruleId, int portIndex)
+    private static Guid GenerateFilterGuid(
+        string ruleId,
+        int portIndex,
+        string action,
+        string protocol,
+        string direction,
+        uint? remoteIp,
+        uint remoteMask,
+        ushort? singlePort,
+        ushort? rangeStart,
+        ushort? rangeEnd,
+        string? processPath)
     {
-        // Use a simple hash-based approach for deterministic GUIDs
-        var input = $"{ruleId}:{portIndex}";
+        // Build a deterministic string from all content-relevant fields
+        // Format: ruleId:portIndex|action|protocol|direction|ip/mask|port|process
+        var sb = new System.Text.StringBuilder();
+        sb.Append(ruleId);
+        sb.Append(':');
+        sb.Append(portIndex);
+        sb.Append('|');
+        sb.Append(action ?? string.Empty);
+        sb.Append('|');
+        sb.Append(protocol ?? string.Empty);
+        sb.Append('|');
+        sb.Append(direction ?? string.Empty);
+        sb.Append('|');
+        if (remoteIp.HasValue)
+        {
+            sb.Append(remoteIp.Value);
+            sb.Append('/');
+            sb.Append(remoteMask);
+        }
+        sb.Append('|');
+        if (singlePort.HasValue)
+        {
+            sb.Append(singlePort.Value);
+        }
+        else if (rangeStart.HasValue && rangeEnd.HasValue)
+        {
+            sb.Append(rangeStart.Value);
+            sb.Append('-');
+            sb.Append(rangeEnd.Value);
+        }
+        sb.Append('|');
+        sb.Append(processPath ?? string.Empty);
+
+        var input = sb.ToString();
         var hash = System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(input));
 
         // Set version 4 (random) and variant bits for valid GUID

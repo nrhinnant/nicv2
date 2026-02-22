@@ -495,12 +495,20 @@ public sealed class WfpInterop : IWfpInterop
                 var appIdResult = NativeMethods.FwpmGetAppIdFromFileName0(compiled.ProcessPath, out appIdBlobPtr);
                 if (!WfpErrorTranslator.IsSuccess(appIdResult))
                 {
-                    _logger.LogWarning("Failed to get app ID for '{ProcessPath}': 0x{ErrorCode:X8}. Skipping process condition.",
+                    // SECURITY: Do NOT silently drop the process condition!
+                    // If we can't resolve the app ID (e.g., executable doesn't exist), we must fail
+                    // the entire filter creation. Otherwise, a typo'd process path would create a
+                    // filter matching ALL processes, which is a privilege escalation vector.
+                    _logger.LogError("Failed to resolve app ID for '{ProcessPath}': 0x{ErrorCode:X8}. " +
+                        "Filter creation aborted to prevent overly-broad rule.",
                         compiled.ProcessPath, appIdResult);
-                    // Don't fail the whole filter, just skip the process condition
-                    conditionCount--;
+                    return Result<ulong>.Failure(new Error(
+                        ErrorCodes.InvalidArgument,
+                        $"Cannot create filter: process path '{compiled.ProcessPath}' could not be resolved. " +
+                        "Ensure the executable exists and the path is correct."));
                 }
-                else if (appIdBlobPtr != IntPtr.Zero)
+
+                if (appIdBlobPtr != IntPtr.Zero)
                 {
                     var appCondition = new FWPM_FILTER_CONDITION0
                     {

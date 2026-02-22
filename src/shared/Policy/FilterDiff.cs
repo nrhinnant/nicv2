@@ -75,8 +75,10 @@ public static class FilterDiffComputer
     /// <returns>A diff describing what needs to be added and removed.</returns>
     /// <remarks>
     /// Comparison is based on FilterKey (GUID) only.
-    /// If a filter with the same GUID exists, it is considered unchanged
-    /// (we assume filter content is deterministic from its GUID).
+    /// Filter GUIDs are derived from rule ID, port index, AND rule content
+    /// (action, protocol, direction, IP, ports, process). This means if rule
+    /// content changes, the GUID changes, and the diff will correctly identify
+    /// the old filter for removal and the new filter for addition.
     /// </remarks>
     public static FilterDiff ComputeDiff(
         IReadOnlyList<CompiledFilter>? desired,

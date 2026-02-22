@@ -93,23 +93,21 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_NullClientIdentity_AllowsRequest()
+    public void TryAcquire_NullClientIdentity_DeniesRequest()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 
-        // Null identity should always be allowed (safety fallback)
-        Assert.True(limiter.TryAcquire(null!));
-        Assert.True(limiter.TryAcquire(null!));
+        // Null identity should be denied (fail-closed security)
+        Assert.False(limiter.TryAcquire(null!));
     }
 
     [Fact]
-    public void TryAcquire_EmptyClientIdentity_AllowsRequest()
+    public void TryAcquire_EmptyClientIdentity_DeniesRequest()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 
-        // Empty identity should always be allowed (safety fallback)
-        Assert.True(limiter.TryAcquire(""));
-        Assert.True(limiter.TryAcquire(""));
+        // Empty identity should be denied (fail-closed security)
+        Assert.False(limiter.TryAcquire(""));
     }
 
     #endregion

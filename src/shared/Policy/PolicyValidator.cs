@@ -114,10 +114,11 @@ public static class PolicyValidator
             return result;
         }
 
-        // Check size limit
-        if (json.Length > MaxPolicyFileSize)
+        // Check size limit (using byte count for accurate UTF-8 size check)
+        var byteCount = System.Text.Encoding.UTF8.GetByteCount(json);
+        if (byteCount > MaxPolicyFileSize)
         {
-            result.AddError("(root)", $"Policy JSON exceeds maximum size ({MaxPolicyFileSize / 1024} KB)");
+            result.AddError("(root)", $"Policy JSON exceeds maximum size ({MaxPolicyFileSize / 1024} KB, actual: {byteCount / 1024} KB)");
             return result;
         }
 

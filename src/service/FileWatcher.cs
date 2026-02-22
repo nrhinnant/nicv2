@@ -494,16 +494,18 @@ public sealed class PolicyFileWatcher : IDisposable
         {
             try
             {
-                // Check file size
-                var fileInfo = new FileInfo(path);
-                if (fileInfo.Length > PolicyValidator.MaxPolicyFileSize)
+                // Read file bytes first, then check size to avoid TOCTOU race
+                // (file could be replaced between size check and read)
+                var bytes = File.ReadAllBytes(path);
+
+                if (bytes.Length > PolicyValidator.MaxPolicyFileSize)
                 {
                     return Result<string>.Failure(ErrorCodes.InvalidArgument,
-                        $"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB)");
+                        $"Policy file exceeds maximum size ({PolicyValidator.MaxPolicyFileSize / 1024} KB, actual: {bytes.Length / 1024} KB)");
                 }
 
-                // Read file
-                var content = File.ReadAllText(path);
+                // Convert to string using UTF-8
+                var content = System.Text.Encoding.UTF8.GetString(bytes);
                 return Result<string>.Success(content);
             }
             catch (IOException ex) when (attempt < FileReadRetryCount - 1)
