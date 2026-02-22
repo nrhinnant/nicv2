@@ -462,8 +462,8 @@ public class PolicyFileWatcherDebounceBehaviorTests : IDisposable
         var updatedPolicy = """{"version":"2.0.0","defaultAction":"allow","updatedAt":"2024-01-15T10:30:00Z","rules":[]}""";
         File.WriteAllText(policyPath, updatedPolicy);
 
-        // Wait longer than debounce time
-        await Task.Delay(PolicyFileWatcher.MinDebounceMs + 200);
+        // Wait longer than debounce time (default is 1000ms)
+        await Task.Delay(PolicyFileWatcher.DefaultDebounceMs + 300);
 
         // Assert - should have triggered another apply
         Assert.True(_mockEngine.ApplyFiltersCallCount > initialApplyCount,

@@ -1025,6 +1025,7 @@ public class PipeServerApplySecurityTests : IDisposable
 /// <summary>
 /// Unit tests for PipeServer.ProcessLkgShowRequest() and ProcessLkgRevertRequest().
 /// </summary>
+[Collection("LkgStore Sequential")]
 public class PipeServerLkgTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
@@ -1078,7 +1079,8 @@ public class PipeServerLkgTests : IDisposable
     [Fact]
     public void ProcessLkgShowRequest_LkgExists_ReturnsMetadata()
     {
-        // Arrange
+        // Arrange - ensure clean state first
+        LkgStore.Delete();
         var policyJson = """
         {
             "version": "2.0.0",
