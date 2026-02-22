@@ -185,6 +185,18 @@ Goal: Measure the overhead the firewall introduces on network throughput and con
 | 50 non-matching rules | Mbps, % delta from baseline |
 | Allow rule matching traffic | Mbps, % delta from baseline |
 
+**Implementation status.** `scripts/Test-Iperf3Baseline.ps1` is implemented:
+
+```powershell
+# Requires a second VM running: iperf3 -s
+.\scripts\Test-Iperf3Baseline.ps1 -ServerIp 192.168.1.20
+
+# Custom parameters:
+.\scripts\Test-Iperf3Baseline.ps1 -ServerIp 192.168.1.20 -Duration 60 -Streams 8 -RuleCount 100
+```
+
+Three-phase test: (A) baseline with no rules, (B) with N non-matching block rules, (C) after rollback. Runs iperf3 3 times per phase, computes mean throughput, and reports a comparison table with % delta from baseline. Validates the ALE per-connection property.
+
 ### 2.2 TCP Connection-Setup Latency — Nice-to-Have
 
 **What it tests.** ALE fires at connection setup. Measure TCP handshake time scaling with rule count.
@@ -275,6 +287,18 @@ Test 1 (pipe connectivity) and Test 2 (oversized message) validate server behavi
 7. Verify connectivity is restored
 
 **Key metrics.** Filters survive service stop (expected). Recovery via rollback after restart. Time to restore connectivity.
+
+**Implementation status.** `scripts/Test-ServiceRestart.ps1` is implemented:
+
+```powershell
+# Default run:
+.\scripts\Test-ServiceRestart.ps1
+
+# With custom service name:
+.\scripts\Test-ServiceRestart.ps1 -ServiceName "WfpTrafficControl"
+```
+
+Ten-step test: enables demo block, verifies block is active, stops service, verifies block persists (BFE retention), restarts service, verifies service responds, rolls back, and verifies connectivity is restored. This is the critical safety/recovery test.
 
 ### 3.4 CIDR Boundary Testing — Nice-to-Have
 
@@ -391,6 +415,18 @@ Generates rules with varied direction (outbound/inbound), protocol (tcp/udp), an
 
 **Key metrics.** Apply count from `wfpctl watch status` should be much less than 100 (debounce working). No crashes. Final filter state matches last written policy.
 
+**Implementation status.** `scripts/Test-HotReloadStress.ps1` is implemented:
+
+```powershell
+# Basic run (requires a writable policy path):
+.\scripts\Test-HotReloadStress.ps1 -PolicyPath "C:\temp\test-policy.json"
+
+# Scale up:
+.\scripts\Test-HotReloadStress.ps1 -PolicyPath "C:\temp\test-policy.json" -Modifications 100 -WaitSeconds 15
+```
+
+Enables file watching, writes policy file N times in rapid succession (no delay), waits for debounce to settle, then checks apply count. Key assertion: apply count << modifications (debounce is coalescing). Cleans up watch and rolls back after test.
+
 ### 4.4 Concurrent IPC Client Stress Test — Nice-to-Have
 
 **What it tests.** 20 parallel PowerShell jobs each sending 10 `wfpctl status` commands. Verify no deadlocks, no crashes, and the rate limiter correctly throttles per-identity.
@@ -411,6 +447,18 @@ $jobs | Wait-Job | Receive-Job
 ```
 
 **Key metrics.** All jobs complete. Service remains running. Rate-limited requests return appropriate errors.
+
+**Implementation status.** `scripts/Test-ConcurrentIpc.ps1` is implemented:
+
+```powershell
+# Default run (20 clients, 10 requests each):
+.\scripts\Test-ConcurrentIpc.ps1
+
+# Scale up:
+.\scripts\Test-ConcurrentIpc.ps1 -ClientCount 50 -RequestsPerClient 20
+```
+
+Launches N background PowerShell jobs, each running M `wfpctl status` commands. Waits with 60-second timeout, collects exit codes, categorizes results (success/rate-limited/error), and verifies service is still running after the test. Reports throughput (req/s) and success rates.
 
 ---
 
@@ -529,10 +577,10 @@ Run before any demonstration or manual validation:
 ### Tier 4 — Full Matrix (Pre-Presentation)
 
 11. Two-VM nmap scan (inbound + outbound matrix from external VM)
-12. Service restart safety test (filter persistence + recovery)
+12. `scripts/Test-ServiceRestart.ps1` — service restart safety test (filter persistence + recovery)
 13. CIDR boundary tests
-14. Concurrent IPC stress test
-15. Hot reload stress test
+14. `scripts/Test-ConcurrentIpc.ps1` — concurrent IPC stress test
+15. `scripts/Test-HotReloadStress.ps1` — hot reload stress test
 
 ---
 
@@ -576,6 +624,66 @@ Run before any demonstration or manual validation:
 - **Inbound UDP not supported.** The `FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4` layer does not handle UDP. Inbound UDP tests are excluded from the matrix.
 - **No IPv6 coverage.** The system is IPv4-only. IPv6 tests belong in a future milestone.
 - **BenchmarkDotNet requires Release builds.** Debug builds produce unreliable timing. Always run `dotnet run -c Release`.
+
+---
+
+## Implementation Summary — PowerShell Test Scripts
+
+The following PowerShell test scripts have been implemented and are located in `/scripts/`:
+
+### Tier 1 Scripts (Smoke Tests)
+
+| Script | Purpose | Key Parameters |
+|--------|---------|----------------|
+| `Test-DemoBlock.ps1` | Outbound TCP block + rollback | `-WfpctlPath`, `-SkipCleanup` |
+| `Test-InboundBlock.ps1` | Inbound TCP block + rollback | `-WfpctlPath`, `-SkipCleanup` |
+| `Test-UdpBlock.ps1` | Outbound UDP block + rollback | `-WfpctlPath`, `-SkipCleanup` |
+| `Test-IpcSecurity.ps1` | IPC authorization (admin-only, rate limit, size limit) | `-WfpctlPath`, `-TestNonAdmin`, `-NonAdminUser` |
+
+### Tier 2 Scripts (Weekly/Per-Phase)
+
+| Script | Purpose | Key Parameters |
+|--------|---------|----------------|
+| `Test-RuleEnforcement.ps1` | Parameterized rule enforcement testing | `-Direction`, `-Protocol`, `-RemoteIp`, `-RemotePort`, `-ExpectedResult` |
+| `Test-NmapMatrix.ps1` | Full rule enforcement matrix (4 groups) | `-TargetIp`, `-SkipNping` |
+| `Test-LargePolicyStress.ps1` | 500-rule compile/apply stress test | `-RuleCount` |
+| `Test-RapidApply.ps1` | Rapid policy apply stress test | `-Iterations`, `-DelayMs`, `-RuleCount` |
+| `Test-ProcessPath.ps1` | Process-path matching with curl | `-WfpctlPath` |
+
+### Tier 3 Scripts (Benchmarking)
+
+| Script | Purpose | Key Parameters |
+|--------|---------|----------------|
+| `Test-Iperf3Baseline.ps1` | TCP throughput benchmark (requires 2 VMs) | `-ServerIp` (required), `-Duration`, `-Streams`, `-RuleCount` |
+
+### Tier 4 Scripts (Pre-Presentation)
+
+| Script | Purpose | Key Parameters |
+|--------|---------|----------------|
+| `Test-ServiceRestart.ps1` | Filter persistence + service recovery | `-ServiceName` |
+| `Test-HotReloadStress.ps1` | File watcher debounce validation | `-PolicyPath` (required), `-Modifications`, `-WaitSeconds` |
+| `Test-ConcurrentIpc.ps1` | Concurrent IPC client stress test | `-ClientCount`, `-RequestsPerClient` |
+
+### Running All Tier 1 Tests
+
+```powershell
+# Quick validation (< 2 minutes)
+.\scripts\Test-DemoBlock.ps1
+.\scripts\Test-InboundBlock.ps1
+.\scripts\Test-UdpBlock.ps1
+.\scripts\Test-IpcSecurity.ps1
+```
+
+### Running Full Tier 4 Matrix
+
+```powershell
+# Pre-presentation validation (requires 2 VMs for iperf3 and nmap tests)
+.\scripts\Test-ServiceRestart.ps1
+.\scripts\Test-HotReloadStress.ps1 -PolicyPath "C:\temp\test-policy.json"
+.\scripts\Test-ConcurrentIpc.ps1
+.\scripts\Test-Iperf3Baseline.ps1 -ServerIp <second-vm-ip>
+.\scripts\Test-NmapMatrix.ps1 -TargetIp <second-vm-ip>
+```
 
 ---
 

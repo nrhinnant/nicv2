@@ -24,7 +24,8 @@
       "Bash(ls:*)",
       "Bash(git rm:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(dotnet run:*)"
     ]
   }
 }
