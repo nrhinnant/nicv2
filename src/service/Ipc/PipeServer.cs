@@ -131,10 +131,12 @@ public sealed class PipeServer : IDisposable
             {
                 // Create a new pipe server for each connection with security ACL
                 // This restricts access at the OS level to Administrators and LocalSystem
+                // HIGH-01 FIX: Allow multiple concurrent connections to prevent DoS from
+                // a single slow client blocking all other administrators
                 pipeServer = NamedPipeServerStreamAcl.Create(
                     WfpConstants.PipeName,
                     PipeDirection.InOut,
-                    1, // maxNumberOfServerInstances - one at a time (sequential)
+                    NamedPipeServerStream.MaxAllowedServerInstances, // Allow multiple concurrent connections
                     PipeTransmissionMode.Byte,
                     PipeOptions.Asynchronous,
                     inBufferSize: WfpConstants.IpcMaxMessageSize,
@@ -579,18 +581,12 @@ public sealed class PipeServer : IDisposable
         try
         {
             // Step 1: Validate the path
-            if (string.IsNullOrWhiteSpace(request.PolicyPath))
+            // HIGH-04 FIX: Use comprehensive path validation instead of simple ".." check
+            if (!NetworkUtils.ValidatePolicyFilePath(request.PolicyPath, out var pathError))
             {
-                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "INVALID_PATH", "Policy path is required"));
-                return ApplyResponse.Failure("Policy path is required");
-            }
-
-            // Security: Check for path traversal
-            if (request.PolicyPath.Contains(".."))
-            {
-                _logger.LogWarning("Rejected policy path with traversal: {Path}", request.PolicyPath);
-                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "PATH_TRAVERSAL", "Policy path cannot contain '..'"));
-                return ApplyResponse.Failure("Policy path cannot contain '..' (path traversal)");
+                _logger.LogWarning("Rejected invalid policy path: {Path}, Error: {Error}", request.PolicyPath, pathError);
+                _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "INVALID_PATH", pathError ?? "Invalid path"));
+                return ApplyResponse.Failure(pathError ?? "Invalid policy path");
             }
 
             // Step 2: Read file content with size check BEFORE loading into memory
@@ -846,14 +842,16 @@ public sealed class PipeServer : IDisposable
             }
 
             // Get absolute path
+            // HIGH-02 FIX: Don't leak internal path information in error messages
             string absolutePath;
             try
             {
                 absolutePath = Path.GetFullPath(request.PolicyPath);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return WatchSetResponse.Failure($"Invalid policy path: {ex.Message}");
+                // Don't include exception details as they may reveal internal path structure
+                return WatchSetResponse.Failure("Invalid policy path format");
             }
 
             // Start watching

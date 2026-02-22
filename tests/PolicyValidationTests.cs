@@ -908,3 +908,144 @@ public class NetworkUtilsTests
 
     #endregion
 }
+
+/// <summary>
+/// Unit tests for policy file path validation (HIGH-04 security fix).
+/// Tests comprehensive path validation including ADS, UNC, device paths, etc.
+/// </summary>
+public class PolicyFilePathValidationTests
+{
+    #region Valid Path Tests
+
+    [Theory]
+    [InlineData(@"C:\policy.json")]
+    [InlineData(@"C:\ProgramData\WfpTrafficControl\policy.json")]
+    [InlineData(@"D:\configs\firewall\rules.json")]
+    [InlineData(@"E:\policy.json")]
+    public void ValidatePolicyFilePath_ValidLocalPaths_ReturnsTrue(string path)
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
+
+        Assert.True(isValid, $"Path '{path}' should be valid. Error: {error}");
+        Assert.Null(error);
+    }
+
+    #endregion
+
+    #region Empty/Null Path Tests
+
+    [Fact]
+    public void ValidatePolicyFilePath_EmptyPath_ReturnsFalse()
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath("", out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("required", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidatePolicyFilePath_WhitespacePath_ReturnsFalse()
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath("   ", out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("required", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ValidatePolicyFilePath_NullPath_ReturnsFalse()
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath(null, out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("required", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
+
+    #region Path Traversal Tests
+
+    [Theory]
+    [InlineData(@"C:\test\..\secret.json")]
+    [InlineData(@"C:\Users\..\..\..\Windows\System32\config.json")]
+    [InlineData(@"D:\app\config\..\..\..\sensitive.json")]
+    public void ValidatePolicyFilePath_PathTraversal_ReturnsFalse(string path)
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("traversal", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
+
+    #region Alternate Data Stream (ADS) Tests
+
+    [Theory]
+    [InlineData(@"C:\policy.json::$DATA")]
+    [InlineData(@"C:\policy.json:hidden_stream")]
+    [InlineData(@"D:\test:secret:hidden")]
+    public void ValidatePolicyFilePath_AlternateDataStream_ReturnsFalse(string path)
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("ADS", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
+
+    #region UNC Path Tests
+
+    [Theory]
+    [InlineData(@"\\server\share\policy.json")]
+    [InlineData(@"\\192.168.1.1\c$\policy.json")]
+    [InlineData(@"\\attacker.com\malware\payload.json")]
+    public void ValidatePolicyFilePath_UncPath_ReturnsFalse(string path)
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("UNC", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
+
+    #region Device Path Tests
+
+    [Theory]
+    [InlineData(@"\\.\C:\policy.json")]
+    [InlineData(@"\\?\C:\policy.json")]
+    [InlineData(@"\\.\PhysicalDrive0")]
+    [InlineData(@"\\?\GLOBALROOT\Device\HarddiskVolume1\policy.json")]
+    public void ValidatePolicyFilePath_DevicePath_ReturnsFalse(string path)
+    {
+        var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
+
+        Assert.False(isValid);
+        // Will match device path, UNC path, or ADS error (depending on which check fails first)
+        // The important thing is that the path is rejected
+        Assert.True(
+            error!.Contains("device", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("UNC", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("ADS", StringComparison.OrdinalIgnoreCase),
+            $"Expected device, UNC, or ADS path error, got: {error}");
+    }
+
+    #endregion
+
+    #region Invalid Character Tests
+
+    [Fact]
+    public void ValidatePolicyFilePath_NullCharacter_ReturnsFalse()
+    {
+        var path = "C:\\policy\0.json";
+
+        var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
+
+        Assert.False(isValid);
+        Assert.Contains("invalid characters", error, StringComparison.OrdinalIgnoreCase);
+    }
+
+    #endregion
+}

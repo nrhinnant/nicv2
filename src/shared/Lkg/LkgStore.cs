@@ -127,6 +127,13 @@ public static class LkgStore
     };
 
     /// <summary>
+    /// HIGH-03 FIX: Lock object to prevent concurrent LKG save operations.
+    /// Without this, concurrent writers could both write to the same temp file
+    /// before one moves it, causing data corruption.
+    /// </summary>
+    private static readonly object SaveLock = new();
+
+    /// <summary>
     /// Saves a policy as the LKG (Last Known Good) policy.
     /// Uses atomic write (temp file + rename) for safety.
     /// </summary>
@@ -140,41 +147,46 @@ public static class LkgStore
             return Result.Failure(ErrorCodes.InvalidArgument, "Policy JSON cannot be empty");
         }
 
-        try
+        // HIGH-03 FIX: Serialize concurrent save operations to prevent temp file corruption.
+        // Without this lock, two threads could write to the same .tmp file simultaneously.
+        lock (SaveLock)
         {
-            // Ensure directory exists
-            var directory = WfpConstants.GetDataDirectory();
-            Directory.CreateDirectory(directory);
-
-            // Compute checksum
-            var checksum = ComputeChecksum(policyJson);
-
-            // Create wrapper
-            var wrapper = new LkgPolicyWrapper
+            try
             {
-                Checksum = checksum,
-                PolicyJson = policyJson,
-                SavedAt = DateTime.UtcNow,
-                SourcePath = sourcePath
-            };
+                // Ensure directory exists
+                var directory = WfpConstants.GetDataDirectory();
+                Directory.CreateDirectory(directory);
 
-            // Serialize wrapper
-            var wrapperJson = JsonSerializer.Serialize(wrapper, JsonOptions);
+                // Compute checksum
+                var checksum = ComputeChecksum(policyJson);
 
-            // Atomic write: write to temp file, then rename
-            var lkgPath = WfpConstants.GetLkgPolicyPath();
-            var tempPath = lkgPath + ".tmp";
+                // Create wrapper
+                var wrapper = new LkgPolicyWrapper
+                {
+                    Checksum = checksum,
+                    PolicyJson = policyJson,
+                    SavedAt = DateTime.UtcNow,
+                    SourcePath = sourcePath
+                };
 
-            File.WriteAllText(tempPath, wrapperJson, Encoding.UTF8);
+                // Serialize wrapper
+                var wrapperJson = JsonSerializer.Serialize(wrapper, JsonOptions);
 
-            // Replace existing file atomically
-            File.Move(tempPath, lkgPath, overwrite: true);
+                // Atomic write: write to temp file, then rename
+                var lkgPath = WfpConstants.GetLkgPolicyPath();
+                var tempPath = lkgPath + ".tmp";
 
-            return Result.Success();
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure(ErrorCodes.ServiceError, $"Failed to save LKG policy: {ex.Message}");
+                File.WriteAllText(tempPath, wrapperJson, Encoding.UTF8);
+
+                // Replace existing file atomically
+                File.Move(tempPath, lkgPath, overwrite: true);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                return Result.Failure(ErrorCodes.ServiceError, $"Failed to save LKG policy: {ex.Message}");
+            }
         }
     }
 

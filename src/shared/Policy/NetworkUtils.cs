@@ -402,6 +402,98 @@ public static partial class NetworkUtils
         return true;
     }
 
+    /// <summary>
+    /// HIGH-04 FIX: Validates a policy file path for security.
+    /// Blocks path traversal, ADS, UNC paths, device paths, and other manipulation techniques.
+    /// </summary>
+    /// <param name="path">File path to validate</param>
+    /// <param name="error">Error message if validation fails</param>
+    /// <returns>True if the path is safe to use, false otherwise</returns>
+    public static bool ValidatePolicyFilePath(string? path, out string? error)
+    {
+        error = null;
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            error = "Policy path is required";
+            return false;
+        }
+
+        var trimmed = path.Trim();
+
+        // Check for path traversal (.. in any form)
+        if (trimmed.Contains(".."))
+        {
+            error = "Policy path cannot contain '..' (path traversal)";
+            return false;
+        }
+
+        // Check for Alternate Data Streams (ADS) - colon after drive letter position
+        // Valid: C:\foo.json, Invalid: C:\foo.json::$DATA, C:\foo.json:stream
+        var colonIndex = trimmed.IndexOf(':');
+        if (colonIndex >= 0)
+        {
+            // Allow single colon after drive letter (position 1)
+            if (colonIndex != 1 || trimmed.IndexOf(':', colonIndex + 1) >= 0)
+            {
+                error = "Policy path cannot contain alternate data stream notation (ADS)";
+                return false;
+            }
+        }
+
+        // Block UNC paths (\\server\share) - these could access remote resources
+        if (trimmed.StartsWith(@"\\"))
+        {
+            error = "Policy path cannot be a UNC path (network paths not allowed)";
+            return false;
+        }
+
+        // Block device paths (\\.\, \\?\) - these bypass normal path processing
+        if (trimmed.StartsWith(@"\\.\") || trimmed.StartsWith(@"\\?\"))
+        {
+            error = "Policy path cannot use device path notation";
+            return false;
+        }
+
+        // Check for invalid path characters
+        var invalidChars = Path.GetInvalidPathChars();
+        if (trimmed.IndexOfAny(invalidChars) >= 0)
+        {
+            error = "Policy path contains invalid characters";
+            return false;
+        }
+
+        // Try to canonicalize the path and verify it's local
+        try
+        {
+            var fullPath = Path.GetFullPath(trimmed);
+
+            // After canonicalization, check again for traversal (in case of edge cases)
+            // The canonical path should be local (start with drive letter)
+            if (!LocalDrivePathRegex().IsMatch(fullPath))
+            {
+                error = "Policy path must be a local file path";
+                return false;
+            }
+
+            // Verify canonical path doesn't escape to unexpected locations
+            // Re-check for .. after canonicalization (should be resolved but be paranoid)
+            if (fullPath.Contains(".."))
+            {
+                error = "Canonicalized path contains traversal";
+                return false;
+            }
+        }
+        catch (Exception)
+        {
+            // If GetFullPath fails, the path is malformed
+            error = "Invalid policy path format";
+            return false;
+        }
+
+        return true;
+    }
+
     [GeneratedRegex(@"^[A-Za-z]:\\|^\\\\", RegexOptions.Compiled)]
     private static partial Regex FullPathRegex();
 
@@ -410,4 +502,10 @@ public static partial class NetworkUtils
 
     [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-Za-z0-9\.\-]+)?(\+[A-Za-z0-9\.\-]+)?$", RegexOptions.Compiled)]
     private static partial Regex SemVerRegex();
+
+    /// <summary>
+    /// Matches a local drive path (e.g., C:\).
+    /// </summary>
+    [GeneratedRegex(@"^[A-Za-z]:\\", RegexOptions.Compiled)]
+    private static partial Regex LocalDrivePathRegex();
 }

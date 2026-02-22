@@ -178,16 +178,10 @@ public sealed class PolicyFileWatcher : IDisposable
     /// <returns>Result indicating success/failure and whether initial apply succeeded.</returns>
     public Result<WatchStartResult> StartWatching(string policyPath)
     {
-        if (string.IsNullOrWhiteSpace(policyPath))
+        // HIGH-04 FIX: Use comprehensive path validation instead of simple ".." check
+        if (!NetworkUtils.ValidatePolicyFilePath(policyPath, out var pathError))
         {
-            return Result<WatchStartResult>.Failure(ErrorCodes.InvalidArgument, "Policy path is required.");
-        }
-
-        // Security: Check for path traversal
-        if (policyPath.Contains(".."))
-        {
-            return Result<WatchStartResult>.Failure(ErrorCodes.InvalidArgument,
-                "Policy path cannot contain '..' (path traversal).");
+            return Result<WatchStartResult>.Failure(ErrorCodes.InvalidArgument, pathError ?? "Invalid path");
         }
 
         // Validate path is absolute
