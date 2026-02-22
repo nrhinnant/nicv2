@@ -334,6 +334,18 @@ Write-Host "600 applies in $($sw.Elapsed.TotalSeconds)s"
 | Audit log entries | Matches apply count |
 | Service memory (before/after) | No significant growth |
 
+**Implementation status.** `scripts/Test-RapidApply.ps1` is implemented:
+
+```powershell
+# Default run (100 applies, 100ms delay, 5 rules):
+.\scripts\Test-RapidApply.ps1
+
+# Scale up to match original spec (600 applies):
+.\scripts\Test-RapidApply.ps1 -Iterations 600 -DelayMs 100 -RuleCount 10
+```
+
+Parameterized for iterations, delay, and rule count. Records initial/final service memory via `Get-Process`, runs the apply loop with progress indicators, checks `wfpctl status` and `wfpctl logs --tail 20` after the run, then rolls back. Reports: total applies, successes, failures, elapsed time, applies/second, and memory delta.
+
 ### 4.2 Large Policy Stress Test — Must-Have
 
 **What it tests.** Compile and apply a policy with 500 rules. Measure compilation time, apply time, and filter count.
@@ -360,6 +372,18 @@ $rules = 1..500 | ForEach-Object {
 | Idempotent re-apply (same policy) | < 100ms (transaction skipped) |
 | Partial diff (250 rules changed) | < 1 second |
 | Peak memory during apply | Documented, not necessarily targeted |
+
+**Implementation status.** `scripts/Test-LargePolicyStress.ps1` is implemented:
+
+```powershell
+# Default run (500 rules):
+.\scripts\Test-LargePolicyStress.ps1
+
+# Scale up (1000 rules, max 10000):
+.\scripts\Test-LargePolicyStress.ps1 -RuleCount 1000
+```
+
+Generates rules with varied direction (outbound/inbound), protocol (tcp/udp), and action (allow/block). Three phases: (A) first apply with all new filters, (B) idempotent re-apply of the same policy, (C) partial diff with first half of rules changed to different IPs. Reports wall-clock time and filter operation counts (created/removed/unchanged) per phase in a summary table.
 
 ### 4.3 Hot Reload Stress Test — Nice-to-Have
 
@@ -486,8 +510,8 @@ Run before any demonstration or manual validation:
 ### Tier 2 — Before Significant Commits (Weekly or Per-Phase)
 
 5. `scripts/Test-NmapMatrix.ps1` — full rule enforcement matrix (4 groups: exact port block, port range, protocol/direction bypass, nping boundary)
-6. `scripts/Test-LargePolicyStress.ps1` (new) — 500-rule compile and apply
-7. `scripts/Test-RapidApply.ps1` (new) — 600 applies in 60 seconds
+6. `scripts/Test-LargePolicyStress.ps1` — 500-rule compile/apply with idempotent re-apply and partial diff phases
+7. `scripts/Test-RapidApply.ps1` — configurable rapid applies (default 100, scalable to 600+) with memory tracking
 8. `scripts/Test-ProcessPath.ps1` (new) — process-path matching with curl
 
 ### Tier 3 — Benchmarking (After Significant Changes)
