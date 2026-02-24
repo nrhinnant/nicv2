@@ -85,6 +85,7 @@ $ScriptsToCopy = @(
 )
 
 $DocsToCopy = @(
+    @{ Source = "docs\RUNBOOK.md"; Dest = "RUNBOOK.md" }
     @{ Source = "docs\EXECUTIVE_SUMMARY.md"; Dest = "EXECUTIVE_SUMMARY.md" }
     @{ Source = "docs\features\022-how-it-works.md"; Dest = "022-how-it-works.md" }
     @{ Source = "docs\features\023-troubleshooting.md"; Dest = "023-troubleshooting.md" }

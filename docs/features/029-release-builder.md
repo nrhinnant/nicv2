@@ -32,6 +32,7 @@ The `Build-Release.ps1` script performs a complete release build:
     Start-Service.ps1
     Stop-Service.ps1
   \docs\
+    RUNBOOK.md
     EXECUTIVE_SUMMARY.md
     022-how-it-works.md
     023-troubleshooting.md

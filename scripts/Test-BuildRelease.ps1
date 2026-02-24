@@ -214,6 +214,10 @@ Describe "Build-Release.ps1" {
     }
 
     Context "Documentation to Copy" {
+        It "RUNBOOK.md exists" {
+            Test-Path (Join-Path $RepoRoot "docs\RUNBOOK.md") | Should -Be $true
+        }
+
         It "EXECUTIVE_SUMMARY.md exists" {
             Test-Path (Join-Path $RepoRoot "docs\EXECUTIVE_SUMMARY.md") | Should -Be $true
         }
