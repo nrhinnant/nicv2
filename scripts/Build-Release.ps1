@@ -343,9 +343,18 @@ Write-SubStep "Packages restored successfully"
 
 Write-Step "4/7" "Building projects in $Configuration configuration..."
 
-# Build the solution (excludes installer which uses WiX SDK)
-Invoke-ExternalCommand -Command "dotnet" -Arguments @("build", $SolutionFile, "-c", $Configuration, "--no-restore") `
-    -ErrorMessage "Failed to build solution"
+# Build the solution (include version for WiX project in solution)
+$originalLocation = Get-Location
+try {
+    Set-Location $RepoRoot
+    dotnet build $SolutionFile -c $Configuration --no-restore -p:Version=$Version
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error-Exit "Failed to build solution (exit code: $LASTEXITCODE)"
+    }
+}
+finally {
+    Set-Location $originalLocation
+}
 
 Write-SubStep "Solution build complete"
 
@@ -395,8 +404,18 @@ if (-not $SkipMsi) {
     Write-Step "6/7" "Building MSI installer..."
 
     if (Test-Path $InstallerProject) {
-        Invoke-ExternalCommand -Command "dotnet" -Arguments @("build", $InstallerProject, "-c", $Configuration, "-p:Version=$Version") `
-            -ErrorMessage "Failed to build MSI installer"
+        # Build MSI directly (avoid wrapper function for complex argument handling)
+        $originalLocation = Get-Location
+        try {
+            Set-Location $RepoRoot
+            dotnet build $InstallerProject -c $Configuration -p:Version=$Version
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error-Exit "Failed to build MSI installer (exit code: $LASTEXITCODE)"
+            }
+        }
+        finally {
+            Set-Location $originalLocation
+        }
 
         Write-SubStep "MSI build complete"
     } else {

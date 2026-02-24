@@ -38,42 +38,61 @@ Describe "Build-Release.ps1" {
     }
 
     Context "Version Parameter Validation" {
-        It "Accepts valid two-part version (1.0)" {
-            { & $BuildReleaseScript -Version "1.0" -WhatIf 2>&1 } | Should -Not -Throw
+        BeforeAll {
+            $versionParam = (Get-Command $BuildReleaseScript).Parameters['Version']
+            $validatePattern = $versionParam.Attributes | Where-Object { $_ -is [System.Management.Automation.ValidatePatternAttribute] }
+            $pattern = $validatePattern.RegexPattern
         }
 
-        It "Accepts valid three-part version (1.0.0)" {
-            { & $BuildReleaseScript -Version "1.0.0" -WhatIf 2>&1 } | Should -Not -Throw
+        It "Has ValidatePattern attribute" {
+            $validatePattern | Should -Not -BeNullOrEmpty
         }
 
-        It "Accepts valid version (10.20.30)" {
-            { & $BuildReleaseScript -Version "10.20.30" -WhatIf 2>&1 } | Should -Not -Throw
+        It "Pattern accepts valid two-part version (1.0)" {
+            "1.0" -match $pattern | Should -Be $true
         }
 
-        It "Rejects invalid version format (no dots)" {
-            { & $BuildReleaseScript -Version "100" -WhatIf 2>&1 } | Should -Throw
+        It "Pattern accepts valid three-part version (1.0.0)" {
+            "1.0.0" -match $pattern | Should -Be $true
         }
 
-        It "Rejects invalid version format (letters)" {
-            { & $BuildReleaseScript -Version "1.0.0-beta" -WhatIf 2>&1 } | Should -Throw
+        It "Pattern accepts valid version (10.20.30)" {
+            "10.20.30" -match $pattern | Should -Be $true
         }
 
-        It "Rejects invalid version format (four parts)" {
-            { & $BuildReleaseScript -Version "1.0.0.0" -WhatIf 2>&1 } | Should -Throw
+        It "Pattern rejects invalid version format (no dots)" {
+            "100" -match $pattern | Should -Be $false
+        }
+
+        It "Pattern rejects invalid version format (letters)" {
+            "1.0.0-beta" -match $pattern | Should -Be $false
+        }
+
+        It "Pattern rejects invalid version format (four parts)" {
+            "1.0.0.0" -match $pattern | Should -Be $false
         }
     }
 
     Context "Configuration Parameter Validation" {
+        BeforeAll {
+            $configParam = (Get-Command $BuildReleaseScript).Parameters['Configuration']
+            $validateSet = $configParam.Attributes | Where-Object { $_ -is [System.Management.Automation.ValidateSetAttribute] }
+        }
+
+        It "Has ValidateSet attribute" {
+            $validateSet | Should -Not -BeNullOrEmpty
+        }
+
         It "Accepts 'Release' configuration" {
-            { & $BuildReleaseScript -Configuration "Release" -WhatIf 2>&1 } | Should -Not -Throw
+            $validateSet.ValidValues -contains 'Release' | Should -Be $true
         }
 
         It "Accepts 'Debug' configuration" {
-            { & $BuildReleaseScript -Configuration "Debug" -WhatIf 2>&1 } | Should -Not -Throw
+            $validateSet.ValidValues -contains 'Debug' | Should -Be $true
         }
 
-        It "Rejects invalid configuration" {
-            { & $BuildReleaseScript -Configuration "Invalid" -WhatIf 2>&1 } | Should -Throw
+        It "Does not accept 'Invalid' configuration" {
+            $validateSet.ValidValues -contains 'Invalid' | Should -Be $false
         }
     }
 
