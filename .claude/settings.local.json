@@ -26,7 +26,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(dotnet run:*)",
-      "Bash(Select-String -Pattern \"Failed|Error\")"
+      "Bash(Select-String -Pattern \"Failed|Error\")",
+      "Bash(git -C \"c:\\\\Users\\\\nrhin\\\\OneDrive\\\\Documents\\\\Github Repos\\\\nicv2\" log --oneline)"
     ]
   }
 }
