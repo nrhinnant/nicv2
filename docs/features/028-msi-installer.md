@@ -199,16 +199,59 @@ If you see a warning about WFP cleanup failing, WFP objects may remain. Use `wfp
 2. Check if the "Add to PATH" feature was selected
 3. Verify the PATH entry: `echo %PATH%`
 
-## Testing Checklist
+## Testing
 
-See `/docs/features/028-msi-installer.md#testing` for the full test checklist.
+### Automated Uninstall Verification
 
-### Basic Tests (in a VM with snapshot)
+Use the `Test-MsiUninstall.ps1` script to verify complete removal of all components:
 
+```powershell
+# After uninstalling, verify complete removal
+.\scripts\Test-MsiUninstall.ps1
+
+# Verify clean state before installation
+.\scripts\Test-MsiUninstall.ps1 -Mode PreInstall
+
+# Verify installation completed correctly
+.\scripts\Test-MsiUninstall.ps1 -Mode PostInstall -Detailed
+```
+
+The test script verifies:
+- **Service**: Windows service is removed and not running
+- **Registry**: Service registry entries are cleaned up
+- **Files**: Installation folder and all files are deleted
+- **PATH**: System PATH no longer contains installation directory
+- **WFP Artifacts**: Provider, sublayer, and filters are removed
+- **Named Pipe**: IPC pipe is no longer active
+- **MSI Registration**: Product is removed from Windows Installer database
+
+### Manual Test Checklist (in a VM with snapshot)
+
+#### Installation Tests
 - [ ] Fresh install succeeds
 - [ ] Service appears in Services (services.msc)
+- [ ] Service starts without errors
 - [ ] `wfpctl status` works from any directory (PATH feature)
-- [ ] Upgrade from previous version preserves data
-- [ ] Uninstall removes service and files
+- [ ] Sample policy file is installed
+- [ ] Named pipe is accessible
+
+#### Upgrade Tests
+- [ ] Upgrade from previous version succeeds
+- [ ] User data in ProgramData is preserved
+- [ ] Service restarts after upgrade
+- [ ] Old version files are removed
+
+#### Uninstall Tests
+- [ ] Uninstall via GUI succeeds
+- [ ] Uninstall via command line succeeds
+- [ ] Service is stopped and removed
+- [ ] All files are deleted from Program Files
+- [ ] PATH entry is removed
+- [ ] WFP artifacts are cleaned up
 - [ ] Re-install after uninstall works
-- [ ] Silent install with custom path works
+
+#### Edge Cases
+- [ ] Uninstall while service is running
+- [ ] Uninstall with active WFP filters
+- [ ] Silent install with custom path
+- [ ] Cancel during installation (rollback)

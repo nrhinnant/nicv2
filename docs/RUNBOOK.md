@@ -403,6 +403,22 @@ The uninstall process:
 3. Unregisters the Windows service
 4. Removes installed files (MSI only)
 
+### Verify Complete Uninstallation
+
+After uninstalling, verify all components were removed:
+
+```powershell
+# Run from the scripts folder (if available) or download the script
+.\Test-MsiUninstall.ps1
+```
+
+This verifies:
+- Service is removed
+- All files are deleted
+- PATH entry is cleaned up
+- WFP artifacts are removed
+- Registry entries are cleaned up
+
 ---
 
 ## Support
