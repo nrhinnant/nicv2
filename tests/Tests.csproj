@@ -25,6 +25,7 @@
     <ProjectReference Include="..\src\shared\Shared.csproj" />
     <ProjectReference Include="..\src\cli\Cli.csproj" />
     <ProjectReference Include="..\src\service\Service.csproj" />
+    <ProjectReference Include="..\src\ui\WfpTrafficControl.UI\WfpTrafficControl.UI.csproj" />
   </ItemGroup>
 
 </Project>
