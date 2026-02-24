@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <!--
+    WfpTrafficControl MSI Installer
+
+    Build with: dotnet build -c Release -p:Version=1.0.0
+
+    IMPORTANT: UpgradeCode must NEVER change across versions.
+    This enables proper major upgrade behavior.
+  -->
+
+  <Package Name="WFP Traffic Control"
+           Manufacturer="WfpTrafficControl"
+           Version="$(var.Version)"
+           UpgradeCode="E8F3A1B2-4C5D-6E7F-8A9B-0C1D2E3F4A5B"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <!-- Package metadata -->
+    <SummaryInformation Description="Windows Filtering Platform traffic control service for policy-based network filtering"
+                        Manufacturer="WfpTrafficControl" />
+
+    <!-- Require elevated privileges -->
+    <Launch Condition="Privileged" Message="Administrator privileges are required to install this application." />
+
+    <!-- Major upgrade: uninstall previous versions before installing new -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  Schedule="afterInstallInitialize" />
+
+    <!-- Embed cab files in MSI for single-file distribution -->
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Use WiX standard UI for installation directory selection -->
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+
+    <!-- License agreement -->
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <!-- Main feature containing all components -->
+    <Feature Id="Core"
+             Title="WFP Traffic Control"
+             Description="Windows Filtering Platform traffic control service and CLI tool."
+             Level="1"
+             AllowAbsent="no"
+             AllowAdvertise="no"
+             Display="expand">
+
+      <!-- Service components -->
+      <ComponentGroupRef Id="ServiceComponents" />
+
+      <!-- CLI components -->
+      <ComponentGroupRef Id="CliComponents" />
+
+      <!-- Sample policy -->
+      <ComponentGroupRef Id="SampleComponents" />
+
+      <!-- Windows Service installation -->
+      <ComponentRef Id="WfpTrafficControlService" />
+
+      <!-- WFP cleanup custom action component -->
+      <ComponentRef Id="WfpCleanupAction" />
+
+      <!-- Optional: Add to PATH -->
+      <Feature Id="AddToPath"
+               Title="Add to PATH"
+               Description="Add wfpctl.exe to system PATH for command-line access from any directory."
+               Level="1"
+               AllowAbsent="yes"
+               AllowAdvertise="no">
+        <ComponentGroupRef Id="PathComponents" />
+      </Feature>
+
+    </Feature>
+
+  </Package>
+
+</Wix>

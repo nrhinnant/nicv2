@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "tests\Tests.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Benchmarks", "benchmarks\Benchmarks.csproj", "{7CC9F1F8-F03D-4906-911A-066BCD63DBBC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "installer", "installer", "{F1A2B3C4-D5E6-4F7A-8B9C-0D1E2F3A4B5C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WfpTrafficControl.Installer", "installer\WfpTrafficControl.Installer\WfpTrafficControl.Installer.wixproj", "{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,10 +48,15 @@ Global
 		{7CC9F1F8-F03D-4906-911A-066BCD63DBBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CC9F1F8-F03D-4906-911A-066BCD63DBBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CC9F1F8-F03D-4906-911A-066BCD63DBBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{37F0BAD6-414D-417A-80A5-95526BDB1270} = {E2084971-6691-4C65-AE65-B5E47DF30A5B}
 		{DAE9F991-7709-4A91-A659-535518024014} = {E2084971-6691-4C65-AE65-B5E47DF30A5B}
 		{13C840C3-1347-4CF8-BE93-A640D595CF95} = {E2084971-6691-4C65-AE65-B5E47DF30A5B}
+		{A1B2C3D4-E5F6-7A8B-9C0D-1E2F3A4B5C6D} = {F1A2B3C4-D5E6-4F7A-8B9C-0D1E2F3A4B5C}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <!--
+    Custom Actions for WfpTrafficControl installer.
+
+    Primary custom action: WFP cleanup before uninstall.
+
+    This ensures that WFP provider, sublayer, and filters created by the service
+    are removed before the service is uninstalled. This prevents orphaned WFP
+    objects that could affect network connectivity.
+
+    IMPORTANT: This action is set to Return="ignore" so that if cleanup fails,
+    the uninstall still proceeds. This follows the "fail-open" safety principle.
+  -->
+
+  <Fragment>
+    <Component Id="WfpCleanupAction" Directory="INSTALLFOLDER" Guid="E1F2A3B4-C5D6-4E7F-8A9B-0C1D2E3F4A5B" KeyPath="yes">
+      <!-- Empty component for scheduling custom action -->
+    </Component>
+
+    <!--
+      WFP Cleanup Custom Action
+
+      Calls: wfpctl.exe teardown
+
+      Scheduled: Before StopServices during uninstall/upgrade
+      This ensures WFP objects are cleaned up while the service can still
+      communicate via IPC.
+
+      Return="ignore" ensures uninstall completes even if cleanup fails.
+
+      We use FileRef to reference the installed wfpctl.exe file.
+    -->
+
+    <!-- Custom action to run wfpctl.exe teardown -->
+    <CustomAction Id="WfpCleanup"
+                  FileRef="WfpctlExe"
+                  ExeCommand="teardown"
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="ignore" />
+
+    <!-- Schedule the cleanup before service is stopped during uninstall -->
+    <InstallExecuteSequence>
+      <!-- Only run during uninstall (REMOVE="ALL") or upgrade -->
+      <Custom Action="WfpCleanup" Before="StopServices" Condition="(REMOVE=&quot;ALL&quot;) OR WIX_UPGRADE_DETECTED" />
+    </InstallExecuteSequence>
+
+  </Fragment>
+
+</Wix>

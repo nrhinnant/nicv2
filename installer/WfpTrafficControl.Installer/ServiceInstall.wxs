@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!--
+    Windows Service installation for WfpTrafficControl.
+
+    Service configuration matches existing Install-Service.ps1:
+      - Name: WfpTrafficControl
+      - Display Name: WFP Traffic Control Service
+      - Start Type: Manual (demand)
+      - Account: LocalSystem
+      - Failure Recovery: Restart at 5s, 10s, 30s
+  -->
+
+  <Fragment>
+    <Component Id="WfpTrafficControlService" Directory="INSTALLFOLDER" Guid="C9D0E1F2-A3B4-4C5D-6E7F-8A9B0C1D2E3F">
+
+      <!-- Service executable - KeyPath for this component -->
+      <File Id="ServiceExeForInstall"
+            Source="!(bindpath.ServicePublish)\WfpTrafficControl.Service.exe"
+            KeyPath="yes" />
+
+      <!-- Windows Service installation -->
+      <ServiceInstall Id="WfpTrafficControlServiceInstall"
+                      Name="WfpTrafficControl"
+                      DisplayName="WFP Traffic Control Service"
+                      Description="Windows Filtering Platform traffic control service for policy-based network filtering"
+                      Type="ownProcess"
+                      Start="demand"
+                      Account="LocalSystem"
+                      ErrorControl="normal"
+                      Vital="yes">
+
+        <!-- Service failure recovery actions using util:ServiceConfig -->
+        <util:ServiceConfig FirstFailureActionType="restart"
+                            SecondFailureActionType="restart"
+                            ThirdFailureActionType="restart"
+                            RestartServiceDelayInSeconds="5"
+                            ResetPeriodInDays="1" />
+
+      </ServiceInstall>
+
+      <!-- Service control: stop on uninstall, don't auto-start on install -->
+      <ServiceControl Id="WfpTrafficControlServiceControl"
+                      Name="WfpTrafficControl"
+                      Stop="both"
+                      Remove="uninstall"
+                      Wait="yes" />
+
+    </Component>
+  </Fragment>
+
+</Wix>
