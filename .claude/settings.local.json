@@ -31,7 +31,11 @@
       "Bash(dotnet publish:*)",
       "Bash(dotnet msbuild:*)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\nrhin\\\\OneDrive\\\\Documents\\\\Github Repos\\\\nicv2\" -Directory -Depth 1)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\nrhin\\\\OneDrive\\\\Documents\\\\Github Repos\\\\nicv2\\\\installer\\\\WfpTrafficControl.Installer\\\\bin\\\\Release\"\" -Filter \"*.msi \" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name, Length, LastWriteTime)",
+      "Bash(Get-Service -Name \"WfpTrafficControl\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name, Status, StartType)"
     ]
   }
 }

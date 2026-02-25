@@ -168,18 +168,11 @@ public sealed class PipeServer : IDisposable
             {
                 if (pipeServer != null)
                 {
-                    try
-                    {
-                        if (pipeServer.IsConnected)
-                        {
-                            pipeServer.Disconnect();
-                        }
-                    }
-                    catch
-                    {
-                        // Ignore disconnect errors
-                    }
-
+                    // Note: We intentionally do NOT call Disconnect() here.
+                    // Disconnect() can truncate buffered data before the client reads it,
+                    // causing "Service disconnected while sending response" errors.
+                    // DisposeAsync() handles cleanup properly and allows the client
+                    // to finish reading any buffered data.
                     await pipeServer.DisposeAsync();
                 }
             }
