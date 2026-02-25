@@ -5,8 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>WfpTrafficControl.Service</RootNamespace>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <AssemblyName>WfpTrafficControl.Service</AssemblyName>
+    <!-- RuntimeIdentifier is specified at publish time, not here,
+         so dotnet build outputs to a consistent location -->
   </PropertyGroup>
 
   <ItemGroup>

@@ -342,9 +342,30 @@ Write-SubStep "Packages restored successfully"
 # Step 4: Build in Release Configuration
 # ============================================================================
 
-Write-Step "4/7" "Building projects in $Configuration configuration..."
+Write-Step "4/7" "Building and publishing projects in $Configuration configuration..."
 
-# Build the solution (include version for WiX project in solution)
+# Publish projects FIRST (installer depends on publish output folders)
+# Publish Service
+Write-SubStep "Publishing Service..."
+Invoke-ExternalCommand -Command "dotnet" -Arguments @("publish", $ServiceProject, "-c", $Configuration, "-r", "win-x64", "--self-contained", "false", "-o", $ServicePublishDir) `
+    -ErrorMessage "Failed to publish Service"
+
+# Publish CLI
+Write-SubStep "Publishing CLI..."
+Invoke-ExternalCommand -Command "dotnet" -Arguments @("publish", $CliProject, "-c", $Configuration, "-o", $CliPublishDir) `
+    -ErrorMessage "Failed to publish CLI"
+
+# Build and publish UI separately if it exists (it may not be in the solution)
+if (Test-Path $UiProject) {
+    Write-SubStep "Publishing UI project..."
+    Invoke-ExternalCommand -Command "dotnet" -Arguments @("publish", $UiProject, "-c", $Configuration, "-o", $UiPublishDir) `
+        -ErrorMessage "Failed to publish UI project"
+}
+
+Write-SubStep "All projects published successfully"
+
+# Now build the solution (including installer, which needs the publish folders to exist)
+Write-SubStep "Building solution..."
 $originalLocation = Get-Location
 try {
     Set-Location $RepoRoot
@@ -358,25 +379,6 @@ finally {
 }
 
 Write-SubStep "Solution build complete"
-
-# Build and publish UI separately if it exists (it may not be in the solution)
-if (Test-Path $UiProject) {
-    Write-SubStep "Building and publishing UI project..."
-    Invoke-ExternalCommand -Command "dotnet" -Arguments @("publish", $UiProject, "-c", $Configuration, "-o", $UiPublishDir) `
-        -ErrorMessage "Failed to publish UI project"
-}
-
-# Publish Service
-Write-SubStep "Publishing Service..."
-Invoke-ExternalCommand -Command "dotnet" -Arguments @("publish", $ServiceProject, "-c", $Configuration, "-r", "win-x64", "--self-contained", "false", "-o", $ServicePublishDir) `
-    -ErrorMessage "Failed to publish Service"
-
-# Publish CLI
-Write-SubStep "Publishing CLI..."
-Invoke-ExternalCommand -Command "dotnet" -Arguments @("publish", $CliProject, "-c", $Configuration, "-o", $CliPublishDir) `
-    -ErrorMessage "Failed to publish CLI"
-
-Write-SubStep "All projects published successfully"
 
 # ============================================================================
 # Step 5: Run Tests
