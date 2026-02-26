@@ -27,6 +27,7 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
         <converters:InverseBoolConverter x:Key="InverseBool" />
+        <converters:ObjectToBoolConverter x:Key="ObjectToBool" />
     </UserControl.Resources>
 
     <Grid>
@@ -81,8 +82,45 @@
                             Command="{Binding SavePolicyAsCommand}"
                             IsEnabled="{Binding HasPolicy}"
                             Padding="12,6"
-                            Margin="0,0,16,0"
+                            Margin="0,0,8,0"
                             ToolTip="Save Policy As (Ctrl+Shift+S)" />
+
+                    <!-- Templates Dropdown -->
+                    <Border BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1,0,0,0"
+                            Margin="8,0,16,0"
+                            Padding="8,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Templates:"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Margin="0,0,8,0" />
+                            <ComboBox x:Name="TemplateComboBox"
+                                      ItemsSource="{Binding Templates}"
+                                      Width="200"
+                                      ToolTip="Load a pre-configured policy template">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text=" - " Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding Category}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                                       FontStyle="Italic" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <Button Content="Load"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding LoadFromTemplateCommand}"
+                                    CommandParameter="{Binding SelectedItem, ElementName=TemplateComboBox}"
+                                    IsEnabled="{Binding SelectedItem, ElementName=TemplateComboBox, Converter={StaticResource ObjectToBool}}"
+                                    Padding="12,6"
+                                    Margin="8,0,0,0"
+                                    ToolTip="Load the selected template" />
+                        </StackPanel>
+                    </Border>
 
                     <!-- Current File -->
                     <TextBlock VerticalAlignment="Center"
@@ -128,26 +166,132 @@
             <!-- No Policy State -->
             <Border Style="{StaticResource CardStyle}"
                     Visibility="{Binding HasPolicy, Converter={StaticResource InverseBoolToVisibility}}">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock Text="No Policy Loaded"
-                               FontSize="20"
-                               FontWeight="SemiBold"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,16" />
-                    <TextBlock Text="Create a new policy or open an existing one to get started."
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,24" />
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="New Policy"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Command="{Binding NewPolicyCommand}"
-                                Margin="0,0,12,0" />
-                        <Button Content="Open Policy"
-                                Style="{StaticResource SecondaryButtonStyle}"
-                                Command="{Binding LoadPolicyCommand}" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel HorizontalAlignment="Center" MaxWidth="900">
+                        <TextBlock Text="No Policy Loaded"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,16" />
+                        <TextBlock Text="Create a new policy, open an existing one, or start from a template."
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,0,0,24" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,32">
+                            <Button Content="New Policy"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding NewPolicyCommand}"
+                                    Margin="0,0,12,0" />
+                            <Button Content="Open Policy"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding LoadPolicyCommand}" />
+                        </StackPanel>
+
+                        <!-- Templates Section -->
+                        <Border BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="0,24,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Quick Start Templates"
+                                           Style="{StaticResource SubheaderTextStyle}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,8" />
+                                <TextBlock Text="Choose a pre-configured template to get started quickly. You can customize rules after loading."
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,24" />
+
+                                <!-- Template Cards -->
+                                <ItemsControl ItemsSource="{Binding Templates}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel HorizontalAlignment="Center" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{StaticResource CardBackgroundBrush}"
+                                                    BorderBrush="{StaticResource BorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4"
+                                                    Width="260"
+                                                    Margin="8"
+                                                    Padding="16">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="*" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Category Badge -->
+                                                    <Border Grid.Row="0"
+                                                            HorizontalAlignment="Left"
+                                                            CornerRadius="3"
+                                                            Padding="8,2"
+                                                            Margin="0,0,0,8">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Category}" Value="Privacy">
+                                                                        <Setter Property="Background" Value="#6B5B95" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Category}" Value="Security">
+                                                                        <Setter Property="Background" Value="{StaticResource ErrorBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Category}" Value="Productivity">
+                                                                        <Setter Property="Background" Value="{StaticResource SuccessBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding Category}" Value="Development">
+                                                                        <Setter Property="Background" Value="{StaticResource WarningBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="{Binding Category}"
+                                                                   Foreground="White"
+                                                                   FontSize="10"
+                                                                   FontWeight="SemiBold" />
+                                                    </Border>
+
+                                                    <!-- Template Name -->
+                                                    <TextBlock Grid.Row="1"
+                                                               Text="{Binding Name}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="14"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,0,0,8" />
+
+                                                    <!-- Description -->
+                                                    <TextBlock Grid.Row="2"
+                                                               Text="{Binding Description}"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               FontSize="12"
+                                                               TextWrapping="Wrap"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               MaxHeight="80"
+                                                               Margin="0,0,0,12" />
+
+                                                    <!-- Load Button -->
+                                                    <Button Grid.Row="3"
+                                                            Content="Load Template"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding DataContext.LoadFromTemplateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            HorizontalAlignment="Stretch"
+                                                            Padding="8,6" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <!-- Policy Editor -->

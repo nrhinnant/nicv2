@@ -1,4 +1,5 @@
 using WfpTrafficControl.Shared.Policy;
+using WfpTrafficControl.UI.Services;
 using WfpTrafficControl.UI.ViewModels;
 using Xunit;
 
@@ -11,13 +12,15 @@ public class PolicyEditorViewModelTests
 {
     private readonly MockServiceClient _mockService;
     private readonly MockDialogService _mockDialog;
+    private readonly IPolicyTemplateProvider _templateProvider;
     private readonly PolicyEditorViewModel _viewModel;
 
     public PolicyEditorViewModelTests()
     {
         _mockService = new MockServiceClient();
         _mockDialog = new MockDialogService();
-        _viewModel = new PolicyEditorViewModel(_mockService, _mockDialog);
+        _templateProvider = new PolicyTemplateProvider();
+        _viewModel = new PolicyEditorViewModel(_mockService, _mockDialog, _templateProvider);
     }
 
     [Fact]
@@ -270,5 +273,171 @@ public class PolicyEditorViewModelTests
         Assert.Contains("tcp", RuleViewModel.AvailableProtocols);
         Assert.Contains("udp", RuleViewModel.AvailableProtocols);
         Assert.Contains("any", RuleViewModel.AvailableProtocols);
+    }
+
+    // ========================================
+    // Template Tests
+    // ========================================
+
+    [Fact]
+    public void Templates_AreLoadedOnConstruction()
+    {
+        // Assert
+        Assert.NotEmpty(_viewModel.Templates);
+        Assert.True(_viewModel.Templates.Count >= 8, "Expected at least 8 built-in templates");
+    }
+
+    [Fact]
+    public void LoadFromTemplateCommand_WithNullTemplate_DoesNothing()
+    {
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(null);
+
+        // Assert
+        Assert.False(_viewModel.HasPolicy);
+    }
+
+    [Fact]
+    public void LoadFromTemplateCommand_LoadsTemplate()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.True(_viewModel.HasPolicy);
+        Assert.NotEmpty(_viewModel.Rules);
+        Assert.True(_viewModel.HasUnsavedChanges);
+        Assert.Equal(1, _mockDialog.SuccessCount);
+    }
+
+    [Fact]
+    public void LoadFromTemplateCommand_WithWarningTemplate_ShowsWarning()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => !string.IsNullOrEmpty(t.Warning));
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.Equal(1, _mockDialog.ConfirmWarningCount);
+    }
+
+    [Fact]
+    public void LoadFromTemplateCommand_UserCancelsWarning_DoesNotLoad()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => !string.IsNullOrEmpty(t.Warning));
+        _mockDialog.ConfirmResult = false;
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.False(_viewModel.HasPolicy);
+        Assert.Equal(1, _mockDialog.ConfirmWarningCount);
+    }
+
+    [Fact]
+    public void LoadFromTemplateCommand_WithUnsavedChanges_AsksConfirmation()
+    {
+        // Arrange
+        _viewModel.NewPolicyCommand.Execute(null);
+        _viewModel.AddRuleCommand.Execute(null);
+        var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
+        _mockDialog.ConfirmResult = false;
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.Equal(1, _mockDialog.ConfirmCount);
+        Assert.Single(_viewModel.Rules); // Original rules still there
+    }
+
+    [Fact]
+    public void LoadFromTemplateCommand_ClearsFilePath()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.Equal("", _viewModel.CurrentFilePath);
+    }
+
+    [Fact]
+    public void BlockCloudflareDnsTemplate_HasExpectedRules()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.True(_viewModel.Rules.Count >= 6, "Expected at least 6 rules for Cloudflare DNS blocking");
+        Assert.All(_viewModel.Rules, r => Assert.Equal("block", r.Action));
+        Assert.Contains(_viewModel.Rules, r => r.RemoteIp.Contains("1.1.1.1"));
+        Assert.Contains(_viewModel.Rules, r => r.RemoteIp.Contains("1.0.0.1"));
+    }
+
+    [Fact]
+    public void BlockAllTrafficTemplate_HasDefaultDeny()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => t.Id == "block-all-traffic");
+
+        // Act
+        _viewModel.LoadFromTemplateCommand.Execute(template);
+
+        // Assert
+        Assert.Equal("block", _viewModel.DefaultAction);
+        Assert.Contains(_viewModel.Rules, r => r.Action == "allow" && r.RemoteIp.Contains("127."));
+    }
+
+    [Fact]
+    public void Templates_HaveUniqueIds()
+    {
+        // Assert
+        var ids = _viewModel.Templates.Select(t => t.Id).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
+
+    [Fact]
+    public void Templates_HaveRequiredProperties()
+    {
+        // Assert
+        foreach (var template in _viewModel.Templates)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(template.Id), $"Template has empty Id");
+            Assert.False(string.IsNullOrWhiteSpace(template.Name), $"Template {template.Id} has empty Name");
+            Assert.False(string.IsNullOrWhiteSpace(template.Description), $"Template {template.Id} has empty Description");
+            Assert.False(string.IsNullOrWhiteSpace(template.Category), $"Template {template.Id} has empty Category");
+
+            var policy = template.CreatePolicy();
+            Assert.NotNull(policy);
+            Assert.NotNull(policy.Rules);
+        }
+    }
+
+    [Fact]
+    public void Templates_CreateFreshPoliciesEachTime()
+    {
+        // Arrange
+        var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
+
+        // Act
+        var policy1 = template.CreatePolicy();
+        var policy2 = template.CreatePolicy();
+
+        // Assert - different object references
+        Assert.NotSame(policy1, policy2);
+        Assert.NotSame(policy1.Rules, policy2.Rules);
     }
 }

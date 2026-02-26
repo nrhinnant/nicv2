@@ -41,6 +41,7 @@ public partial class App : Application
         // Services
         services.AddSingleton<IServiceClient, ServiceClient>();
         services.AddSingleton<IDialogService, DialogService>();
+        services.AddSingleton<IPolicyTemplateProvider, PolicyTemplateProvider>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();

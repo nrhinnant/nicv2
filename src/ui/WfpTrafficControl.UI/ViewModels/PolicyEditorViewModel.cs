@@ -3,6 +3,7 @@ using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WfpTrafficControl.Shared.Policy;
+using WfpTrafficControl.UI.Models;
 using WfpTrafficControl.UI.Services;
 
 namespace WfpTrafficControl.UI.ViewModels;
@@ -14,6 +15,7 @@ public partial class PolicyEditorViewModel : ObservableObject
 {
     private readonly IServiceClient _serviceClient;
     private readonly IDialogService _dialogService;
+    private readonly IPolicyTemplateProvider _templateProvider;
 
     // Current policy
     [ObservableProperty]
@@ -65,10 +67,21 @@ public partial class PolicyEditorViewModel : ObservableObject
     [ObservableProperty]
     private bool _isApplying;
 
-    public PolicyEditorViewModel(IServiceClient serviceClient, IDialogService dialogService)
+    // Templates
+    [ObservableProperty]
+    private ObservableCollection<PolicyTemplate> _templates = new();
+
+    public PolicyEditorViewModel(IServiceClient serviceClient, IDialogService dialogService, IPolicyTemplateProvider templateProvider)
     {
         _serviceClient = serviceClient;
         _dialogService = dialogService;
+        _templateProvider = templateProvider;
+
+        // Load available templates
+        foreach (var template in _templateProvider.GetTemplates())
+        {
+            Templates.Add(template);
+        }
     }
 
     /// <summary>
@@ -99,6 +112,49 @@ public partial class PolicyEditorViewModel : ObservableObject
         CurrentFilePath = "";
         HasUnsavedChanges = false;
         HasPolicy = true;
+    }
+
+    /// <summary>
+    /// Loads a policy from a template.
+    /// </summary>
+    [RelayCommand]
+    private void LoadFromTemplate(PolicyTemplate? template)
+    {
+        if (template == null)
+            return;
+
+        if (HasUnsavedChanges)
+        {
+            if (!_dialogService.Confirm(
+                    "You have unsaved changes. Load a template anyway?",
+                    "Unsaved Changes"))
+            {
+                return;
+            }
+        }
+
+        // Show warning if template has one
+        if (!string.IsNullOrEmpty(template.Warning))
+        {
+            if (!_dialogService.ConfirmWarning(
+                    $"{template.Description}\n\nWarning: {template.Warning}\n\nDo you want to continue?",
+                    $"Load Template: {template.Name}"))
+            {
+                return;
+            }
+        }
+
+        // Create the policy from the template
+        CurrentPolicy = template.CreatePolicy();
+
+        LoadPolicyToUI(CurrentPolicy);
+        CurrentFilePath = "";
+        HasUnsavedChanges = true; // Mark as unsaved since it's from a template
+        HasPolicy = true;
+
+        _dialogService.ShowSuccess(
+            $"Template '{template.Name}' loaded with {CurrentPolicy.Rules.Count} rules.\n\nReview the rules and click 'Save' to save the policy to a file, or 'Apply to Service' to activate it.",
+            "Template Loaded");
     }
 
     /// <summary>
