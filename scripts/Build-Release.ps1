@@ -262,12 +262,27 @@ if (-not $SkipArchive -and (Test-Path $ReleaseDir)) {
         Write-Step "1/7" "Archiving existing release..."
 
         # Try to detect the version of the existing release
+        # Priority: 1) VERSION file, 2) MSI filename, 3) timestamp fallback
         $existingVersion = $null
-        $existingMsi = Get-ChildItem -Path (Join-Path $ReleaseDir "installer") -Filter "*.msi" -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($existingMsi) {
-            # Extract version from filename like WfpTrafficControl-1.0.0.msi
-            if ($existingMsi.Name -match 'WfpTrafficControl-(\d+\.\d+(\.\d+)?)\.msi') {
-                $existingVersion = $Matches[1]
+
+        # Check for VERSION file first (most reliable)
+        $versionFile = Join-Path $ReleaseDir "VERSION"
+        if (Test-Path $versionFile) {
+            $existingVersion = (Get-Content $versionFile -ErrorAction SilentlyContinue | Select-Object -First 1).Trim()
+            if ($existingVersion) {
+                Write-SubStep "Detected version from VERSION file: $existingVersion"
+            }
+        }
+
+        # Fallback to MSI filename
+        if (-not $existingVersion) {
+            $existingMsi = Get-ChildItem -Path (Join-Path $ReleaseDir "installer") -Filter "*.msi" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($existingMsi) {
+                # Extract version from filename like WfpTrafficControl-1.0.0.msi
+                if ($existingMsi.Name -match 'WfpTrafficControl-(\d+\.\d+(\.\d+)?)\.msi') {
+                    $existingVersion = $Matches[1]
+                    Write-SubStep "Detected version from MSI filename: $existingVersion"
+                }
             }
         }
 
@@ -497,6 +512,11 @@ foreach ($doc in $DocsToCopy) {
         Write-Warning-Tracked "Documentation file not found: $srcPath"
     }
 }
+
+# Write VERSION file for future archive detection
+$versionFilePath = Join-Path $ReleaseDir "VERSION"
+Set-Content -Path $versionFilePath -Value $Version -NoNewline -ErrorAction Stop
+Write-SubStep "Created VERSION file: $Version"
 
 # ============================================================================
 # Summary
