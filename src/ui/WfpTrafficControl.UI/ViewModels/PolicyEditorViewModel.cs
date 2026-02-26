@@ -457,6 +457,40 @@ public partial class PolicyEditorViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Copies the selected rule.
+    /// </summary>
+    [RelayCommand]
+    private void CopyRule()
+    {
+        if (SelectedRule == null)
+            return;
+
+        var copy = new RuleViewModel
+        {
+            Id = $"{SelectedRule.Id}-copy",
+            Action = SelectedRule.Action,
+            Direction = SelectedRule.Direction,
+            Protocol = SelectedRule.Protocol,
+            Process = SelectedRule.Process,
+            RemoteIp = SelectedRule.RemoteIp,
+            RemotePorts = SelectedRule.RemotePorts,
+            LocalIp = SelectedRule.LocalIp,
+            LocalPorts = SelectedRule.LocalPorts,
+            Priority = SelectedRule.Priority,
+            Enabled = SelectedRule.Enabled,
+            Comment = SelectedRule.Comment
+        };
+
+        copy.PropertyChanged += (s, e) => MarkAsChanged();
+
+        // Insert after the selected rule
+        var index = Rules.IndexOf(SelectedRule);
+        Rules.Insert(index + 1, copy);
+        SelectedRule = copy;
+        HasUnsavedChanges = true;
+    }
+
     private void LoadPolicyToUI(Policy policy)
     {
         PolicyVersion = policy.Version;

@@ -8,7 +8,20 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:PolicyEditorViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000"
-             Background="{StaticResource BackgroundBrush}">
+             Background="{StaticResource BackgroundBrush}"
+             Focusable="True">
+
+    <!-- Keyboard Shortcuts -->
+    <UserControl.InputBindings>
+        <KeyBinding Key="N" Modifiers="Control" Command="{Binding NewPolicyCommand}" />
+        <KeyBinding Key="O" Modifiers="Control" Command="{Binding LoadPolicyCommand}" />
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SavePolicyCommand}" />
+        <KeyBinding Key="S" Modifiers="Control+Shift" Command="{Binding SavePolicyAsCommand}" />
+        <KeyBinding Key="D" Modifiers="Control" Command="{Binding CopyRuleCommand}" />
+        <KeyBinding Key="Delete" Command="{Binding DeleteRuleCommand}" />
+        <KeyBinding Key="Up" Modifiers="Alt" Command="{Binding MoveRuleUpCommand}" />
+        <KeyBinding Key="Down" Modifiers="Alt" Command="{Binding MoveRuleDownCommand}" />
+    </UserControl.InputBindings>
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
@@ -45,27 +58,31 @@
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding NewPolicyCommand}"
                             Padding="12,6"
-                            Margin="0,0,8,0" />
+                            Margin="0,0,8,0"
+                            ToolTip="New Policy (Ctrl+N)" />
 
                     <Button Content="Open"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding LoadPolicyCommand}"
                             Padding="12,6"
-                            Margin="0,0,8,0" />
+                            Margin="0,0,8,0"
+                            ToolTip="Open Policy (Ctrl+O)" />
 
                     <Button Content="Save"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding SavePolicyCommand}"
                             IsEnabled="{Binding HasPolicy}"
                             Padding="12,6"
-                            Margin="0,0,8,0" />
+                            Margin="0,0,8,0"
+                            ToolTip="Save Policy (Ctrl+S)" />
 
                     <Button Content="Save As..."
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding SavePolicyAsCommand}"
                             IsEnabled="{Binding HasPolicy}"
                             Padding="12,6"
-                            Margin="0,0,16,0" />
+                            Margin="0,0,16,0"
+                            ToolTip="Save Policy As (Ctrl+Shift+S)" />
 
                     <!-- Current File -->
                     <TextBlock VerticalAlignment="Center"
@@ -206,8 +223,7 @@
                         <ListBox Grid.Row="2"
                                  ItemsSource="{Binding Rules}"
                                  SelectedItem="{Binding SelectedRule}"
-                                 BorderThickness="0"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                 Style="{StaticResource RulesListBoxStyle}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Border Padding="8,6"
@@ -295,21 +311,28 @@
                                         FontSize="16"
                                         FontWeight="Bold"
                                         Margin="4,0,0,0"
-                                        ToolTip="Delete Rule" />
+                                        ToolTip="Delete Rule (Delete)" />
+                                <Button Content="Copy"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding CopyRuleCommand}"
+                                        Padding="8,0"
+                                        Height="32"
+                                        Margin="4,0,0,0"
+                                        ToolTip="Duplicate Rule (Ctrl+D)" />
                                 <Button Content="Up"
                                         Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding MoveRuleUpCommand}"
                                         Padding="8,0"
                                         Height="32"
                                         Margin="8,0,0,0"
-                                        ToolTip="Move Up" />
+                                        ToolTip="Move Up (Alt+Up)" />
                                 <Button Content="Down"
                                         Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding MoveRuleDownCommand}"
                                         Padding="8,0"
                                         Height="32"
                                         Margin="4,0,0,0"
-                                        ToolTip="Move Down" />
+                                        ToolTip="Move Down (Alt+Down)" />
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -336,6 +359,8 @@
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -422,33 +447,51 @@
                                      Text="{Binding RemotePorts, UpdateSourceTrigger=PropertyChanged}"
                                      Margin="0,0,0,12" />
 
-                            <!-- Priority -->
+                            <!-- Local IP -->
                             <TextBlock Grid.Row="8" Grid.Column="0"
-                                       Text="Priority"
+                                       Text="Local IP/CIDR"
                                        VerticalAlignment="Center"
                                        Margin="0,0,0,12" />
                             <TextBox Grid.Row="8" Grid.Column="1"
+                                     Text="{Binding LocalIp, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,0,12" />
+
+                            <!-- Local Ports -->
+                            <TextBlock Grid.Row="9" Grid.Column="0"
+                                       Text="Local Ports"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,0,12" />
+                            <TextBox Grid.Row="9" Grid.Column="1"
+                                     Text="{Binding LocalPorts, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,0,12" />
+
+                            <!-- Priority -->
+                            <TextBlock Grid.Row="10" Grid.Column="0"
+                                       Text="Priority"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,0,12" />
+                            <TextBox Grid.Row="10" Grid.Column="1"
                                      Text="{Binding Priority, UpdateSourceTrigger=PropertyChanged}"
                                      Width="100"
                                      HorizontalAlignment="Left"
                                      Margin="0,0,0,12" />
 
                             <!-- Enabled -->
-                            <TextBlock Grid.Row="9" Grid.Column="0"
+                            <TextBlock Grid.Row="11" Grid.Column="0"
                                        Text="Enabled"
                                        VerticalAlignment="Center"
                                        Margin="0,0,0,12" />
-                            <CheckBox Grid.Row="9" Grid.Column="1"
+                            <CheckBox Grid.Row="11" Grid.Column="1"
                                       IsChecked="{Binding Enabled}"
                                       VerticalAlignment="Center"
                                       Margin="0,0,0,12" />
 
                             <!-- Comment -->
-                            <TextBlock Grid.Row="10" Grid.Column="0"
+                            <TextBlock Grid.Row="12" Grid.Column="0"
                                        Text="Comment"
                                        VerticalAlignment="Top"
                                        Margin="0,0,0,12" />
-                            <TextBox Grid.Row="10" Grid.Column="1"
+                            <TextBox Grid.Row="12" Grid.Column="1"
                                      Text="{Binding Comment, UpdateSourceTrigger=PropertyChanged}"
                                      TextWrapping="Wrap"
                                      AcceptsReturn="True"

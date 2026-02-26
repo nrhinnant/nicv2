@@ -166,4 +166,48 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <!-- Selection highlight colors -->
+    <SolidColorBrush x:Key="SelectionBrush" Color="#E8F4FD" />
+    <SolidColorBrush x:Key="SelectionBorderBrush" Color="#0078D4" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#F5F5F5" />
+
+    <!-- Rules List Style -->
+    <Style x:Key="RulesListBoxStyle" TargetType="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border x:Name="Bd"
+                                        Background="Transparent"
+                                        BorderBrush="Transparent"
+                                        BorderThickness="3,0,0,0"
+                                        Padding="0">
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource SelectionBrush}" />
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource SelectionBorderBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
 </ResourceDictionary>
