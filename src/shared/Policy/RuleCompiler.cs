@@ -169,7 +169,12 @@ public sealed record CompilationError(string RuleId, string Message);
 /// - Uses same FWPM_LAYER_ALE_AUTH_CONNECT_V4 layer as outbound TCP
 /// - Supports: remote.ip (IPv4 only), remote.ports (single or range)
 /// - Supports: process (full path)
-/// - Errors on: direction=inbound + protocol=udp, protocol=any
+/// - Errors on: direction=inbound + protocol=udp
+///
+/// Protocol "any" Support:
+/// - protocol=any is expanded to separate TCP and UDP filters
+/// - For outbound rules, creates one TCP filter + one UDP filter per port spec
+/// - Inbound rules with protocol=any are not supported (UDP inbound not implemented)
 /// </summary>
 public static class RuleCompiler
 {
@@ -250,31 +255,41 @@ public static class RuleCompiler
             ? RuleDirection.Inbound
             : RuleDirection.Outbound;
 
-        if (portSpecs.Count == 0)
+        // Determine protocols to generate filters for
+        // "any" expands to both TCP and UDP (for outbound only - inbound "any" blocked in validation)
+        var isAny = string.Equals(rule.Protocol, RuleProtocol.Any, StringComparison.OrdinalIgnoreCase);
+        var protocolsToGenerate = isAny
+            ? new[] { RuleProtocol.Tcp, RuleProtocol.Udp }
+            : new[] { rule.Protocol };
+
+        foreach (var protocol in protocolsToGenerate)
         {
-            // No port specified - create single filter matching any port
-            var filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, null, null, 0, direction);
-            result.Filters.Add(filter);
-        }
-        else
-        {
-            // Create one filter per port specification
-            int portIndex = 0;
-            foreach (var (start, end) in portSpecs)
+            if (portSpecs.Count == 0)
             {
-                CompiledFilter filter;
-                if (start == end)
-                {
-                    // Single port
-                    filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, (ushort)start, null, null, portIndex, direction);
-                }
-                else
-                {
-                    // Port range
-                    filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, (ushort)start, (ushort)end, portIndex, direction);
-                }
+                // No port specified - create single filter matching any port
+                var filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, null, null, 0, direction, protocol);
                 result.Filters.Add(filter);
-                portIndex++;
+            }
+            else
+            {
+                // Create one filter per port specification
+                int portIndex = 0;
+                foreach (var (start, end) in portSpecs)
+                {
+                    CompiledFilter filter;
+                    if (start == end)
+                    {
+                        // Single port
+                        filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, (ushort)start, null, null, portIndex, direction, protocol);
+                    }
+                    else
+                    {
+                        // Port range
+                        filter = CreateFilter(rule, ruleId, remoteIp, remoteMask, null, (ushort)start, (ushort)end, portIndex, direction, protocol);
+                    }
+                    result.Filters.Add(filter);
+                    portIndex++;
+                }
             }
         }
     }
@@ -296,18 +311,24 @@ public static class RuleCompiler
             hasErrors = true;
         }
 
-        // Check protocol - TCP supported for both directions, UDP only for outbound
+        // Check protocol - TCP supported for both directions, UDP only for outbound, "any" expands to both
         var isTcp = string.Equals(rule.Protocol, RuleProtocol.Tcp, StringComparison.OrdinalIgnoreCase);
         var isUdp = string.Equals(rule.Protocol, RuleProtocol.Udp, StringComparison.OrdinalIgnoreCase);
+        var isAny = string.Equals(rule.Protocol, RuleProtocol.Any, StringComparison.OrdinalIgnoreCase);
 
-        if (!isTcp && !isUdp)
+        if (!isTcp && !isUdp && !isAny)
         {
-            result.AddError(ruleId, $"Unsupported protocol: '{rule.Protocol}'. Only 'tcp' and 'udp' are supported in this version.");
+            result.AddError(ruleId, $"Unsupported protocol: '{rule.Protocol}'. Only 'tcp', 'udp', and 'any' are supported in this version.");
             hasErrors = true;
         }
         else if (isUdp && isInbound)
         {
             result.AddError(ruleId, "Inbound UDP rules are not supported in this version. Use protocol 'tcp' for inbound rules.");
+            hasErrors = true;
+        }
+        else if (isAny && isInbound)
+        {
+            result.AddError(ruleId, "Inbound rules with protocol 'any' are not supported in this version (UDP inbound not implemented). Use protocol 'tcp' for inbound rules.");
             hasErrors = true;
         }
 
@@ -354,6 +375,8 @@ public static class RuleCompiler
     /// <summary>
     /// Creates a compiled filter from rule data.
     /// </summary>
+    /// <param name="protocol">The specific protocol for this filter (tcp or udp). When rule.Protocol is "any",
+    /// this method is called twice with each specific protocol.</param>
     private static CompiledFilter CreateFilter(
         Rule rule,
         string ruleId,
@@ -363,13 +386,16 @@ public static class RuleCompiler
         ushort? rangeStart,
         ushort? rangeEnd,
         int portIndex,
-        string direction)
+        string direction,
+        string protocol)
     {
         // Generate deterministic filter GUID from rule ID, port index, AND content
         // This ensures that if rule content changes, the GUID changes, causing the diff
         // to correctly identify the filter as needing removal and re-addition.
+        // Note: We use the specific protocol (tcp/udp), not rule.Protocol, to ensure
+        // unique GUIDs when expanding "any" to multiple protocol filters.
         var filterKey = GenerateFilterGuid(
-            ruleId, portIndex, rule.Action, rule.Protocol, direction,
+            ruleId, portIndex, rule.Action, protocol, direction,
             remoteIp, remoteMask, singlePort, rangeStart, rangeEnd, rule.Process);
 
         // Build display name
@@ -379,8 +405,8 @@ public static class RuleCompiler
             displayName += $" (port-{portIndex + 1})";
         }
 
-        // Build description
-        var description = $"Compiled from rule '{ruleId}': {rule.Action} {rule.Protocol} {direction}";
+        // Build description (use specific protocol, not rule.Protocol which may be "any")
+        var description = $"Compiled from rule '{ruleId}': {rule.Action} {protocol} {direction}";
         if (remoteIp.HasValue)
         {
             var ipStr = IpToString(remoteIp.Value);
@@ -416,7 +442,7 @@ public static class RuleCompiler
                 : FilterAction.Allow,
             Weight = weight,
             RuleId = ruleId,
-            Protocol = GetProtocolByte(rule.Protocol),
+            Protocol = GetProtocolByte(protocol),
             Direction = direction,
             RemoteIpAddress = remoteIp,
             RemoteIpMask = remoteMask,

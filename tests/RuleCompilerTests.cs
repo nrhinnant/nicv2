@@ -442,7 +442,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_AnyProtocol_ReturnsError()
+    public void Compile_OutboundAnyProtocol_CreatesTwoFilters()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -450,6 +450,151 @@ public class RuleCompilerTests
             Action = "block",
             Direction = "outbound",
             Protocol = "any",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Filters.Count);
+
+        // Should create one TCP and one UDP filter
+        var tcpFilter = result.Filters.FirstOrDefault(f => f.Protocol == 6);
+        var udpFilter = result.Filters.FirstOrDefault(f => f.Protocol == 17);
+
+        Assert.NotNull(tcpFilter);
+        Assert.NotNull(udpFilter);
+        Assert.Equal("any-rule", tcpFilter.RuleId);
+        Assert.Equal("any-rule", udpFilter.RuleId);
+        Assert.Equal(FilterAction.Block, tcpFilter.Action);
+        Assert.Equal(FilterAction.Block, udpFilter.Action);
+    }
+
+    [Fact]
+    public void Compile_InboundAnyProtocol_ReturnsError()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "inbound-any",
+            Action = "block",
+            Direction = "inbound",
+            Protocol = "any",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.False(result.IsSuccess);
+        Assert.Single(result.Errors);
+        Assert.Contains("not supported", result.Errors[0].Message.ToLower());
+    }
+
+    [Fact]
+    public void Compile_OutboundAnyProtocolWithPorts_CreatesCorrectFilters()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "any-dns",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "any",
+            Remote = new EndpointFilter { Ip = "8.8.8.8", Ports = "53" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Filters.Count);
+
+        // Both filters should have same IP and port
+        foreach (var filter in result.Filters)
+        {
+            Assert.Equal(0x08080808u, filter.RemoteIpAddress);
+            Assert.Equal((ushort)53, filter.RemotePort);
+            Assert.Equal("any-dns", filter.RuleId);
+        }
+    }
+
+    [Fact]
+    public void Compile_OutboundAnyProtocolWithMultiplePorts_CreatesAllFilters()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "any-multi-port",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "any",
+            Remote = new EndpointFilter { Ports = "53,443" },
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        // 2 protocols x 2 ports = 4 filters
+        Assert.Equal(4, result.Filters.Count);
+
+        var tcpFilters = result.Filters.Where(f => f.Protocol == 6).ToList();
+        var udpFilters = result.Filters.Where(f => f.Protocol == 17).ToList();
+
+        Assert.Equal(2, tcpFilters.Count);
+        Assert.Equal(2, udpFilters.Count);
+    }
+
+    [Fact]
+    public void Compile_OutboundAnyProtocol_GeneratesUniqueGuids()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "any-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "any",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Filters.Count);
+
+        // TCP and UDP filters should have different GUIDs
+        Assert.NotEqual(result.Filters[0].FilterKey, result.Filters[1].FilterKey);
+    }
+
+    [Fact]
+    public void Compile_OutboundAnyProtocol_DescriptionsShowSpecificProtocol()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "any-desc",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "any",
+            Enabled = true
+        });
+
+        var result = RuleCompiler.Compile(policy);
+
+        Assert.True(result.IsSuccess);
+
+        var tcpFilter = result.Filters.First(f => f.Protocol == 6);
+        var udpFilter = result.Filters.First(f => f.Protocol == 17);
+
+        Assert.Contains("tcp", tcpFilter.Description.ToLower());
+        Assert.Contains("udp", udpFilter.Description.ToLower());
+    }
+
+    [Fact]
+    public void Compile_UnknownProtocol_ReturnsError()
+    {
+        var policy = CreatePolicy(new Rule
+        {
+            Id = "icmp-rule",
+            Action = "block",
+            Direction = "outbound",
+            Protocol = "icmp",
             Enabled = true
         });
 
