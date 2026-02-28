@@ -1,5 +1,9 @@
 using System.Runtime.InteropServices;
 
+// Restrict DLL search to System32 only to prevent DLL hijacking attacks.
+// fwpuclnt.dll is a Windows system DLL located in System32.
+[assembly: DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+
 namespace WfpTrafficControl.Shared.Native;
 
 /// <summary>
