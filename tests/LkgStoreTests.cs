@@ -16,7 +16,7 @@ public class LkgStoreTestCollection : ICollectionFixture<LkgStoreTestFixture> { 
 /// <summary>
 /// Shared fixture for LkgStore tests - ensures clean state.
 /// </summary>
-public class LkgStoreTestFixture : IDisposable
+public sealed class LkgStoreTestFixture : IDisposable
 {
     public LkgStoreTestFixture()
     {
@@ -36,7 +36,7 @@ public class LkgStoreTestFixture : IDisposable
 /// Phase 14: LKG Persistence and Fail-Open Behavior
 /// </summary>
 [Collection("LkgStore Sequential")]
-public class LkgStoreTests : IDisposable
+public sealed class LkgStoreTests : IDisposable
 {
     private readonly string _testDirectory;
     private readonly string _originalDataDirectory;
@@ -593,7 +593,7 @@ public class LkgIpcMessageTests
 /// Verifies thread-safety and atomic operation guarantees.
 /// </summary>
 [Collection("LkgStore Sequential")]
-public class LkgStoreConcurrentAccessTests : IDisposable
+public sealed class LkgStoreConcurrentAccessTests : IDisposable
 {
     public LkgStoreConcurrentAccessTests()
     {

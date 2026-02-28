@@ -237,4 +237,13 @@ public class Worker : BackgroundService
         var principal = new WindowsPrincipal(identity);
         return principal.IsInRole(WindowsBuiltInRole.Administrator);
     }
+
+    /// <inheritdoc/>
+    public override void Dispose()
+    {
+        _fileWatcher?.Dispose();
+        _pipeServer?.Dispose();
+        base.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

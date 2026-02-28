@@ -782,7 +782,7 @@ public class PipeServerValidateTests
 /// <summary>
 /// Unit tests for PipeServer.ProcessApplyRequest() - security-critical tests.
 /// </summary>
-public class PipeServerApplySecurityTests : IDisposable
+public sealed class PipeServerApplySecurityTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly MockAuditLogWriter _mockAuditLog;
@@ -1026,7 +1026,7 @@ public class PipeServerApplySecurityTests : IDisposable
 /// Unit tests for PipeServer.ProcessLkgShowRequest() and ProcessLkgRevertRequest().
 /// </summary>
 [Collection("LkgStore Sequential")]
-public class PipeServerLkgTests : IDisposable
+public sealed class PipeServerLkgTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly MockAuditLogWriter _mockAuditLog;
@@ -1204,7 +1204,7 @@ public class PipeServerLkgTests : IDisposable
 /// <summary>
 /// Unit tests for PipeServer.ProcessWatchSetRequest() and ProcessWatchStatusRequest().
 /// </summary>
-public class PipeServerWatchTests : IDisposable
+public sealed class PipeServerWatchTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly MockAuditLogWriter _mockAuditLog;

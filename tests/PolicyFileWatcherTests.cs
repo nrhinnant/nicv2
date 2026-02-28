@@ -14,7 +14,7 @@ namespace WfpTrafficControl.Tests;
 /// <summary>
 /// Tests for PolicyFileWatcher debounce configuration.
 /// </summary>
-public class PolicyFileWatcherDebounceTests : IDisposable
+public sealed class PolicyFileWatcherDebounceTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;
@@ -118,7 +118,7 @@ public class PolicyFileWatcherDebounceTests : IDisposable
 /// <summary>
 /// Tests for PolicyFileWatcher StartWatching/StopWatching behavior.
 /// </summary>
-public class PolicyFileWatcherStartStopTests : IDisposable
+public sealed class PolicyFileWatcherStartStopTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;
@@ -304,7 +304,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
 /// <summary>
 /// Tests for PolicyFileWatcher statistics tracking.
 /// </summary>
-public class PolicyFileWatcherStatisticsTests : IDisposable
+public sealed class PolicyFileWatcherStatisticsTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;
@@ -402,7 +402,7 @@ public class PolicyFileWatcherStatisticsTests : IDisposable
 /// Tests for PolicyFileWatcher debounce timing behavior.
 /// These tests verify the debounce concept without relying on precise timing.
 /// </summary>
-public class PolicyFileWatcherDebounceBehaviorTests : IDisposable
+public sealed class PolicyFileWatcherDebounceBehaviorTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;
@@ -474,7 +474,7 @@ public class PolicyFileWatcherDebounceBehaviorTests : IDisposable
 /// <summary>
 /// Tests for PolicyFileWatcher invalid policy handling.
 /// </summary>
-public class PolicyFileWatcherInvalidPolicyTests : IDisposable
+public sealed class PolicyFileWatcherInvalidPolicyTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;
@@ -558,7 +558,7 @@ public class PolicyFileWatcherInvalidPolicyTests : IDisposable
 /// Tests for PolicyFileWatcher rapid change coalescing.
 /// These tests verify that multiple rapid file changes are coalesced into a single apply.
 /// </summary>
-public class PolicyFileWatcherCoalescingTests : IDisposable
+public sealed class PolicyFileWatcherCoalescingTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;
@@ -653,7 +653,7 @@ public class PolicyFileWatcherCoalescingTests : IDisposable
 /// <summary>
 /// Tests for PolicyFileWatcher file access retry behavior.
 /// </summary>
-public class PolicyFileWatcherFileAccessTests : IDisposable
+public sealed class PolicyFileWatcherFileAccessTests : IDisposable
 {
     private readonly MockWfpEngineForPipeServer _mockEngine;
     private readonly PolicyFileWatcher _watcher;

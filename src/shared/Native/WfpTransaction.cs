@@ -123,7 +123,10 @@ public sealed class WfpTransaction : IDisposable
             return WfpErrorTranslator.ToFailedResult<WfpTransaction>(result, "Failed to begin WFP transaction");
         }
 
+        // CA2000: False positive - caller receives ownership via Result and is responsible for disposal
+#pragma warning disable CA2000
         return Result<WfpTransaction>.Success(new WfpTransaction(engineHandle, native));
+#pragma warning restore CA2000
     }
 
     /// <summary>

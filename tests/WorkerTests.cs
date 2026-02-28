@@ -137,7 +137,7 @@ public class WorkerConfigurationTests
 /// These test the logic flow without requiring full Worker instantiation.
 /// </summary>
 [Collection("LkgStore Sequential")]
-public class WorkerLkgAutoApplyLogicTests : IDisposable
+public sealed class WorkerLkgAutoApplyLogicTests : IDisposable
 {
     public WorkerLkgAutoApplyLogicTests()
     {

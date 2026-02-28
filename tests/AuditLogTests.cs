@@ -208,7 +208,7 @@ public class AuditLogEntryTests
 /// <summary>
 /// Unit tests for AuditLogWriter.
 /// </summary>
-public class AuditLogWriterTests : IDisposable
+public sealed class AuditLogWriterTests : IDisposable
 {
     private readonly string _testLogPath;
     private readonly AuditLogWriter _writer;
@@ -288,7 +288,7 @@ public class AuditLogWriterTests : IDisposable
 /// <summary>
 /// Unit tests for AuditLogReader.
 /// </summary>
-public class AuditLogReaderTests : IDisposable
+public sealed class AuditLogReaderTests : IDisposable
 {
     private readonly string _testLogPath;
     private readonly AuditLogWriter _writer;
@@ -466,7 +466,7 @@ public class NullAuditLogWriterTests
 /// normal audit log operations. Since tests don't run as LocalSystem, the
 /// ACL protection is skipped, which is the expected behavior.
 /// </remarks>
-public class AuditLogWriterAclTests : IDisposable
+public sealed class AuditLogWriterAclTests : IDisposable
 {
     private readonly string _testLogPath;
     private readonly AuditLogWriter _writer;

@@ -53,7 +53,10 @@ public static class WfpSession
             return WfpErrorTranslator.ToFailedResult<WfpEngineHandle>(result, "Failed to open WFP engine");
         }
 
+        // CA2000: False positive - caller receives ownership via Result and is responsible for disposal
+#pragma warning disable CA2000
         return Result<WfpEngineHandle>.Success(new WfpEngineHandle(rawHandle, ownsHandle: true));
+#pragma warning restore CA2000
     }
 
     /// <summary>
