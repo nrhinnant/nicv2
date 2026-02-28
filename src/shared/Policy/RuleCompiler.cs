@@ -184,6 +184,12 @@ public static class RuleCompiler
     private const ulong BaseWeight = 1000;
 
     /// <summary>
+    /// Static array for "any" protocol expansion (TCP and UDP).
+    /// Reused to avoid allocation per rule compilation.
+    /// </summary>
+    private static readonly string[] TcpUdpProtocols = { RuleProtocol.Tcp, RuleProtocol.Udp };
+
+    /// <summary>
     /// Compiles a policy to WFP filter definitions.
     /// Only enabled rules with supported features are compiled.
     /// </summary>
@@ -257,9 +263,10 @@ public static class RuleCompiler
 
         // Determine protocols to generate filters for
         // "any" expands to both TCP and UDP (for outbound only - inbound "any" blocked in validation)
+        // Use static array for "any" case to avoid allocation per rule
         var isAny = string.Equals(rule.Protocol, RuleProtocol.Any, StringComparison.OrdinalIgnoreCase);
         var protocolsToGenerate = isAny
-            ? new[] { RuleProtocol.Tcp, RuleProtocol.Udp }
+            ? TcpUdpProtocols
             : new[] { rule.Protocol };
 
         foreach (var protocol in protocolsToGenerate)
@@ -473,7 +480,8 @@ public static class RuleCompiler
     {
         // Build a deterministic string from all content-relevant fields
         // Format: ruleId:portIndex|action|protocol|direction|ip/mask|port|process
-        var sb = new System.Text.StringBuilder();
+        // Pre-allocate capacity to avoid reallocations (typical string is 80-150 chars)
+        var sb = new System.Text.StringBuilder(256);
         sb.Append(ruleId);
         sb.Append(':');
         sb.Append(portIndex);

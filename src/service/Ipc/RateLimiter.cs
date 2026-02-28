@@ -24,6 +24,7 @@ public sealed class RateLimiter
 {
     private readonly object _lock = new();
     private readonly Dictionary<string, ClientRateState> _clients = new();
+    private readonly List<string> _expiredClientsBuffer = new(); // Reusable buffer for cleanup
     private int _callCount;
 
     // Global rate limit state
@@ -278,10 +279,11 @@ public sealed class RateLimiter
     /// <summary>
     /// Removes expired client entries to prevent memory leaks.
     /// Must be called while holding _lock.
+    /// Uses a reusable buffer to avoid allocation per cleanup cycle.
     /// </summary>
     private void CleanupExpiredEntries(long now)
     {
-        var expiredClients = new List<string>();
+        _expiredClientsBuffer.Clear();
         var expirationThreshold = WindowSeconds * 2 * Stopwatch.Frequency; // 2x window = expired
 
         foreach (var kvp in _clients)
@@ -289,11 +291,11 @@ public sealed class RateLimiter
             var elapsed = now - kvp.Value.WindowStart;
             if (elapsed > expirationThreshold)
             {
-                expiredClients.Add(kvp.Key);
+                _expiredClientsBuffer.Add(kvp.Key);
             }
         }
 
-        foreach (var client in expiredClients)
+        foreach (var client in _expiredClientsBuffer)
         {
             _clients.Remove(client);
         }

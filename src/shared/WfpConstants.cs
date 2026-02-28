@@ -158,28 +158,37 @@ public static class WfpConstants
     // Set "WfpTrafficControl:AutoApplyLkgOnStartup" to true in appsettings.json to enable.
     // Default is false (fail-open behavior for safety).
 
+    // Cached paths to avoid repeated allocations (lazy-initialized)
+    private static string? _dataDirectory;
+    private static string? _lkgPolicyPath;
+    private static string? _auditLogPath;
+
     /// <summary>
     /// Gets the full path to the application data directory.
+    /// Cached after first call to avoid repeated string allocations.
     /// </summary>
     public static string GetDataDirectory()
     {
-        var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-        return Path.Combine(programData, DataDirectoryName);
+        return _dataDirectory ??= Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            DataDirectoryName);
     }
 
     /// <summary>
     /// Gets the full path to the LKG policy file.
+    /// Cached after first call to avoid repeated string allocations.
     /// </summary>
     public static string GetLkgPolicyPath()
     {
-        return Path.Combine(GetDataDirectory(), LkgPolicyFileName);
+        return _lkgPolicyPath ??= Path.Combine(GetDataDirectory(), LkgPolicyFileName);
     }
 
     /// <summary>
     /// Gets the full path to the audit log file.
+    /// Cached after first call to avoid repeated string allocations.
     /// </summary>
     public static string GetAuditLogPath()
     {
-        return Path.Combine(GetDataDirectory(), AuditLogFileName);
+        return _auditLogPath ??= Path.Combine(GetDataDirectory(), AuditLogFileName);
     }
 }

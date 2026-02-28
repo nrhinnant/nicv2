@@ -105,6 +105,20 @@ public static class PolicyValidator
     /// <returns>Validation result with all errors found</returns>
     public static ValidationResult ValidateJson(string json)
     {
+        return ValidateJsonWithPolicy(json, out _);
+    }
+
+    /// <summary>
+    /// Validates a policy JSON string and returns the parsed policy if successful.
+    /// Use this overload when you need to use the policy after validation to avoid
+    /// parsing the JSON twice.
+    /// </summary>
+    /// <param name="json">JSON string to validate</param>
+    /// <param name="policy">The parsed policy if validation succeeds; null otherwise</param>
+    /// <returns>Validation result with all errors found</returns>
+    public static ValidationResult ValidateJsonWithPolicy(string json, out Policy? policy)
+    {
+        policy = null;
         var result = new ValidationResult();
 
         // Check for null/empty
@@ -114,19 +128,23 @@ public static class PolicyValidator
             return result;
         }
 
-        // Check size limit (using byte count for accurate UTF-8 size check)
-        var byteCount = System.Text.Encoding.UTF8.GetByteCount(json);
-        if (byteCount > MaxPolicyFileSize)
+        // Fast reject for oversized input (char count is always <= byte count for UTF-8)
+        if (json.Length > MaxPolicyFileSize)
         {
-            result.AddError("(root)", $"Policy JSON exceeds maximum size ({MaxPolicyFileSize / 1024} KB, actual: {byteCount / 1024} KB)");
-            return result;
+            // Need precise byte count check
+            var byteCount = System.Text.Encoding.UTF8.GetByteCount(json);
+            if (byteCount > MaxPolicyFileSize)
+            {
+                result.AddError("(root)", $"Policy JSON exceeds maximum size ({MaxPolicyFileSize / 1024} KB, actual: {byteCount / 1024} KB)");
+                return result;
+            }
         }
 
         // Try to parse JSON
-        Policy? policy;
+        Policy? parsedPolicy;
         try
         {
-            policy = Policy.FromJson(json);
+            parsedPolicy = Policy.FromJson(json);
         }
         catch (JsonException ex)
         {
@@ -134,14 +152,20 @@ public static class PolicyValidator
             return result;
         }
 
-        if (policy == null)
+        if (parsedPolicy == null)
         {
             result.AddError("(root)", "Failed to parse policy (null result)");
             return result;
         }
 
         // Validate the parsed policy
-        ValidatePolicy(policy, result);
+        ValidatePolicy(parsedPolicy, result);
+
+        // Only return the policy if validation succeeded
+        if (result.IsValid)
+        {
+            policy = parsedPolicy;
+        }
 
         return result;
     }

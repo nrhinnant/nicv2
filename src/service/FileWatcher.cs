@@ -402,8 +402,8 @@ public sealed class PolicyFileWatcher : IDisposable
             }
             json = readResult.Value;
 
-            // Step 2: Validate the policy
-            var validationResult = PolicyValidator.ValidateJson(json);
+            // Step 2: Validate and parse the policy (single parse operation)
+            var validationResult = PolicyValidator.ValidateJsonWithPolicy(json, out var policy);
             if (!validationResult.IsValid)
             {
                 var error = $"Policy validation failed: {validationResult.GetSummary()}";
@@ -411,8 +411,7 @@ public sealed class PolicyFileWatcher : IDisposable
                 return Result<Unit>.Failure(ErrorCodes.InvalidArgument, error);
             }
 
-            // Step 3: Parse the policy
-            var policy = Policy.FromJson(json);
+            // Policy is guaranteed non-null when validation succeeds
             if (policy == null)
             {
                 var error = "Failed to parse policy after validation";

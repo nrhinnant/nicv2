@@ -229,15 +229,14 @@ public static class LkgStore
                 return LkgLoadResult.Failed("LKG checksum mismatch - file may be corrupted");
             }
 
-            // Validate the policy JSON
-            var validationResult = PolicyValidator.ValidateJson(wrapper.PolicyJson);
+            // Validate and parse the policy JSON (single parse operation)
+            var validationResult = PolicyValidator.ValidateJsonWithPolicy(wrapper.PolicyJson, out var policy);
             if (!validationResult.IsValid)
             {
                 return LkgLoadResult.Failed($"LKG policy validation failed: {validationResult.GetSummary()}");
             }
 
-            // Parse the policy
-            var policy = Policy.Policy.FromJson(wrapper.PolicyJson);
+            // Policy is guaranteed non-null when validation succeeds
             if (policy == null)
             {
                 return LkgLoadResult.Failed("Failed to parse LKG policy");

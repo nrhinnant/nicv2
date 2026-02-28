@@ -35,6 +35,7 @@ public sealed class AuditLogReader
 
     /// <summary>
     /// Reads the last N entries from the audit log.
+    /// Optimized to read from end of file without loading entire content.
     /// </summary>
     /// <param name="count">Maximum number of entries to return.</param>
     /// <returns>List of audit log entries, newest first.</returns>
@@ -52,18 +53,20 @@ public sealed class AuditLogReader
 
         try
         {
-            // Read all lines and take the last N
-            // For large files, this could be optimized to read from end
-            var lines = ReadLinesShared();
-            var entries = new List<AuditLogEntry>();
+            var lines = ReadLinesFromEnd(count);
+            var entries = new List<AuditLogEntry>(Math.Min(count, lines.Count));
 
-            // Process from end to get newest first
-            for (int i = lines.Count - 1; i >= 0 && entries.Count < count; i--)
+            // Lines are already in reverse order (newest first)
+            foreach (var line in lines)
             {
-                var entry = AuditLogEntry.FromJson(lines[i]);
+                var entry = AuditLogEntry.FromJson(line);
                 if (entry != null)
                 {
                     entries.Add(entry);
+                    if (entries.Count >= count)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -73,6 +76,99 @@ public sealed class AuditLogReader
         {
             return new List<AuditLogEntry>();
         }
+    }
+
+    /// <summary>
+    /// Reads lines from the end of the file, returning them newest first.
+    /// Uses backward scanning to avoid loading the entire file.
+    /// </summary>
+    /// <param name="maxLines">Maximum number of lines to read.</param>
+    /// <returns>Lines in reverse order (newest first).</returns>
+    private List<string> ReadLinesFromEnd(int maxLines)
+    {
+        const int BufferSize = 4096;
+        var lines = new List<string>();
+
+        using var stream = new FileStream(
+            _logPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite);
+
+        if (stream.Length == 0)
+        {
+            return lines;
+        }
+
+        // Use StreamReader for proper encoding handling, but read in chunks from end
+        // For simplicity and correctness with UTF-8, we'll read backwards in chunks
+        // and accumulate complete lines
+
+        var buffer = new byte[BufferSize];
+        var lineBuffer = new List<byte>();
+        long position = stream.Length;
+
+        while (position > 0 && lines.Count < maxLines)
+        {
+            // Calculate how much to read
+            int bytesToRead = (int)Math.Min(BufferSize, position);
+            position -= bytesToRead;
+            stream.Seek(position, SeekOrigin.Begin);
+
+            int bytesRead = stream.Read(buffer, 0, bytesToRead);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            // Process bytes in reverse order
+            for (int i = bytesRead - 1; i >= 0 && lines.Count < maxLines; i--)
+            {
+                byte b = buffer[i];
+
+                if (b == '\n')
+                {
+                    // Found end of a line, extract it
+                    if (lineBuffer.Count > 0)
+                    {
+                        // Remove trailing CR if present
+                        if (lineBuffer.Count > 0 && lineBuffer[lineBuffer.Count - 1] == '\r')
+                        {
+                            lineBuffer.RemoveAt(lineBuffer.Count - 1);
+                        }
+
+                        // Reverse the buffer since we built it backwards
+                        lineBuffer.Reverse();
+                        var lineText = System.Text.Encoding.UTF8.GetString(lineBuffer.ToArray());
+
+                        if (!string.IsNullOrWhiteSpace(lineText))
+                        {
+                            lines.Add(lineText);
+                        }
+                        lineBuffer.Clear();
+                    }
+                }
+                else if (b != '\r')
+                {
+                    // Add non-CR characters to buffer
+                    lineBuffer.Add(b);
+                }
+            }
+        }
+
+        // Handle any remaining content (first line of file without leading newline)
+        if (lineBuffer.Count > 0 && lines.Count < maxLines)
+        {
+            lineBuffer.Reverse();
+            var lineText = System.Text.Encoding.UTF8.GetString(lineBuffer.ToArray());
+
+            if (!string.IsNullOrWhiteSpace(lineText))
+            {
+                lines.Add(lineText);
+            }
+        }
+
+        return lines;
     }
 
     /// <summary>
@@ -167,6 +263,7 @@ public sealed class AuditLogReader
 
     /// <summary>
     /// Gets the total number of entries in the audit log.
+    /// Optimized to count newlines directly without loading file content.
     /// </summary>
     public int GetEntryCount()
     {
@@ -177,13 +274,62 @@ public sealed class AuditLogReader
 
         try
         {
-            var lines = ReadLinesShared();
-            return lines.Count(line => !string.IsNullOrWhiteSpace(line));
+            return CountLinesOptimized();
         }
         catch
         {
             return 0;
         }
+    }
+
+    /// <summary>
+    /// Counts lines in the file by scanning for newlines directly.
+    /// Much more efficient than loading all content into memory.
+    /// </summary>
+    private int CountLinesOptimized()
+    {
+        using var stream = new FileStream(
+            _logPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite);
+
+        if (stream.Length == 0)
+        {
+            return 0;
+        }
+
+        int lineCount = 0;
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        bool lastCharWasNewline = false;
+        bool hasContent = false;
+
+        while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
+        {
+            for (int i = 0; i < bytesRead; i++)
+            {
+                byte b = buffer[i];
+                if (b == '\n')
+                {
+                    lineCount++;
+                    lastCharWasNewline = true;
+                }
+                else if (b != '\r')
+                {
+                    hasContent = true;
+                    lastCharWasNewline = false;
+                }
+            }
+        }
+
+        // If file doesn't end with newline but has content, count the last line
+        if (hasContent && !lastCharWasNewline)
+        {
+            lineCount++;
+        }
+
+        return lineCount;
     }
 
     /// <summary>

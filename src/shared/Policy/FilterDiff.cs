@@ -91,10 +91,19 @@ public static class FilterDiffComputer
         var currentFilters = current ?? Array.Empty<ExistingFilter>();
 
         // Build a set of current filter GUIDs for O(1) lookup
-        var currentGuids = new HashSet<Guid>(currentFilters.Select(f => f.FilterKey));
+        // Pre-allocate capacity and iterate directly to avoid LINQ iterator allocation
+        var currentGuids = new HashSet<Guid>(currentFilters.Count);
+        foreach (var f in currentFilters)
+        {
+            currentGuids.Add(f.FilterKey);
+        }
 
         // Build a set of desired filter GUIDs for O(1) lookup
-        var desiredGuids = new HashSet<Guid>(desiredFilters.Select(f => f.FilterKey));
+        var desiredGuids = new HashSet<Guid>(desiredFilters.Count);
+        foreach (var f in desiredFilters)
+        {
+            desiredGuids.Add(f.FilterKey);
+        }
 
         // Find filters to add: in desired but not in current
         foreach (var filter in desiredFilters)

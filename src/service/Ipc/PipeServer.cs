@@ -617,8 +617,8 @@ public sealed class PipeServer : IDisposable
                 return ApplyResponse.Failure($"Failed to read policy file: {ex.Message}");
             }
 
-            // Step 3: Validate the policy
-            var validationResult = PolicyValidator.ValidateJson(json);
+            // Step 3: Validate and parse the policy (single parse operation)
+            var validationResult = PolicyValidator.ValidateJsonWithPolicy(json, out var policy);
             if (!validationResult.IsValid)
             {
                 _logger.LogWarning("Policy validation failed with {ErrorCount} error(s)", validationResult.Errors.Count);
@@ -626,8 +626,7 @@ public sealed class PipeServer : IDisposable
                 return ApplyResponse.Failure($"Policy validation failed: {validationResult.GetSummary()}");
             }
 
-            // Step 4: Parse the policy
-            var policy = Policy.FromJson(json);
+            // Policy is guaranteed non-null when validation succeeds
             if (policy == null)
             {
                 _auditLog.Write(AuditLogEntry.ApplyFailed(AuditSource.Cli, "PARSE_ERROR", "Failed to parse policy after validation"));
@@ -917,22 +916,26 @@ public sealed class PipeServer : IDisposable
 
             var totalCount = _auditLogReader.GetEntryCount();
 
-            // Convert to DTOs
-            var dtos = entries.Select(e => new AuditLogEntryDto
+            // Convert to DTOs - pre-allocate to avoid LINQ iterator allocation
+            var dtos = new List<AuditLogEntryDto>(entries.Count);
+            foreach (var e in entries)
             {
-                Timestamp = e.Timestamp,
-                Event = e.Event,
-                Source = e.Source,
-                Status = e.Status,
-                ErrorCode = e.ErrorCode,
-                ErrorMessage = e.ErrorMessage,
-                PolicyFile = e.Details?.PolicyFile,
-                PolicyVersion = e.Details?.PolicyVersion,
-                FiltersCreated = e.Details?.FiltersCreated ?? 0,
-                FiltersRemoved = e.Details?.FiltersRemoved ?? 0,
-                RulesSkipped = e.Details?.RulesSkipped ?? 0,
-                TotalRules = e.Details?.TotalRules ?? 0
-            }).ToList();
+                dtos.Add(new AuditLogEntryDto
+                {
+                    Timestamp = e.Timestamp,
+                    Event = e.Event,
+                    Source = e.Source,
+                    Status = e.Status,
+                    ErrorCode = e.ErrorCode,
+                    ErrorMessage = e.ErrorMessage,
+                    PolicyFile = e.Details?.PolicyFile,
+                    PolicyVersion = e.Details?.PolicyVersion,
+                    FiltersCreated = e.Details?.FiltersCreated ?? 0,
+                    FiltersRemoved = e.Details?.FiltersRemoved ?? 0,
+                    RulesSkipped = e.Details?.RulesSkipped ?? 0,
+                    TotalRules = e.Details?.TotalRules ?? 0
+                });
+            }
 
             return AuditLogsResponse.Success(dtos, totalCount, _auditLogReader.LogPath);
         }
