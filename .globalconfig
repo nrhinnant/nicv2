@@ -62,6 +62,16 @@ dotnet_diagnostic.CA2227.severity = suggestion  # Collection properties with set
 dotnet_diagnostic.CA1815.severity = suggestion  # Override equals on value types
 
 # ============================================
+# TEST-SPECIFIC RULES — Suppress for test projects
+# These are valid warnings in production but unnecessary in tests
+# ============================================
+dotnet_diagnostic.CA1308.severity = suggestion  # ToUpperInvariant vs ToLowerInvariant (stylistic)
+dotnet_diagnostic.CA1849.severity = suggestion  # Async methods (sync is fine in tests)
+dotnet_diagnostic.CA1859.severity = suggestion  # Concrete types (interfaces useful for mocking)
+dotnet_diagnostic.CA1805.severity = suggestion  # Unnecessary init (readability in tests)
+dotnet_diagnostic.CA1819.severity = suggestion  # Arrays in properties (fine for DTOs/test data)
+
+# ============================================
 # DISABLE RULES — Not applicable to this project
 # ============================================
 dotnet_diagnostic.CA1014.severity = none    # Mark assemblies with CLSCompliant

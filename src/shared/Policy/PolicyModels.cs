@@ -49,16 +49,20 @@ public sealed class Policy
     /// </summary>
     public string ToJson(bool indented = false)
     {
-        var options = indented
-            ? new JsonSerializerOptions(SerializerOptions) { WriteIndented = true }
-            : SerializerOptions;
-        return JsonSerializer.Serialize(this, options);
+        return JsonSerializer.Serialize(this, indented ? IndentedSerializerOptions : SerializerOptions);
     }
 
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
         PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private static readonly JsonSerializerOptions IndentedSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        WriteIndented = true
     };
 }
 

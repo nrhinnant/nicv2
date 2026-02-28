@@ -366,13 +366,13 @@ public sealed class WfpInterop : IWfpInterop
     }
 
     /// <inheritdoc/>
-    public Result<ulong> AddFilter(IntPtr engineHandle, CompiledFilter compiled)
+    public Result<ulong> AddFilter(IntPtr engineHandle, CompiledFilter filter)
     {
         // Count conditions
         int conditionCount = 1; // Protocol is always present
-        if (compiled.RemoteIpAddress.HasValue) conditionCount++;
-        if (compiled.RemotePort.HasValue || compiled.RemotePortRangeStart.HasValue) conditionCount++;
-        if (!string.IsNullOrEmpty(compiled.ProcessPath)) conditionCount++;
+        if (filter.RemoteIpAddress.HasValue) conditionCount++;
+        if (filter.RemotePort.HasValue || filter.RemotePortRangeStart.HasValue) conditionCount++;
+        if (!string.IsNullOrEmpty(filter.ProcessPath)) conditionCount++;
 
         // Allocate memory for conditions
         var conditionSize = Marshal.SizeOf<FWPM_FILTER_CONDITION0>();
@@ -389,7 +389,7 @@ public sealed class WfpInterop : IWfpInterop
         // Allocate memory for weight (FWP_UINT64 requires a pointer to the value)
         var weightPtr = Marshal.AllocHGlobal(sizeof(ulong));
         allocatedPtrs.Add(weightPtr);
-        Marshal.WriteInt64(weightPtr, (long)compiled.Weight);
+        Marshal.WriteInt64(weightPtr, (long)filter.Weight);
 
         try
         {
@@ -403,22 +403,22 @@ public sealed class WfpInterop : IWfpInterop
                 conditionValue = new FWP_CONDITION_VALUE0
                 {
                     type = FwpDataType.FWP_UINT8,
-                    value = compiled.Protocol
+                    value = filter.Protocol
                 }
             };
             Marshal.StructureToPtr(protocolCondition, conditionsPtr + (conditionSize * conditionIndex), false);
             conditionIndex++;
 
             // Condition 2: Remote IP (if specified)
-            if (compiled.RemoteIpAddress.HasValue)
+            if (filter.RemoteIpAddress.HasValue)
             {
                 var addrMaskPtr = Marshal.AllocHGlobal(Marshal.SizeOf<FWP_V4_ADDR_AND_MASK>());
                 allocatedPtrs.Add(addrMaskPtr);
 
                 var addrMask = new FWP_V4_ADDR_AND_MASK
                 {
-                    addr = compiled.RemoteIpAddress.Value,
-                    mask = compiled.RemoteIpMask
+                    addr = filter.RemoteIpAddress.Value,
+                    mask = filter.RemoteIpMask
                 };
                 Marshal.StructureToPtr(addrMask, addrMaskPtr, false);
 
@@ -437,7 +437,7 @@ public sealed class WfpInterop : IWfpInterop
             }
 
             // Condition 3: Remote Port (single or range)
-            if (compiled.RemotePort.HasValue)
+            if (filter.RemotePort.HasValue)
             {
                 // Single port match
                 var portCondition = new FWPM_FILTER_CONDITION0
@@ -447,13 +447,13 @@ public sealed class WfpInterop : IWfpInterop
                     conditionValue = new FWP_CONDITION_VALUE0
                     {
                         type = FwpDataType.FWP_UINT16,
-                        value = compiled.RemotePort.Value
+                        value = filter.RemotePort.Value
                     }
                 };
                 Marshal.StructureToPtr(portCondition, conditionsPtr + (conditionSize * conditionIndex), false);
                 conditionIndex++;
             }
-            else if (compiled.RemotePortRangeStart.HasValue && compiled.RemotePortRangeEnd.HasValue)
+            else if (filter.RemotePortRangeStart.HasValue && filter.RemotePortRangeEnd.HasValue)
             {
                 // Port range match
                 var rangePtr = Marshal.AllocHGlobal(Marshal.SizeOf<FWP_RANGE0>());
@@ -464,12 +464,12 @@ public sealed class WfpInterop : IWfpInterop
                     valueLow = new FWP_VALUE0
                     {
                         type = FwpDataType.FWP_UINT16,
-                        value = compiled.RemotePortRangeStart.Value
+                        value = filter.RemotePortRangeStart.Value
                     },
                     valueHigh = new FWP_VALUE0
                     {
                         type = FwpDataType.FWP_UINT16,
-                        value = compiled.RemotePortRangeEnd.Value
+                        value = filter.RemotePortRangeEnd.Value
                     }
                 };
                 Marshal.StructureToPtr(range, rangePtr, false);
@@ -489,10 +489,10 @@ public sealed class WfpInterop : IWfpInterop
             }
 
             // Condition 4: Application ID (if specified)
-            if (!string.IsNullOrEmpty(compiled.ProcessPath))
+            if (!string.IsNullOrEmpty(filter.ProcessPath))
             {
                 // Get app ID from file name
-                var appIdResult = NativeMethods.FwpmGetAppIdFromFileName0(compiled.ProcessPath, out appIdBlobPtr);
+                var appIdResult = NativeMethods.FwpmGetAppIdFromFileName0(filter.ProcessPath, out appIdBlobPtr);
                 if (!WfpErrorTranslator.IsSuccess(appIdResult))
                 {
                     // SECURITY: Do NOT silently drop the process condition!
@@ -501,10 +501,10 @@ public sealed class WfpInterop : IWfpInterop
                     // filter matching ALL processes, which is a privilege escalation vector.
                     _logger.LogError("Failed to resolve app ID for '{ProcessPath}': 0x{ErrorCode:X8}. " +
                         "Filter creation aborted to prevent overly-broad rule.",
-                        compiled.ProcessPath, appIdResult);
+                        filter.ProcessPath, appIdResult);
                     return Result<ulong>.Failure(new Error(
                         ErrorCodes.InvalidArgument,
-                        $"Cannot create filter: process path '{compiled.ProcessPath}' could not be resolved. " +
+                        $"Cannot create filter: process path '{filter.ProcessPath}' could not be resolved. " +
                         "Ensure the executable exists and the path is correct."));
                 }
 
@@ -526,23 +526,23 @@ public sealed class WfpInterop : IWfpInterop
             }
 
             // Determine action type
-            var actionType = compiled.Action == FilterAction.Block
+            var actionType = filter.Action == FilterAction.Block
                 ? FwpActionType.FWP_ACTION_BLOCK
                 : FwpActionType.FWP_ACTION_PERMIT;
 
             // Select the appropriate WFP layer based on direction
-            var layerKey = string.Equals(compiled.Direction, RuleDirection.Inbound, StringComparison.OrdinalIgnoreCase)
+            var layerKey = string.Equals(filter.Direction, RuleDirection.Inbound, StringComparison.OrdinalIgnoreCase)
                 ? WfpLayerGuids.FWPM_LAYER_ALE_AUTH_RECV_ACCEPT_V4
                 : WfpLayerGuids.FWPM_LAYER_ALE_AUTH_CONNECT_V4;
 
             // Create the filter structure
-            var filter = new FWPM_FILTER0
+            var wfpFilter = new FWPM_FILTER0
             {
-                filterKey = compiled.FilterKey,
+                filterKey = filter.FilterKey,
                 displayData = new FWPM_DISPLAY_DATA0
                 {
-                    name = compiled.DisplayName,
-                    description = compiled.Description
+                    name = filter.DisplayName,
+                    description = filter.Description
                 },
                 flags = FwpmFilterFlags.FWPM_FILTER_FLAG_NONE,
                 providerKey = providerGuidHandle.AddrOfPinnedObject(),
@@ -567,18 +567,18 @@ public sealed class WfpInterop : IWfpInterop
                 effectiveWeight = new FWP_VALUE0 { type = FwpDataType.FWP_EMPTY, value = 0 }
             };
 
-            _logger.LogDebug("Calling FwpmFilterAdd0 for filter {FilterKey}", compiled.FilterKey);
-            var result = NativeMethods.FwpmFilterAdd0(engineHandle, in filter, IntPtr.Zero, out ulong filterId);
+            _logger.LogDebug("Calling FwpmFilterAdd0 for filter {FilterKey}", filter.FilterKey);
+            var result = NativeMethods.FwpmFilterAdd0(engineHandle, in wfpFilter, IntPtr.Zero, out ulong filterId);
 
             if (result == NativeMethods.FWP_E_ALREADY_EXISTS)
             {
-                _logger.LogDebug("Filter {FilterKey} already exists, treating as success", compiled.FilterKey);
+                _logger.LogDebug("Filter {FilterKey} already exists, treating as success", filter.FilterKey);
                 return Result<ulong>.Success(0);
             }
 
             if (!WfpErrorTranslator.IsSuccess(result))
             {
-                return WfpErrorTranslator.ToFailedResult<ulong>(result, $"Failed to add filter {compiled.FilterKey}");
+                return WfpErrorTranslator.ToFailedResult<ulong>(result, $"Failed to add filter {filter.FilterKey}");
             }
 
             return Result<ulong>.Success(filterId);

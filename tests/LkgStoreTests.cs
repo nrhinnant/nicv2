@@ -11,7 +11,9 @@ namespace WfpTrafficControl.Tests;
 /// Test collection to ensure LkgStore tests run sequentially (shared file state).
 /// </summary>
 [CollectionDefinition("LkgStore Sequential", DisableParallelization = true)]
+#pragma warning disable CA1711 // "Collection" suffix is conventional for xUnit collection definitions
 public class LkgStoreTestCollection : ICollectionFixture<LkgStoreTestFixture> { }
+#pragma warning restore CA1711
 
 /// <summary>
 /// Shared fixture for LkgStore tests - ensures clean state.

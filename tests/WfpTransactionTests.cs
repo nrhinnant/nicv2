@@ -14,7 +14,7 @@ public class WfpTransactionTests
     // Mock Implementation
     // ========================================
 
-    private class MockNativeTransaction : IWfpNativeTransaction
+    private sealed class MockNativeTransaction : IWfpNativeTransaction
     {
         public int BeginCallCount { get; private set; }
         public int CommitCallCount { get; private set; }

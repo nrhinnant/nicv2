@@ -16,7 +16,7 @@ public class PanicRollbackTests
     // MockWfpEngine for rollback testing
     // ========================================
 
-    private class MockWfpEngine : IWfpEngine
+    private sealed class MockWfpEngine : IWfpEngine
     {
         public bool ProviderExistsValue { get; set; } = true;
         public bool SublayerExistsValue { get; set; } = true;

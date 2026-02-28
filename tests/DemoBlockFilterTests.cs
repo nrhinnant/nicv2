@@ -15,7 +15,7 @@ public class DemoBlockFilterTests
     // MockWfpEngine for demo block testing
     // ========================================
 
-    private class MockWfpEngine : IWfpEngine
+    private sealed class MockWfpEngine : IWfpEngine
     {
         public bool ProviderExistsValue { get; set; }
         public bool SublayerExistsValue { get; set; }

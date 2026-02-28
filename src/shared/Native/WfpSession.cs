@@ -74,8 +74,7 @@ public static class WfpSession
     /// </remarks>
     public static Result CloseEngine(WfpEngineHandle handle)
     {
-        if (handle == null)
-            throw new ArgumentNullException(nameof(handle));
+        ArgumentNullException.ThrowIfNull(handle);
 
         if (handle.IsInvalid || handle.IsClosed)
             return Result.Success();

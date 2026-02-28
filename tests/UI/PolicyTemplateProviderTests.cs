@@ -44,7 +44,7 @@ public class PolicyTemplateProviderTests
         // Arrange
         var categories = _provider.GetCategories();
         Assert.NotEmpty(categories);
-        var category = categories.First();
+        var category = categories[0];
 
         // Act
         var templates = _provider.GetTemplatesByCategory(category);

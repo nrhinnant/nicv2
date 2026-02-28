@@ -281,9 +281,9 @@ public sealed class FakeWfpInterop : IWfpInterop
         }
 
         // Simulate idempotent behavior - if already exists, return success
-        if (_filters.ContainsKey(filter.FilterKey))
+        if (_filters.TryGetValue(filter.FilterKey, out var existing))
         {
-            return Result<ulong>.Success(_filters[filter.FilterKey].FilterId);
+            return Result<ulong>.Success(existing.FilterId);
         }
 
         var filterId = _nextFilterId++;
