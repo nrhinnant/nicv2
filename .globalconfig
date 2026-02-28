@@ -1,0 +1,92 @@
+# .globalconfig
+# Static analysis rule configuration for WFP Traffic Control
+# See docs/STATIC_ANALYSIS_PLAN.md for details.
+
+is_global = true
+
+# ============================================
+# SECURITY RULES — Keep as errors
+# ============================================
+dotnet_diagnostic.CA2100.severity = error   # SQL injection (review queries)
+dotnet_diagnostic.CA3001.severity = error   # SQL injection
+dotnet_diagnostic.CA3002.severity = error   # XSS
+dotnet_diagnostic.CA3003.severity = error   # File path injection
+dotnet_diagnostic.CA3004.severity = error   # Information disclosure
+dotnet_diagnostic.CA3006.severity = error   # Command injection
+dotnet_diagnostic.CA3007.severity = error   # Open redirect
+dotnet_diagnostic.CA5350.severity = error   # Weak crypto (SHA1 for security)
+dotnet_diagnostic.CA5351.severity = warning # MD5 — warning only (used for deterministic GUID generation, not crypto)
+
+# ============================================
+# P/INVOKE RULES — Critical for this project
+# ============================================
+dotnet_diagnostic.CA1401.severity = warning     # P/Invokes should not be visible
+dotnet_diagnostic.CA2101.severity = warning     # Specify marshaling for P/Invoke strings
+dotnet_diagnostic.SYSLIB1054.severity = suggestion  # Use LibraryImport instead of DllImport
+
+# ============================================
+# RELIABILITY RULES — Keep as warnings
+# ============================================
+dotnet_diagnostic.CA2000.severity = warning     # Dispose objects before losing scope
+dotnet_diagnostic.CA2007.severity = none        # ConfigureAwait (not needed in app code)
+dotnet_diagnostic.CA2008.severity = warning     # Do not create tasks without TaskScheduler
+dotnet_diagnostic.CA2012.severity = warning     # Use ValueTasks correctly
+dotnet_diagnostic.CA2013.severity = warning     # Do not use ReferenceEquals with value types
+
+# ============================================
+# PERFORMANCE RULES — Keep as warnings
+# ============================================
+dotnet_diagnostic.CA1822.severity = suggestion  # Mark members as static
+dotnet_diagnostic.CA1825.severity = warning     # Avoid zero-length array allocations
+dotnet_diagnostic.CA1826.severity = warning     # Use property instead of Enumerable method
+dotnet_diagnostic.CA1827.severity = warning     # Do not use Count/LongCount when Any can be used
+dotnet_diagnostic.CA1828.severity = warning     # Do not use CountAsync when AnyAsync can be used
+dotnet_diagnostic.CA1829.severity = warning     # Use Length/Count property instead of Count()
+dotnet_diagnostic.CA1854.severity = warning     # Prefer Dictionary.TryGetValue over indexer
+
+# ============================================
+# PLATFORM COMPATIBILITY — Windows-only project
+# ============================================
+dotnet_diagnostic.CA1416.severity = none    # Platform compatibility (entire project is Windows-only)
+
+# ============================================
+# P/INVOKE SECURITY — Keep as warnings
+# ============================================
+dotnet_diagnostic.CA5392.severity = warning     # Use DefaultDllImportSearchPaths (review P/Invoke security)
+
+# ============================================
+# DESIGN RULES — Relaxed for internal code
+# ============================================
+dotnet_diagnostic.CA1002.severity = suggestion  # Don't expose List<T> (internal APIs are fine)
+dotnet_diagnostic.CA2227.severity = suggestion  # Collection properties with setters (needed for serialization)
+dotnet_diagnostic.CA1815.severity = suggestion  # Override equals on value types
+
+# ============================================
+# DISABLE RULES — Not applicable to this project
+# ============================================
+dotnet_diagnostic.CA1014.severity = none    # Mark assemblies with CLSCompliant
+dotnet_diagnostic.CA1062.severity = none    # Validate arguments (nullable handles this)
+dotnet_diagnostic.CA1303.severity = none    # Do not pass literals as localized parameters
+dotnet_diagnostic.CA1304.severity = none    # Specify CultureInfo
+dotnet_diagnostic.CA1305.severity = none    # Specify IFormatProvider
+dotnet_diagnostic.CA1307.severity = none    # Specify StringComparison (ordinal) - too strict
+dotnet_diagnostic.CA1310.severity = none    # Specify StringComparison for correctness
+dotnet_diagnostic.CA1716.severity = none    # Identifiers should not match keywords
+dotnet_diagnostic.CA1724.severity = none    # Type names should not match namespaces
+dotnet_diagnostic.CA1848.severity = none    # Use LoggerMessage delegates (not using high-perf logging)
+dotnet_diagnostic.CA2234.severity = none    # Pass System.Uri instead of string (too strict)
+dotnet_diagnostic.CA1031.severity = suggestion  # Do not catch general exceptions (sometimes needed)
+dotnet_diagnostic.CA1000.severity = suggestion  # Do not declare static members on generic types
+dotnet_diagnostic.CA2225.severity = none    # Operator overloads have named alternates (too strict)
+dotnet_diagnostic.CA1419.severity = none    # Provide a parameterless constructor for P/Invoke (not always needed)
+
+# ============================================
+# ROSLYNATOR RULES — Adjust as needed
+# ============================================
+dotnet_diagnostic.RCS1036.severity = suggestion     # Remove redundant empty line
+dotnet_diagnostic.RCS1037.severity = suggestion     # Remove trailing whitespace
+dotnet_diagnostic.RCS1090.severity = none           # ConfigureAwait (disabled above)
+dotnet_diagnostic.RCS1194.severity = suggestion     # Implement exception constructors
+dotnet_diagnostic.RCS1021.severity = suggestion     # Convert lambda to method group
+dotnet_diagnostic.RCS1077.severity = suggestion     # Optimize LINQ method call
+dotnet_diagnostic.RCS1197.severity = none           # Optimize StringBuilder.Append (can be noisy)

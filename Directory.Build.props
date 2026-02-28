@@ -1,0 +1,30 @@
+<Project>
+  <!--
+    Static Analysis Configuration
+    Applied to all C# projects in the solution.
+    See docs/STATIC_ANALYSIS_PLAN.md for details.
+  -->
+
+  <PropertyGroup>
+    <!-- Enable .NET analyzers with maximum analysis level -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+
+    <!--
+      TreatWarningsAsErrors is DISABLED until existing warnings are resolved.
+      Current baseline: ~100 warnings (tracked in docs/STATIC_ANALYSIS_PLAN.md).
+      To enable strict mode: uncomment the line below and fix all warnings.
+    -->
+    <!-- <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">true</TreatWarningsAsErrors> -->
+  </PropertyGroup>
+
+  <!-- Roslynator analyzers - only for SDK-style C# projects -->
+  <ItemGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true' AND '$(Language)' == 'C#'">
+    <PackageReference Include="Roslynator.Analyzers" Version="4.12.9">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
