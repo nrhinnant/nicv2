@@ -66,23 +66,23 @@ public class FilterDiffBenchmarks
     }
 
     [Benchmark]
-    public FilterDiff Diff_EmptyToEmpty() =>
+    public FilterDiff DiffEmptyToEmpty() =>
         FilterDiffComputer.ComputeDiff(_empty, _emptyExisting);
 
     [Benchmark]
-    public FilterDiff Diff_EmptyTo100() =>
+    public FilterDiff DiffEmptyTo100() =>
         FilterDiffComputer.ComputeDiff(_desired100, _emptyExisting);
 
     [Benchmark]
-    public FilterDiff Diff_100ToSame100() =>
+    public FilterDiff Diff100ToSame100() =>
         FilterDiffComputer.ComputeDiff(_desired100, _existing100Same);
 
     [Benchmark]
-    public FilterDiff Diff_100To100_HalfChanged() =>
+    public FilterDiff Diff100To100HalfChanged() =>
         FilterDiffComputer.ComputeDiff(_desired100HalfChanged, _existing100ForHalfChanged);
 
     [Benchmark]
-    public FilterDiff Diff_500To500_AllChanged() =>
+    public FilterDiff Diff500To500AllChanged() =>
         FilterDiffComputer.ComputeDiff(_desired500, _existing500AllChanged);
 
     private static List<CompiledFilter> CreateCompiledFilters(int count, int offset)

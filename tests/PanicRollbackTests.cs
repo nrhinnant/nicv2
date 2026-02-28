@@ -110,7 +110,7 @@ public class PanicRollbackTests
     // ========================================
 
     [Fact]
-    public void RemoveAllFilters_WhenNoFilters_ReturnsZero()
+    public void RemoveAllFiltersWhenNoFiltersReturnsZero()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -129,7 +129,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_WithOneFilter_ReturnsOne()
+    public void RemoveAllFiltersWithOneFilterReturnsOne()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -149,7 +149,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_WithMultipleFilters_ReturnsCorrectCount()
+    public void RemoveAllFiltersWithMultipleFiltersReturnsCorrectCount()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -169,7 +169,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_OnEnumerationFailure_ReturnsError()
+    public void RemoveAllFiltersOnEnumerationFailureReturnsError()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -188,7 +188,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_OnDeletionFailure_ReturnsError()
+    public void RemoveAllFiltersOnDeletionFailureReturnsError()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -207,7 +207,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_MultipleCalls_IsIdempotent()
+    public void RemoveAllFiltersMultipleCallsIsIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -232,7 +232,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_PreservesSublayerAndProvider()
+    public void RemoveAllFiltersPreservesSublayerAndProvider()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -256,7 +256,7 @@ public class PanicRollbackTests
     // ========================================
 
     [Fact]
-    public void FullLifecycle_AddFiltersThenRollback_RemovesAll()
+    public void FullLifecycleAddFiltersThenRollbackRemovesAll()
     {
         // Arrange
         var engine = new MockWfpEngine();
@@ -282,7 +282,7 @@ public class PanicRollbackTests
     }
 
     [Fact]
-    public void FullLifecycle_RollbackThenTeardown_CleansEverything()
+    public void FullLifecycleRollbackThenTeardownCleansEverything()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -314,7 +314,7 @@ public class PanicRollbackTests
 public class RollbackIpcMessageTests
 {
     [Fact]
-    public void RollbackResponse_Success_WithZeroFilters()
+    public void RollbackResponseSuccessWithZeroFilters()
     {
         var response = RollbackResponse.Success(filtersRemoved: 0);
 
@@ -324,7 +324,7 @@ public class RollbackIpcMessageTests
     }
 
     [Fact]
-    public void RollbackResponse_Success_WithMultipleFilters()
+    public void RollbackResponseSuccessWithMultipleFilters()
     {
         var response = RollbackResponse.Success(filtersRemoved: 10);
 
@@ -334,7 +334,7 @@ public class RollbackIpcMessageTests
     }
 
     [Fact]
-    public void RollbackResponse_Failure_PreservesErrorMessage()
+    public void RollbackResponseFailurePreservesErrorMessage()
     {
         var response = RollbackResponse.Failure("Failed to enumerate filters in sublayer");
 
@@ -344,7 +344,7 @@ public class RollbackIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_RollbackResponse_WithZero_ProducesValidJson()
+    public void SerializeResponseRollbackResponseWithZeroProducesValidJson()
     {
         var response = RollbackResponse.Success(filtersRemoved: 0);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -354,7 +354,7 @@ public class RollbackIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_RollbackResponse_WithCount_ProducesValidJson()
+    public void SerializeResponseRollbackResponseWithCountProducesValidJson()
     {
         var response = RollbackResponse.Success(filtersRemoved: 42);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -364,7 +364,7 @@ public class RollbackIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_RollbackRequest_ParsesCorrectly()
+    public void ParseRequestRollbackRequestParsesCorrectly()
     {
         var json = "{\"type\":\"rollback\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -381,7 +381,7 @@ public class RollbackIpcMessageTests
 public class RemoveAllFiltersInterfaceTests
 {
     [Fact]
-    public void IWfpEngine_RemoveAllFilters_ReturnsResultInt()
+    public void IWfpEngineRemoveAllFiltersReturnsResultInt()
     {
         var method = typeof(IWfpEngine).GetMethod("RemoveAllFilters");
         Assert.NotNull(method);
@@ -389,7 +389,7 @@ public class RemoveAllFiltersInterfaceTests
     }
 
     [Fact]
-    public void IWfpEngine_RemoveAllFilters_TakesNoParameters()
+    public void IWfpEngineRemoveAllFiltersTakesNoParameters()
     {
         var method = typeof(IWfpEngine).GetMethod("RemoveAllFilters");
         Assert.NotNull(method);

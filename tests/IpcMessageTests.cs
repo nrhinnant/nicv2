@@ -10,7 +10,7 @@ namespace WfpTrafficControl.Tests;
 public class IpcMessageParserTests
 {
     [Fact]
-    public void ParseRequest_ValidPingRequest_ReturnsPingRequest()
+    public void ParseRequestValidPingRequestReturnsPingRequest()
     {
         var json = """{"type":"ping"}""";
 
@@ -22,7 +22,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_PingRequestWithExtraFields_ReturnsPingRequest()
+    public void ParseRequestPingRequestWithExtraFieldsReturnsPingRequest()
     {
         // Extra fields should be ignored
         var json = """{"type":"ping","extra":"ignored"}""";
@@ -34,7 +34,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_EmptyString_ReturnsError()
+    public void ParseRequestEmptyStringReturnsError()
     {
         var result = IpcMessageParser.ParseRequest("");
 
@@ -44,7 +44,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_WhitespaceOnly_ReturnsError()
+    public void ParseRequestWhitespaceOnlyReturnsError()
     {
         var result = IpcMessageParser.ParseRequest("   ");
 
@@ -53,7 +53,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_NullInput_ReturnsError()
+    public void ParseRequestNullInputReturnsError()
     {
         var result = IpcMessageParser.ParseRequest(null!);
 
@@ -62,7 +62,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_InvalidJson_ReturnsError()
+    public void ParseRequestInvalidJsonReturnsError()
     {
         var json = "not valid json";
 
@@ -74,7 +74,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_JsonArray_ReturnsError()
+    public void ParseRequestJsonArrayReturnsError()
     {
         var json = """["not","an","object"]""";
 
@@ -86,7 +86,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_MissingTypeField_ReturnsError()
+    public void ParseRequestMissingTypeFieldReturnsError()
     {
         var json = """{"foo":"bar"}""";
 
@@ -98,7 +98,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_TypeFieldNotString_ReturnsError()
+    public void ParseRequestTypeFieldNotStringReturnsError()
     {
         var json = """{"type":123}""";
 
@@ -110,7 +110,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_TypeFieldNull_ReturnsError()
+    public void ParseRequestTypeFieldNullReturnsError()
     {
         var json = """{"type":null}""";
 
@@ -121,7 +121,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_UnknownType_ReturnsError()
+    public void ParseRequestUnknownTypeReturnsError()
     {
         var json = """{"type":"unknown"}""";
 
@@ -133,7 +133,7 @@ public class IpcMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_CaseInsensitiveType_StillMatchesExact()
+    public void ParseRequestCaseInsensitiveTypeStillMatchesExact()
     {
         // Type matching should be case-sensitive ("ping" != "PING")
         var json = """{"type":"PING"}""";
@@ -151,7 +151,7 @@ public class IpcMessageParserTests
 public class IpcResponseSerializationTests
 {
     [Fact]
-    public void SerializeResponse_PingResponseSuccess_ContainsExpectedFields()
+    public void SerializeResponsePingResponseSuccessContainsExpectedFields()
     {
         var response = PingResponse.Success("1.0.0");
 
@@ -164,7 +164,7 @@ public class IpcResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_ErrorResponse_ContainsExpectedFields()
+    public void SerializeResponseErrorResponseContainsExpectedFields()
     {
         var response = new ErrorResponse("Test error message");
 
@@ -175,7 +175,7 @@ public class IpcResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_AccessDenied_ContainsAdminMessage()
+    public void SerializeResponseAccessDeniedContainsAdminMessage()
     {
         var response = ErrorResponse.AccessDenied();
 
@@ -186,7 +186,7 @@ public class IpcResponseSerializationTests
     }
 
     [Fact]
-    public void CreateErrorResponse_ReturnsValidJson()
+    public void CreateErrorResponseReturnsValidJson()
     {
         var json = IpcMessageParser.CreateErrorResponse("Something went wrong");
 
@@ -201,7 +201,7 @@ public class IpcResponseSerializationTests
 public class IpcMessageModelTests
 {
     [Fact]
-    public void PingRequest_Type_IsPing()
+    public void PingRequestTypeIsPing()
     {
         var request = new PingRequest();
         Assert.Equal("ping", request.Type);
@@ -209,7 +209,7 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void PingResponse_Success_SetsOkTrue()
+    public void PingResponseSuccessSetsOkTrue()
     {
         var response = PingResponse.Success("1.2.3");
 
@@ -220,7 +220,7 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void PingResponse_Success_TimeIsIso8601()
+    public void PingResponseSuccessTimeIsIso8601()
     {
         var response = PingResponse.Success("1.0.0");
 
@@ -231,14 +231,14 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void ErrorResponse_DefaultConstructor_SetsOkFalse()
+    public void ErrorResponseDefaultConstructorSetsOkFalse()
     {
         var response = new ErrorResponse();
         Assert.False(response.Ok);
     }
 
     [Fact]
-    public void ErrorResponse_WithMessage_SetsError()
+    public void ErrorResponseWithMessageSetsError()
     {
         var response = new ErrorResponse("Test error");
 
@@ -247,7 +247,7 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void ErrorResponse_AccessDenied_HasExpectedMessage()
+    public void ErrorResponseAccessDeniedHasExpectedMessage()
     {
         var response = ErrorResponse.AccessDenied();
 
@@ -257,7 +257,7 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void ErrorResponse_InvalidJson_IncludesDetails()
+    public void ErrorResponseInvalidJsonIncludesDetails()
     {
         var response = ErrorResponse.InvalidJson("unexpected token");
 
@@ -267,7 +267,7 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void ErrorResponse_UnknownRequestType_IncludesType()
+    public void ErrorResponseUnknownRequestTypeIncludesType()
     {
         var response = ErrorResponse.UnknownRequestType("foobar");
 
@@ -276,7 +276,7 @@ public class IpcMessageModelTests
     }
 
     [Fact]
-    public void ErrorResponse_MissingRequestType_HasExpectedMessage()
+    public void ErrorResponseMissingRequestTypeHasExpectedMessage()
     {
         var response = ErrorResponse.MissingRequestType();
 
@@ -310,7 +310,7 @@ public class IpcMessageModelTests
 public class CliServiceConnectionTests
 {
     [Fact]
-    public void PipeClient_Connect_ServiceNotRunning_ReturnsServiceUnavailableError()
+    public void PipeClientConnectServiceNotRunningReturnsServiceUnavailableError()
     {
         // Arrange - create a client that will fail to connect (no service running)
         using var client = new WfpTrafficControl.Cli.PipeClient();
@@ -325,7 +325,7 @@ public class CliServiceConnectionTests
     }
 
     [Fact]
-    public void PipeClient_SendRequest_WithoutConnect_ReturnsInvalidStateError()
+    public void PipeClientSendRequestWithoutConnectReturnsInvalidStateError()
     {
         // Arrange - create a client but don't connect
         using var client = new WfpTrafficControl.Cli.PipeClient();
@@ -341,7 +341,7 @@ public class CliServiceConnectionTests
     }
 
     [Fact]
-    public void PipeClient_Dispose_CanBeCalledMultipleTimes()
+    public void PipeClientDisposeCanBeCalledMultipleTimes()
     {
         // Arrange
         var client = new WfpTrafficControl.Cli.PipeClient();
@@ -361,7 +361,7 @@ public class CliServiceConnectionTests
 public class IpcMalformedRequestEdgeCaseTests
 {
     [Fact]
-    public void ParseRequest_DeeplyNestedJson_HandledGracefully()
+    public void ParseRequestDeeplyNestedJsonHandledGracefully()
     {
         // Create deeply nested JSON that could cause stack overflow
         var nested = "{";
@@ -383,7 +383,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_VeryLongString_HandledGracefully()
+    public void ParseRequestVeryLongStringHandledGracefully()
     {
         // Create a request with a very long string value
         var longString = new string('x', 100000);
@@ -397,7 +397,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_UnicodeCharacters_HandledCorrectly()
+    public void ParseRequestUnicodeCharactersHandledCorrectly()
     {
         var json = """{"type":"apply","policyPath":"C:\\путь\\策略.json"}""";
 
@@ -411,7 +411,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_NullBytesInString_HandledGracefully()
+    public void ParseRequestNullBytesInStringHandledGracefully()
     {
         // JSON with escaped null character
         var json = "{\"type\":\"ping\",\"extra\":\"\\u0000test\"}";
@@ -423,7 +423,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_ControlCharactersInString_HandledGracefully()
+    public void ParseRequestControlCharactersInStringHandledGracefully()
     {
         // JSON with various control characters
         var json = "{\"type\":\"ping\",\"extra\":\"\\t\\r\\n\\b\\f\"}";
@@ -434,7 +434,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_EmptyObject_ReturnsMissingTypeError()
+    public void ParseRequestEmptyObjectReturnsMissingTypeError()
     {
         var json = "{}";
 
@@ -445,7 +445,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_WhitespaceInType_ReturnsUnknownType()
+    public void ParseRequestWhitespaceInTypeReturnsUnknownType()
     {
         var json = """{"type":" ping "}""";
 
@@ -457,7 +457,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_NumericType_ReturnsError()
+    public void ParseRequestNumericTypeReturnsError()
     {
         var json = """{"type":42}""";
 
@@ -468,7 +468,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_BooleanType_ReturnsError()
+    public void ParseRequestBooleanTypeReturnsError()
     {
         var json = """{"type":true}""";
 
@@ -479,7 +479,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_ArrayType_ReturnsError()
+    public void ParseRequestArrayTypeReturnsError()
     {
         var json = """{"type":["ping"]}""";
 
@@ -489,7 +489,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_ObjectType_ReturnsError()
+    public void ParseRequestObjectTypeReturnsError()
     {
         var json = """{"type":{"name":"ping"}}""";
 
@@ -499,7 +499,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_TrailingComma_HandlesGracefully()
+    public void ParseRequestTrailingCommaHandlesGracefully()
     {
         // Some JSON parsers are lenient about trailing commas
         var json = """{"type":"ping",}""";
@@ -511,7 +511,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_SingleQuotes_ReturnsError()
+    public void ParseRequestSingleQuotesReturnsError()
     {
         // JSON requires double quotes
         var json = "{'type':'ping'}";
@@ -523,7 +523,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_UnquotedKeys_ReturnsError()
+    public void ParseRequestUnquotedKeysReturnsError()
     {
         var json = "{type:\"ping\"}";
 
@@ -533,7 +533,7 @@ public class IpcMalformedRequestEdgeCaseTests
     }
 
     [Fact]
-    public void ParseRequest_CommentsInJson_ReturnsError()
+    public void ParseRequestCommentsInJsonReturnsError()
     {
         // JSON doesn't support comments
         var json = """{"type":"ping" /* comment */}""";

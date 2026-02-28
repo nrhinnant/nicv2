@@ -13,7 +13,7 @@ public class IpcSecurityTests
     #region Protocol Version Parsing Tests
 
     [Fact]
-    public void ParseRequest_WithProtocolVersion_ExtractsVersion()
+    public void ParseRequestWithProtocolVersionExtractsVersion()
     {
         var json = """{"type":"ping","protocolVersion":1}""";
 
@@ -24,7 +24,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ParseRequest_WithoutProtocolVersion_DefaultsToZero()
+    public void ParseRequestWithoutProtocolVersionDefaultsToZero()
     {
         var json = """{"type":"ping"}""";
 
@@ -35,7 +35,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ParseRequest_WithProtocolVersionNull_DefaultsToZero()
+    public void ParseRequestWithProtocolVersionNullDefaultsToZero()
     {
         // JSON null for protocolVersion - should be treated as not present
         var json = """{"type":"ping","protocolVersion":null}""";
@@ -47,7 +47,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ParseRequest_WithProtocolVersionString_DefaultsToZero()
+    public void ParseRequestWithProtocolVersionStringDefaultsToZero()
     {
         // Wrong type (string instead of number) - should be ignored
         var json = """{"type":"ping","protocolVersion":"1"}""";
@@ -59,7 +59,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ParseRequest_WithLargeProtocolVersion_ParsesCorrectly()
+    public void ParseRequestWithLargeProtocolVersionParsesCorrectly()
     {
         var json = """{"type":"ping","protocolVersion":999}""";
 
@@ -74,7 +74,7 @@ public class IpcSecurityTests
     #region Protocol Version Validation Tests
 
     [Fact]
-    public void ValidateProtocolVersion_CurrentVersion_ReturnsNull()
+    public void ValidateProtocolVersionCurrentVersionReturnsNull()
     {
         var request = new PingRequest { ProtocolVersion = WfpConstants.IpcProtocolVersion };
 
@@ -84,7 +84,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateProtocolVersion_MinVersion_ReturnsNull()
+    public void ValidateProtocolVersionMinVersionReturnsNull()
     {
         var request = new PingRequest { ProtocolVersion = WfpConstants.IpcMinProtocolVersion };
 
@@ -94,7 +94,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateProtocolVersion_ZeroVersion_ReturnsNullForBackwardCompatibility()
+    public void ValidateProtocolVersionZeroVersionReturnsNullForBackwardCompatibility()
     {
         // Version 0 means client didn't send version - allow for backward compatibility
         var request = new PingRequest { ProtocolVersion = 0 };
@@ -105,7 +105,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateProtocolVersion_BelowMinVersion_ReturnsError()
+    public void ValidateProtocolVersionBelowMinVersionReturnsError()
     {
         // Version below minimum (but not 0) should be rejected
         // Note: This test assumes IpcMinProtocolVersion > 0. If it equals 1,
@@ -121,7 +121,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateProtocolVersion_AboveMaxVersion_ReturnsError()
+    public void ValidateProtocolVersionAboveMaxVersionReturnsError()
     {
         var request = new PingRequest { ProtocolVersion = WfpConstants.IpcProtocolVersion + 100 };
 
@@ -134,7 +134,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateProtocolVersion_ErrorIncludesVersionInfo()
+    public void ValidateProtocolVersionErrorIncludesVersionInfo()
     {
         var request = new PingRequest { ProtocolVersion = 999 };
 
@@ -151,7 +151,7 @@ public class IpcSecurityTests
     #region Message Size Validation Tests
 
     [Fact]
-    public void ValidateMessageSize_ValidSize_ReturnsNull()
+    public void ValidateMessageSizeValidSizeReturnsNull()
     {
         var error = IpcMessageParser.ValidateMessageSize(1024);
 
@@ -159,7 +159,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateMessageSize_MaxSize_ReturnsNull()
+    public void ValidateMessageSizeMaxSizeReturnsNull()
     {
         var error = IpcMessageParser.ValidateMessageSize(WfpConstants.IpcMaxMessageSize);
 
@@ -167,7 +167,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateMessageSize_OneByteOverMax_ReturnsError()
+    public void ValidateMessageSizeOneByteOverMaxReturnsError()
     {
         var error = IpcMessageParser.ValidateMessageSize(WfpConstants.IpcMaxMessageSize + 1);
 
@@ -177,7 +177,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateMessageSize_ZeroSize_ReturnsError()
+    public void ValidateMessageSizeZeroSizeReturnsError()
     {
         var error = IpcMessageParser.ValidateMessageSize(0);
 
@@ -186,7 +186,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateMessageSize_NegativeSize_ReturnsError()
+    public void ValidateMessageSizeNegativeSizeReturnsError()
     {
         var error = IpcMessageParser.ValidateMessageSize(-1);
 
@@ -195,7 +195,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ValidateMessageSize_ErrorIncludesSizeInfo()
+    public void ValidateMessageSizeErrorIncludesSizeInfo()
     {
         var size = WfpConstants.IpcMaxMessageSize + 1000;
         var error = IpcMessageParser.ValidateMessageSize(size);
@@ -210,7 +210,7 @@ public class IpcSecurityTests
     #region Error Response Factory Tests
 
     [Fact]
-    public void ErrorResponse_ProtocolVersionMismatch_ContainsExpectedInfo()
+    public void ErrorResponseProtocolVersionMismatchContainsExpectedInfo()
     {
         var response = ErrorResponse.ProtocolVersionMismatch(5, 1, 3);
 
@@ -222,7 +222,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ErrorResponse_RequestTooLarge_ContainsExpectedInfo()
+    public void ErrorResponseRequestTooLargeContainsExpectedInfo()
     {
         var response = ErrorResponse.RequestTooLarge(100000, 65536);
 
@@ -233,7 +233,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ErrorResponse_RequestTimeout_ContainsExpectedMessage()
+    public void ErrorResponseRequestTimeoutContainsExpectedMessage()
     {
         var response = ErrorResponse.RequestTimeout();
 
@@ -246,7 +246,7 @@ public class IpcSecurityTests
     #region Response Protocol Version Tests
 
     [Fact]
-    public void IpcResponse_IncludesServerProtocolVersion()
+    public void IpcResponseIncludesServerProtocolVersion()
     {
         var response = PingResponse.Success("1.0.0");
 
@@ -254,7 +254,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void ErrorResponse_IncludesServerProtocolVersion()
+    public void ErrorResponseIncludesServerProtocolVersion()
     {
         var response = new ErrorResponse("Test error");
 
@@ -262,7 +262,7 @@ public class IpcSecurityTests
     }
 
     [Fact]
-    public void SerializedResponse_ContainsProtocolVersion()
+    public void SerializedResponseContainsProtocolVersion()
     {
         var response = PingResponse.Success("1.0.0");
         var json = IpcMessageParser.SerializeResponse(response);
@@ -276,7 +276,7 @@ public class IpcSecurityTests
     #region Constants Validation Tests
 
     [Fact]
-    public void IpcConstants_AreReasonable()
+    public void IpcConstantsAreReasonable()
     {
         // Protocol version should be positive
         Assert.True(WfpConstants.IpcProtocolVersion >= 1);

@@ -19,15 +19,15 @@ public class PolicyValidatorBenchmarks
     }
 
     [Benchmark]
-    public ValidationResult Validate_ValidPolicy_10Rules() =>
+    public ValidationResult ValidateValidPolicy10Rules() =>
         PolicyValidator.ValidateJson(_validPolicy10Rules);
 
     [Benchmark]
-    public ValidationResult Validate_PolicyWith50Rules() =>
+    public ValidationResult ValidatePolicyWith50Rules() =>
         PolicyValidator.ValidateJson(_validPolicy50Rules);
 
     [Benchmark]
-    public ValidationResult Validate_AllRulesInvalid() =>
+    public ValidationResult ValidateAllRulesInvalid() =>
         PolicyValidator.ValidateJson(_allInvalidRules);
 
     private static string CreateValidPolicyJson(int ruleCount)

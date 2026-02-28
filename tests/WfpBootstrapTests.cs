@@ -101,7 +101,7 @@ public class WfpBootstrapTests
     // ========================================
 
     [Fact]
-    public void Bootstrap_FromCleanState_CreatesProviderAndSublayer()
+    public void BootstrapFromCleanStateCreatesProviderAndSublayer()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -121,7 +121,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void Bootstrap_WhenAlreadyExists_IsIdempotent()
+    public void BootstrapWhenAlreadyExistsIsIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -143,7 +143,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void Bootstrap_OnFailure_ReturnsError()
+    public void BootstrapOnFailureReturnsError()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -165,7 +165,7 @@ public class WfpBootstrapTests
     // ========================================
 
     [Fact]
-    public void Teardown_WhenExists_RemovesProviderAndSublayer()
+    public void TeardownWhenExistsRemovesProviderAndSublayer()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -185,7 +185,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void Teardown_WhenNotExists_IsIdempotent()
+    public void TeardownWhenNotExistsIsIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -205,7 +205,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void Teardown_OnFiltersInUse_ReturnsError()
+    public void TeardownOnFiltersInUseReturnsError()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -229,7 +229,7 @@ public class WfpBootstrapTests
     // ========================================
 
     [Fact]
-    public void ProviderExists_WhenTrue_ReturnsTrue()
+    public void ProviderExistsWhenTrueReturnsTrue()
     {
         var engine = new MockWfpEngine { ProviderExistsValue = true };
         var result = engine.ProviderExists();
@@ -239,7 +239,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void ProviderExists_WhenFalse_ReturnsFalse()
+    public void ProviderExistsWhenFalseReturnsFalse()
     {
         var engine = new MockWfpEngine { ProviderExistsValue = false };
         var result = engine.ProviderExists();
@@ -249,7 +249,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void SublayerExists_WhenTrue_ReturnsTrue()
+    public void SublayerExistsWhenTrueReturnsTrue()
     {
         var engine = new MockWfpEngine { SublayerExistsValue = true };
         var result = engine.SublayerExists();
@@ -259,7 +259,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void SublayerExists_WhenFalse_ReturnsFalse()
+    public void SublayerExistsWhenFalseReturnsFalse()
     {
         var engine = new MockWfpEngine { SublayerExistsValue = false };
         var result = engine.SublayerExists();
@@ -273,7 +273,7 @@ public class WfpBootstrapTests
     // ========================================
 
     [Fact]
-    public void FullLifecycle_BootstrapThenTeardown_Works()
+    public void FullLifecycleBootstrapThenTeardownWorks()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -296,7 +296,7 @@ public class WfpBootstrapTests
     }
 
     [Fact]
-    public void FullLifecycle_MultipleBootstrapsAndTeardowns_AreIdempotent()
+    public void FullLifecycleMultipleBootstrapsAndTeardownsAreIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -335,21 +335,21 @@ public class WfpBootstrapTests
 public class WfpBootstrapIpcMessageTests
 {
     [Fact]
-    public void BootstrapRequest_HasCorrectType()
+    public void BootstrapRequestHasCorrectType()
     {
         var request = new BootstrapRequest();
         Assert.Equal("bootstrap", request.Type);
     }
 
     [Fact]
-    public void TeardownRequest_HasCorrectType()
+    public void TeardownRequestHasCorrectType()
     {
         var request = new TeardownRequest();
         Assert.Equal("teardown", request.Type);
     }
 
     [Fact]
-    public void ParseRequest_BootstrapRequest_ParsesCorrectly()
+    public void ParseRequestBootstrapRequestParsesCorrectly()
     {
         var json = "{\"type\":\"bootstrap\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -359,7 +359,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_TeardownRequest_ParsesCorrectly()
+    public void ParseRequestTeardownRequestParsesCorrectly()
     {
         var json = "{\"type\":\"teardown\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -369,7 +369,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void BootstrapResponse_Success_SetsProperties()
+    public void BootstrapResponseSuccessSetsProperties()
     {
         var response = BootstrapResponse.Success(providerExists: true, sublayerExists: true);
 
@@ -380,7 +380,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void BootstrapResponse_Failure_SetsError()
+    public void BootstrapResponseFailureSetsError()
     {
         var response = BootstrapResponse.Failure("Test error");
 
@@ -389,7 +389,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void TeardownResponse_Success_SetsProperties()
+    public void TeardownResponseSuccessSetsProperties()
     {
         var response = TeardownResponse.Success(providerRemoved: true, sublayerRemoved: true);
 
@@ -400,7 +400,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void TeardownResponse_Failure_SetsError()
+    public void TeardownResponseFailureSetsError()
     {
         var response = TeardownResponse.Failure("Filters still exist");
 
@@ -409,7 +409,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_BootstrapResponse_ProducesValidJson()
+    public void SerializeResponseBootstrapResponseProducesValidJson()
     {
         var response = BootstrapResponse.Success(providerExists: true, sublayerExists: false);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -420,7 +420,7 @@ public class WfpBootstrapIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_TeardownResponse_ProducesValidJson()
+    public void SerializeResponseTeardownResponseProducesValidJson()
     {
         var response = TeardownResponse.Success(providerRemoved: false, sublayerRemoved: true);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -437,7 +437,7 @@ public class WfpBootstrapIpcMessageTests
 public class IWfpEngineInterfaceTests
 {
     [Fact]
-    public void IWfpEngine_HasAllRequiredMethods()
+    public void IWfpEngineHasAllRequiredMethods()
     {
         // Verify interface has all expected methods
         var interfaceType = typeof(IWfpEngine);
@@ -453,28 +453,28 @@ public class IWfpEngineInterfaceTests
     }
 
     [Fact]
-    public void IWfpEngine_EnsureProviderAndSublayerExist_ReturnsResult()
+    public void IWfpEngineEnsureProviderAndSublayerExistReturnsResult()
     {
         var method = typeof(IWfpEngine).GetMethod("EnsureProviderAndSublayerExist");
         Assert.Equal(typeof(Result), method!.ReturnType);
     }
 
     [Fact]
-    public void IWfpEngine_RemoveProviderAndSublayer_ReturnsResult()
+    public void IWfpEngineRemoveProviderAndSublayerReturnsResult()
     {
         var method = typeof(IWfpEngine).GetMethod("RemoveProviderAndSublayer");
         Assert.Equal(typeof(Result), method!.ReturnType);
     }
 
     [Fact]
-    public void IWfpEngine_ProviderExists_ReturnsResultBool()
+    public void IWfpEngineProviderExistsReturnsResultBool()
     {
         var method = typeof(IWfpEngine).GetMethod("ProviderExists");
         Assert.Equal(typeof(Result<bool>), method!.ReturnType);
     }
 
     [Fact]
-    public void IWfpEngine_SublayerExists_ReturnsResultBool()
+    public void IWfpEngineSublayerExistsReturnsResultBool()
     {
         var method = typeof(IWfpEngine).GetMethod("SublayerExists");
         Assert.Equal(typeof(Result<bool>), method!.ReturnType);

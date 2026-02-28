@@ -14,7 +14,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ComputeDiff_BothEmpty_ReturnsEmptyDiff()
+    public void ComputeDiffBothEmptyReturnsEmptyDiff()
     {
         var desired = new List<CompiledFilter>();
         var current = new List<ExistingFilter>();
@@ -30,7 +30,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_NullDesired_TreatsAsEmpty()
+    public void ComputeDiffNullDesiredTreatsAsEmpty()
     {
         var current = new List<ExistingFilter>
         {
@@ -46,7 +46,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_NullCurrent_TreatsAsEmpty()
+    public void ComputeDiffNullCurrentTreatsAsEmpty()
     {
         var desired = new List<CompiledFilter>
         {
@@ -62,7 +62,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_BothNull_ReturnsEmptyDiff()
+    public void ComputeDiffBothNullReturnsEmptyDiff()
     {
         var diff = FilterDiffComputer.ComputeDiff(null, null);
 
@@ -77,7 +77,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ComputeDiff_AllNew_ReturnsAllToAdd()
+    public void ComputeDiffAllNewReturnsAllToAdd()
     {
         var guid1 = Guid.NewGuid();
         var guid2 = Guid.NewGuid();
@@ -101,7 +101,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_SomeNew_ReturnsOnlyNewToAdd()
+    public void ComputeDiffSomeNewReturnsOnlyNewToAdd()
     {
         var existingGuid = Guid.NewGuid();
         var newGuid = Guid.NewGuid();
@@ -131,7 +131,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ComputeDiff_AllRemoved_ReturnsAllToRemove()
+    public void ComputeDiffAllRemovedReturnsAllToRemove()
     {
         var guid1 = Guid.NewGuid();
         var guid2 = Guid.NewGuid();
@@ -155,7 +155,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_SomeRemoved_ReturnsOnlyObsoleteToRemove()
+    public void ComputeDiffSomeRemovedReturnsOnlyObsoleteToRemove()
     {
         var keepGuid = Guid.NewGuid();
         var removeGuid = Guid.NewGuid();
@@ -185,7 +185,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ComputeDiff_SameFilters_ReturnsEmptyDiff()
+    public void ComputeDiffSameFiltersReturnsEmptyDiff()
     {
         var guid1 = Guid.NewGuid();
         var guid2 = Guid.NewGuid();
@@ -212,7 +212,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_SameFiltersInDifferentOrder_ReturnsEmptyDiff()
+    public void ComputeDiffSameFiltersInDifferentOrderReturnsEmptyDiff()
     {
         var guid1 = Guid.NewGuid();
         var guid2 = Guid.NewGuid();
@@ -243,7 +243,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ComputeDiff_MixedAddRemove_ReturnsBothLists()
+    public void ComputeDiffMixedAddRemoveReturnsBothLists()
     {
         var keepGuid = Guid.NewGuid();
         var addGuid = Guid.NewGuid();
@@ -272,7 +272,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void ComputeDiff_CompleteReplacement_ReturnsAllToAddAndRemove()
+    public void ComputeDiffCompleteReplacementReturnsAllToAddAndRemove()
     {
         var oldGuid1 = Guid.NewGuid();
         var oldGuid2 = Guid.NewGuid();
@@ -304,7 +304,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ComputeDiff_LargeNumberOfFilters_PerformsEfficiently()
+    public void ComputeDiffLargeNumberOfFiltersPerformsEfficiently()
     {
         // Test with a moderate number of filters to ensure HashSet usage is effective
         var sharedGuids = Enumerable.Range(0, 100).Select(_ => Guid.NewGuid()).ToList();
@@ -332,7 +332,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void FilterDiff_IsEmpty_TrueWhenBothListsEmpty()
+    public void FilterDiffIsEmptyTrueWhenBothListsEmpty()
     {
         var diff = new FilterDiff();
         Assert.True(diff.IsEmpty);
@@ -340,7 +340,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void FilterDiff_IsEmpty_FalseWhenToAddHasItems()
+    public void FilterDiffIsEmptyFalseWhenToAddHasItems()
     {
         var diff = new FilterDiff();
         diff.ToAdd.Add(CreateCompiledFilter(Guid.NewGuid(), "test"));
@@ -350,7 +350,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void FilterDiff_IsEmpty_FalseWhenToRemoveHasItems()
+    public void FilterDiffIsEmptyFalseWhenToRemoveHasItems()
     {
         var diff = new FilterDiff();
         diff.ToRemove.Add(Guid.NewGuid());
@@ -360,7 +360,7 @@ public class FilterDiffTests
     }
 
     [Fact]
-    public void FilterDiff_FinalCount_CorrectWithUnchangedAndAdded()
+    public void FilterDiffFinalCountCorrectWithUnchangedAndAdded()
     {
         var diff = new FilterDiff
         {
@@ -377,7 +377,7 @@ public class FilterDiffTests
     // ========================================
 
     [Fact]
-    public void ExistingFilter_Equality_BasedOnAllProperties()
+    public void ExistingFilterEqualityBasedOnAllProperties()
     {
         var guid = Guid.NewGuid();
         var filter1 = new ExistingFilter { FilterKey = guid, FilterId = 123, DisplayName = "Test" };

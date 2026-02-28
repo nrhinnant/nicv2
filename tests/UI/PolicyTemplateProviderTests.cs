@@ -16,7 +16,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void GetTemplates_ReturnsNonEmptyList()
+    public void GetTemplatesReturnsNonEmptyList()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -27,7 +27,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void GetCategories_ReturnsDistinctCategories()
+    public void GetCategoriesReturnsDistinctCategories()
     {
         // Act
         var categories = _provider.GetCategories();
@@ -39,7 +39,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void GetTemplatesByCategory_ReturnsMatchingTemplates()
+    public void GetTemplatesByCategoryReturnsMatchingTemplates()
     {
         // Arrange
         var categories = _provider.GetCategories();
@@ -55,7 +55,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void GetTemplatesByCategory_WithNonExistentCategory_ReturnsEmpty()
+    public void GetTemplatesByCategoryWithNonExistentCategoryReturnsEmpty()
     {
         // Act
         var templates = _provider.GetTemplatesByCategory("NonExistentCategory");
@@ -65,7 +65,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainBlockCloudflareDns()
+    public void TemplatesContainBlockCloudflareDns()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -82,7 +82,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainBlockGoogleServices()
+    public void TemplatesContainBlockGoogleServices()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -99,7 +99,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainBlockWindowsTelemetry()
+    public void TemplatesContainBlockWindowsTelemetry()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -114,7 +114,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainBlockSocialMedia()
+    public void TemplatesContainBlockSocialMedia()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -129,7 +129,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainBlockAllTraffic()
+    public void TemplatesContainBlockAllTraffic()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -147,7 +147,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainAllowWebBrowsingOnly()
+    public void TemplatesContainAllowWebBrowsingOnly()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -165,7 +165,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainDevelopmentLockdown()
+    public void TemplatesContainDevelopmentLockdown()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -182,7 +182,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void Templates_ContainBlockAdsAndTrackers()
+    public void TemplatesContainBlockAdsAndTrackers()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -198,7 +198,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void AllTemplates_HaveValidPolicies()
+    public void AllTemplatesHaveValidPolicies()
     {
         // Act
         var templates = _provider.GetTemplates();
@@ -224,7 +224,7 @@ public class PolicyTemplateProviderTests
     }
 
     [Fact]
-    public void AllTemplates_RulesHaveUniqueIds()
+    public void AllTemplatesRulesHaveUniqueIds()
     {
         // Act
         var templates = _provider.GetTemplates();

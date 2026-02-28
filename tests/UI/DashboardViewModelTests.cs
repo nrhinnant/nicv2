@@ -20,7 +20,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task InitializeAsync_WhenServiceOnline_SetsConnectedState()
+    public async Task InitializeAsyncWhenServiceOnlineSetsConnectedState()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -37,7 +37,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task InitializeAsync_WhenServiceOffline_SetsDisconnectedState()
+    public async Task InitializeAsyncWhenServiceOfflineSetsDisconnectedState()
     {
         // Arrange
         _mockService.ShouldConnect = false;
@@ -51,7 +51,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RefreshStatusAsync_CallsPingAndLkgAndLogs()
+    public async Task RefreshStatusAsyncCallsPingAndLkgAndLogs()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -66,7 +66,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RefreshStatusAsync_WhenLkgExists_SetsLkgStatus()
+    public async Task RefreshStatusAsyncWhenLkgExistsSetsLkgStatus()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -86,7 +86,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RefreshStatusAsync_WhenLkgCorrupt_SetsCorruptStatus()
+    public async Task RefreshStatusAsyncWhenLkgCorruptSetsCorruptStatus()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -102,7 +102,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task ApplyPolicyCommand_WhenUserCancels_DoesNotApply()
+    public async Task ApplyPolicyCommandWhenUserCancelsDoesNotApply()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -117,7 +117,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task ApplyPolicyCommand_WhenUserCancelsFileDialog_DoesNotApply()
+    public async Task ApplyPolicyCommandWhenUserCancelsFileDialogDoesNotApply()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -132,7 +132,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task ApplyPolicyCommand_WhenSuccessful_ShowsSuccessDialog()
+    public async Task ApplyPolicyCommandWhenSuccessfulShowsSuccessDialog()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -151,7 +151,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task ApplyPolicyCommand_WhenFails_ShowsErrorDialog()
+    public async Task ApplyPolicyCommandWhenFailsShowsErrorDialog()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -168,7 +168,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RollbackCommand_WhenUserCancels_DoesNotRollback()
+    public async Task RollbackCommandWhenUserCancelsDoesNotRollback()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -182,7 +182,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RollbackCommand_WhenSuccessful_ShowsSuccessMessage()
+    public async Task RollbackCommandWhenSuccessfulShowsSuccessMessage()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -202,7 +202,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RollbackCommand_RequiresWarningConfirmation()
+    public async Task RollbackCommandRequiresWarningConfirmation()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -217,7 +217,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RevertToLkgCommand_WhenNoLkg_ShowsWarning()
+    public async Task RevertToLkgCommandWhenNoLkgShowsWarning()
     {
         // Arrange
         _viewModel.GetType().GetProperty("HasLkg")?.SetValue(_viewModel, false);
@@ -231,7 +231,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task RevertToLkgCommand_WhenSuccessful_UpdatesState()
+    public async Task RevertToLkgCommandWhenSuccessfulUpdatesState()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -254,7 +254,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task StatusUpdated_RaisedOnRefresh()
+    public async Task StatusUpdatedRaisedOnRefresh()
     {
         // Arrange
         _mockService.ShouldConnect = true;
@@ -272,7 +272,7 @@ public class DashboardViewModelTests
     }
 
     [Fact]
-    public async Task IsLoading_SetDuringRefresh()
+    public async Task IsLoadingSetDuringRefresh()
     {
         // Arrange
         bool wasLoading = false;

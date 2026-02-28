@@ -52,7 +52,7 @@ public class WfpTransactionTests
     // ========================================
 
     [Fact]
-    public void Begin_WithValidHandle_ReturnsTransaction()
+    public void BeginWithValidHandleReturnsTransaction()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -69,7 +69,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Begin_WithZeroHandle_ReturnsError()
+    public void BeginWithZeroHandleReturnsError()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -85,7 +85,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Begin_WhenNativeFails_ReturnsError()
+    public void BeginWhenNativeFailsReturnsError()
     {
         // Arrange
         var mockNative = new MockNativeTransaction
@@ -103,7 +103,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Begin_WithNullNativeTransaction_FallsBackToDefault()
+    public void BeginWithNullNativeTransactionFallsBackToDefault()
     {
         // This test verifies that passing null for nativeTransaction is allowed
         // and the code uses WfpNativeTransaction.Instance (singleton).
@@ -128,7 +128,7 @@ public class WfpTransactionTests
     // ========================================
 
     [Fact]
-    public void Commit_OnActiveTransaction_Succeeds()
+    public void CommitOnActiveTransactionSucceeds()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -146,7 +146,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Commit_WhenAlreadyCommitted_ReturnsError()
+    public void CommitWhenAlreadyCommittedReturnsError()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -166,7 +166,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Commit_WhenNativeFails_ReturnsError()
+    public void CommitWhenNativeFailsReturnsError()
     {
         // Arrange
         var mockNative = new MockNativeTransaction
@@ -187,7 +187,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Commit_AfterDispose_ReturnsError()
+    public void CommitAfterDisposeReturnsError()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -210,7 +210,7 @@ public class WfpTransactionTests
     // ========================================
 
     [Fact]
-    public void Dispose_WithoutCommit_AbortsTransaction()
+    public void DisposeWithoutCommitAbortsTransaction()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -226,7 +226,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Dispose_AfterCommit_DoesNotAbort()
+    public void DisposeAfterCommitDoesNotAbort()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -244,7 +244,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Dispose_CalledTwice_OnlyAbortsOnce()
+    public void DisposeCalledTwiceOnlyAbortsOnce()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -261,7 +261,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void Dispose_WhenAbortFails_DoesNotThrow()
+    public void DisposeWhenAbortFailsDoesNotThrow()
     {
         // Arrange
         var mockNative = new MockNativeTransaction
@@ -283,7 +283,7 @@ public class WfpTransactionTests
     // ========================================
 
     [Fact]
-    public void UsingPattern_WithCommit_CommitsAndDoesNotAbort()
+    public void UsingPatternWithCommitCommitsAndDoesNotAbort()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -305,7 +305,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void UsingPattern_WithoutCommit_Aborts()
+    public void UsingPatternWithoutCommitAborts()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -326,7 +326,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void UsingPattern_WithException_Aborts()
+    public void UsingPatternWithExceptionAborts()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -356,7 +356,7 @@ public class WfpTransactionTests
     // ========================================
 
     [Fact]
-    public void IsCommitted_InitiallyFalse()
+    public void IsCommittedInitiallyFalse()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -368,7 +368,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void IsCommitted_TrueAfterCommit()
+    public void IsCommittedTrueAfterCommit()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -384,7 +384,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void IsDisposed_InitiallyFalse()
+    public void IsDisposedInitiallyFalse()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -396,7 +396,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void IsDisposed_TrueAfterDispose()
+    public void IsDisposedTrueAfterDispose()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -412,7 +412,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void IsDisposed_TrueAfterCommit()
+    public void IsDisposedTrueAfterCommit()
     {
         // Arrange
         var mockNative = new MockNativeTransaction();
@@ -432,7 +432,7 @@ public class WfpTransactionTests
     }
 
     [Fact]
-    public void IsDisposed_TrueAfterFailedCommit()
+    public void IsDisposedTrueAfterFailedCommit()
     {
         // Arrange
         var mockNative = new MockNativeTransaction
@@ -458,7 +458,7 @@ public class WfpTransactionTests
 public class IWfpNativeTransactionInterfaceTests
 {
     [Fact]
-    public void Interface_HasAllRequiredMethods()
+    public void InterfaceHasAllRequiredMethods()
     {
         var interfaceType = typeof(IWfpNativeTransaction);
 
@@ -468,21 +468,21 @@ public class IWfpNativeTransactionInterfaceTests
     }
 
     [Fact]
-    public void Begin_ReturnsUint()
+    public void BeginReturnsUint()
     {
         var method = typeof(IWfpNativeTransaction).GetMethod("Begin");
         Assert.Equal(typeof(uint), method!.ReturnType);
     }
 
     [Fact]
-    public void Commit_ReturnsUint()
+    public void CommitReturnsUint()
     {
         var method = typeof(IWfpNativeTransaction).GetMethod("Commit");
         Assert.Equal(typeof(uint), method!.ReturnType);
     }
 
     [Fact]
-    public void Abort_ReturnsUint()
+    public void AbortReturnsUint()
     {
         var method = typeof(IWfpNativeTransaction).GetMethod("Abort");
         Assert.Equal(typeof(uint), method!.ReturnType);

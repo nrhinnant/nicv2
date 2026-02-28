@@ -19,7 +19,7 @@ public class ElevationCheckTests
     /// This is the same pattern used by Worker.IsRunningAsAdministrator().
     /// </summary>
     [Fact]
-    public void WindowsIdentity_CanBeRetrievedAndChecked()
+    public void WindowsIdentityCanBeRetrievedAndChecked()
     {
         // Arrange & Act - validate the API pattern works
         using var identity = WindowsIdentity.GetCurrent();
@@ -38,7 +38,7 @@ public class ElevationCheckTests
     /// The elevation check must dispose the identity to avoid handle leaks.
     /// </summary>
     [Fact]
-    public void WindowsIdentity_IsDisposable()
+    public void WindowsIdentityIsDisposable()
     {
         // Arrange
         var identity = WindowsIdentity.GetCurrent();
@@ -55,7 +55,7 @@ public class ElevationCheckTests
     /// The service should exit with this specific message when not elevated.
     /// </summary>
     [Fact]
-    public void ElevationError_MessageFormat()
+    public void ElevationErrorMessageFormat()
     {
         // This is the exact message the service logs and throws
         const string expectedMessage =
@@ -72,7 +72,7 @@ public class ElevationCheckTests
     /// This documents the expected exception type for callers/tests.
     /// </summary>
     [Fact]
-    public void ElevationError_ThrowsInvalidOperationException()
+    public void ElevationErrorThrowsInvalidOperationException()
     {
         const string message =
             "Service must run with Administrator privileges to access Windows Filtering Platform";

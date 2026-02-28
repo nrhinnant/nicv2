@@ -33,7 +33,7 @@ public class PolicyFileWatcherDebounceTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_ValidValue_Succeeds()
+    public void SetDebounceMsValidValueSucceeds()
     {
         // Arrange
         var validDebounce = 500;
@@ -46,7 +46,7 @@ public class PolicyFileWatcherDebounceTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_MinValue_Succeeds()
+    public void SetDebounceMsMinValueSucceeds()
     {
         // Arrange
         var minDebounce = PolicyFileWatcher.MinDebounceMs;
@@ -59,7 +59,7 @@ public class PolicyFileWatcherDebounceTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_MaxValue_Succeeds()
+    public void SetDebounceMsMaxValueSucceeds()
     {
         // Arrange
         var maxDebounce = PolicyFileWatcher.MaxDebounceMs;
@@ -72,7 +72,7 @@ public class PolicyFileWatcherDebounceTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_BelowMin_ThrowsArgumentOutOfRange()
+    public void SetDebounceMsBelowMinThrowsArgumentOutOfRange()
     {
         // Arrange
         var belowMin = PolicyFileWatcher.MinDebounceMs - 1;
@@ -83,7 +83,7 @@ public class PolicyFileWatcherDebounceTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_AboveMax_ThrowsArgumentOutOfRange()
+    public void SetDebounceMsAboveMaxThrowsArgumentOutOfRange()
     {
         // Arrange
         var aboveMax = PolicyFileWatcher.MaxDebounceMs + 1;
@@ -94,21 +94,21 @@ public class PolicyFileWatcherDebounceTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_Zero_ThrowsArgumentOutOfRange()
+    public void SetDebounceMsZeroThrowsArgumentOutOfRange()
     {
         // Act & Assert
         Assert.Throws<ArgumentOutOfRangeException>(() => _watcher.SetDebounceMs(0));
     }
 
     [Fact]
-    public void SetDebounceMs_Negative_ThrowsArgumentOutOfRange()
+    public void SetDebounceMsNegativeThrowsArgumentOutOfRange()
     {
         // Act & Assert
         Assert.Throws<ArgumentOutOfRangeException>(() => _watcher.SetDebounceMs(-100));
     }
 
     [Fact]
-    public void DebounceMs_DefaultValue_IsCorrect()
+    public void DebounceMsDefaultValueIsCorrect()
     {
         // Assert
         Assert.Equal(PolicyFileWatcher.DefaultDebounceMs, _watcher.DebounceMs);
@@ -148,7 +148,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_EmptyPath_ReturnsFailure()
+    public void StartWatchingEmptyPathReturnsFailure()
     {
         // Act
         var result = _watcher.StartWatching("");
@@ -159,7 +159,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_WhitespacePath_ReturnsFailure()
+    public void StartWatchingWhitespacePathReturnsFailure()
     {
         // Act
         var result = _watcher.StartWatching("   ");
@@ -170,7 +170,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_PathTraversal_ReturnsFailure()
+    public void StartWatchingPathTraversalReturnsFailure()
     {
         // Act - path with .. sequence
         var result = _watcher.StartWatching("C:\\test..path");
@@ -181,7 +181,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_RelativePath_ReturnsFailure()
+    public void StartWatchingRelativePathReturnsFailure()
     {
         // Act
         var result = _watcher.StartWatching("policy.json");
@@ -192,7 +192,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_FileNotFound_ReturnsFailure()
+    public void StartWatchingFileNotFoundReturnsFailure()
     {
         // Act
         var result = _watcher.StartWatching(@"C:\nonexistent\policy.json");
@@ -203,7 +203,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_ValidFile_Succeeds()
+    public void StartWatchingValidFileSucceeds()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "policy.json");
@@ -227,7 +227,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_ValidFile_AppliesPolicyImmediately()
+    public void StartWatchingValidFileAppliesPolicyImmediately()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "policy.json");
@@ -260,7 +260,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StopWatching_WhenNotWatching_DoesNotThrow()
+    public void StopWatchingWhenNotWatchingDoesNotThrow()
     {
         // Act - should not throw
         _watcher.StopWatching();
@@ -270,7 +270,7 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void StopWatching_WhenWatching_StopsSuccessfully()
+    public void StopWatchingWhenWatchingStopsSuccessfully()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "stop-test.json");
@@ -287,14 +287,14 @@ public class PolicyFileWatcherStartStopTests : IDisposable
     }
 
     [Fact]
-    public void IsWatching_InitiallyFalse()
+    public void IsWatchingInitiallyFalse()
     {
         // Assert
         Assert.False(_watcher.IsWatching);
     }
 
     [Fact]
-    public void WatchedPath_InitiallyNull()
+    public void WatchedPathInitiallyNull()
     {
         // Assert
         Assert.Null(_watcher.WatchedPath);
@@ -334,7 +334,7 @@ public class PolicyFileWatcherStatisticsTests : IDisposable
     }
 
     [Fact]
-    public void Statistics_InitiallyZero()
+    public void StatisticsInitiallyZero()
     {
         // Assert - use individual properties instead of GetStatistics()
         Assert.Equal(0, _watcher.ApplyCount);
@@ -345,7 +345,7 @@ public class PolicyFileWatcherStatisticsTests : IDisposable
     }
 
     [Fact]
-    public void Statistics_AfterSuccessfulApply_UpdatesApplyCount()
+    public void StatisticsAfterSuccessfulApplyUpdatesApplyCount()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "stats-test.json");
@@ -361,7 +361,7 @@ public class PolicyFileWatcherStatisticsTests : IDisposable
     }
 
     [Fact]
-    public void Statistics_AfterFailedApply_UpdatesErrorCount()
+    public void StatisticsAfterFailedApplyUpdatesErrorCount()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "invalid-policy.json");
@@ -377,7 +377,7 @@ public class PolicyFileWatcherStatisticsTests : IDisposable
     }
 
     [Fact]
-    public void Statistics_ResetOnNewWatch()
+    public void StatisticsResetOnNewWatch()
     {
         // Arrange
         var policyPath1 = Path.Combine(_testDirectory, "policy1.json");
@@ -435,7 +435,7 @@ public class PolicyFileWatcherDebounceBehaviorTests : IDisposable
     }
 
     [Fact]
-    public void Debounce_InitialApplyIsSynchronous()
+    public void DebounceInitialApplyIsSynchronous()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "debounce-test.json");
@@ -449,7 +449,7 @@ public class PolicyFileWatcherDebounceBehaviorTests : IDisposable
     }
 
     [Fact]
-    public async Task Debounce_FileChange_TriggersApplyAfterDelay()
+    public async Task DebounceFileChangeTriggersApplyAfterDelay()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "debounce-change.json");
@@ -504,7 +504,7 @@ public class PolicyFileWatcherInvalidPolicyTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_InvalidJson_FailsButContinuesWatching()
+    public void StartWatchingInvalidJsonFailsButContinuesWatching()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "invalid-json.json");
@@ -521,7 +521,7 @@ public class PolicyFileWatcherInvalidPolicyTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_InvalidVersion_FailsButContinuesWatching()
+    public void StartWatchingInvalidVersionFailsButContinuesWatching()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "invalid-version.json");
@@ -538,7 +538,7 @@ public class PolicyFileWatcherInvalidPolicyTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_EmptyFile_FailsButContinuesWatching()
+    public void StartWatchingEmptyFileFailsButContinuesWatching()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "empty.json");
@@ -591,7 +591,7 @@ public class PolicyFileWatcherCoalescingTests : IDisposable
     }
 
     [Fact]
-    public async Task RapidChanges_Coalesce_IntoSingleApply()
+    public async Task RapidChangesCoalesceIntoSingleApply()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "coalesce-test.json");
@@ -615,7 +615,7 @@ public class PolicyFileWatcherCoalescingTests : IDisposable
     }
 
     [Fact]
-    public async Task DisposeWhileDebouncing_DoesNotThrow()
+    public async Task DisposeWhileDebouncingDoesNotThrow()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "dispose-debounce.json");
@@ -634,7 +634,7 @@ public class PolicyFileWatcherCoalescingTests : IDisposable
     }
 
     [Fact]
-    public void SetDebounceMs_WhileWatching_TakesEffectOnNextChange()
+    public void SetDebounceMsWhileWatchingTakesEffectOnNextChange()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "change-debounce.json");
@@ -683,7 +683,7 @@ public class PolicyFileWatcherFileAccessTests : IDisposable
     }
 
     [Fact]
-    public async Task FileLockedBriefly_EventuallySucceeds()
+    public async Task FileLockedBrieflyEventuallySucceeds()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "locked-test.json");
@@ -710,7 +710,7 @@ public class PolicyFileWatcherFileAccessTests : IDisposable
     }
 
     [Fact]
-    public void StartWatching_DirectoryNotFound_ReturnsFailure()
+    public void StartWatchingDirectoryNotFoundReturnsFailure()
     {
         // Act
         var result = _watcher.StartWatching(@"C:\NonExistent\Directory\policy.json");
@@ -726,7 +726,7 @@ public class PolicyFileWatcherFileAccessTests : IDisposable
 public class PolicyFileWatcherDisposeTests
 {
     [Fact]
-    public void Dispose_StopsWatching()
+    public void DisposeStopsWatching()
     {
         // Arrange
         var mockEngine = new MockWfpEngineForPipeServer();
@@ -742,7 +742,7 @@ public class PolicyFileWatcherDisposeTests
     }
 
     [Fact]
-    public void Dispose_CanBeCalledMultipleTimes()
+    public void DisposeCanBeCalledMultipleTimes()
     {
         // Arrange
         var mockEngine = new MockWfpEngineForPipeServer();

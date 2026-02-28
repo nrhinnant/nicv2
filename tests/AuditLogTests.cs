@@ -10,7 +10,7 @@ namespace WfpTrafficControl.Tests;
 public class AuditLogEntryTests
 {
     [Fact]
-    public void ApplyStarted_CreatesCorrectEntry()
+    public void ApplyStartedCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.ApplyStarted("cli", @"C:\policies\my-policy.json");
 
@@ -22,7 +22,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void ApplyStarted_RedactsFullPath()
+    public void ApplyStartedRedactsFullPath()
     {
         var entry = AuditLogEntry.ApplyStarted("cli", @"C:\Users\Admin\Documents\sensitive\policy.json");
 
@@ -33,7 +33,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void ApplyFinished_Success_CreatesCorrectEntry()
+    public void ApplyFinishedSuccessCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.ApplyFinished("cli", 5, 2, 1, "1.0.0", 8);
 
@@ -51,7 +51,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void ApplyFailed_CreatesCorrectEntry()
+    public void ApplyFailedCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.ApplyFailed("cli", "VALIDATION_FAILED", "Missing required field");
 
@@ -64,7 +64,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void RollbackStarted_CreatesCorrectEntry()
+    public void RollbackStartedCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.RollbackStarted("cli");
 
@@ -74,7 +74,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void RollbackFinished_Success_CreatesCorrectEntry()
+    public void RollbackFinishedSuccessCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.RollbackFinished("cli", 3);
 
@@ -86,7 +86,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void RollbackFailed_CreatesCorrectEntry()
+    public void RollbackFailedCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.RollbackFailed("cli", "WFP_ERROR", "Access denied");
 
@@ -97,7 +97,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void TeardownStarted_CreatesCorrectEntry()
+    public void TeardownStartedCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.TeardownStarted("cli");
 
@@ -106,7 +106,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void TeardownFinished_Success_CreatesCorrectEntry()
+    public void TeardownFinishedSuccessCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.TeardownFinished("cli", true, true);
 
@@ -118,7 +118,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void LkgRevertStarted_CreatesCorrectEntry()
+    public void LkgRevertStartedCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.LkgRevertStarted("cli");
 
@@ -127,7 +127,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void LkgRevertFinished_Success_CreatesCorrectEntry()
+    public void LkgRevertFinishedSuccessCreatesCorrectEntry()
     {
         var entry = AuditLogEntry.LkgRevertFinished("cli", 4, 1, 0, "2.0.0", 4);
 
@@ -140,7 +140,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void ToJson_ProducesValidJson()
+    public void ToJsonProducesValidJson()
     {
         var entry = AuditLogEntry.ApplyFinished("cli", 5, 2, 0, "1.0.0", 5);
         var json = entry.ToJson();
@@ -154,7 +154,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void ToJson_OmitsNullFields()
+    public void ToJsonOmitsNullFields()
     {
         var entry = AuditLogEntry.RollbackStarted("cli");
         var json = entry.ToJson();
@@ -166,7 +166,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void FromJson_ParsesValidEntry()
+    public void FromJsonParsesValidEntry()
     {
         var json = """{"ts":"2026-01-31T10:00:00Z","event":"apply-finished","source":"cli","status":"success"}""";
         var entry = AuditLogEntry.FromJson(json);
@@ -178,7 +178,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void FromJson_InvalidJson_ReturnsNull()
+    public void FromJsonInvalidJsonReturnsNull()
     {
         var entry = AuditLogEntry.FromJson("not valid json");
 
@@ -186,7 +186,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void FromJson_EmptyString_ReturnsNull()
+    public void FromJsonEmptyStringReturnsNull()
     {
         var entry = AuditLogEntry.FromJson("");
 
@@ -194,7 +194,7 @@ public class AuditLogEntryTests
     }
 
     [Fact]
-    public void Timestamp_IsIso8601Utc()
+    public void TimestampIsIso8601Utc()
     {
         var entry = AuditLogEntry.ApplyStarted("cli");
 
@@ -235,7 +235,7 @@ public class AuditLogWriterTests : IDisposable
     }
 
     [Fact]
-    public void Write_CreatesFile()
+    public void WriteCreatesFile()
     {
         var entry = AuditLogEntry.ApplyStarted("cli");
 
@@ -245,7 +245,7 @@ public class AuditLogWriterTests : IDisposable
     }
 
     [Fact]
-    public void Write_AppendsEntries()
+    public void WriteAppendsEntries()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
         _writer.Write(AuditLogEntry.ApplyFinished("cli", 1, 0, 0, "1.0", 1));
@@ -255,7 +255,7 @@ public class AuditLogWriterTests : IDisposable
     }
 
     [Fact]
-    public void Write_NullEntry_DoesNotThrow()
+    public void WriteNullEntryDoesNotThrow()
     {
         _writer.Write(null!);
 
@@ -264,7 +264,7 @@ public class AuditLogWriterTests : IDisposable
     }
 
     [Fact]
-    public void Write_EachLineIsSingleJson()
+    public void WriteEachLineIsSingleJson()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
         _writer.Write(AuditLogEntry.RollbackStarted("cli"));
@@ -279,7 +279,7 @@ public class AuditLogWriterTests : IDisposable
     }
 
     [Fact]
-    public void LogPath_ReturnsConfiguredPath()
+    public void LogPathReturnsConfiguredPath()
     {
         Assert.Equal(_testLogPath, _writer.LogPath);
     }
@@ -317,7 +317,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadTail_NoFile_ReturnsEmpty()
+    public void ReadTailNoFileReturnsEmpty()
     {
         var entries = _reader.ReadTail(10);
 
@@ -325,7 +325,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadTail_ReturnsNewestFirst()
+    public void ReadTailReturnsNewestFirst()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
         Thread.Sleep(10); // Ensure different timestamps
@@ -339,7 +339,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadTail_LimitsResults()
+    public void ReadTailLimitsResults()
     {
         for (int i = 0; i < 10; i++)
         {
@@ -352,7 +352,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadTail_ZeroCount_ReturnsEmpty()
+    public void ReadTailZeroCountReturnsEmpty()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
 
@@ -362,7 +362,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadTail_NegativeCount_ReturnsEmpty()
+    public void ReadTailNegativeCountReturnsEmpty()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
 
@@ -372,7 +372,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadSince_ReturnsRecentEntries()
+    public void ReadSinceReturnsRecentEntries()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
 
@@ -382,7 +382,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadSince_ZeroMinutes_ReturnsEmpty()
+    public void ReadSinceZeroMinutesReturnsEmpty()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
 
@@ -392,7 +392,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void GetEntryCount_ReturnsCorrectCount()
+    public void GetEntryCountReturnsCorrectCount()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
         _writer.Write(AuditLogEntry.ApplyFinished("cli", 1, 0, 0, "1.0", 1));
@@ -404,7 +404,7 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void GetEntryCount_NoFile_ReturnsZero()
+    public void GetEntryCountNoFileReturnsZero()
     {
         var count = _reader.GetEntryCount();
 
@@ -412,13 +412,13 @@ public class AuditLogReaderTests : IDisposable
     }
 
     [Fact]
-    public void LogFileExists_ReturnsFalseWhenNoFile()
+    public void LogFileExistsReturnsFalseWhenNoFile()
     {
         Assert.False(_reader.LogFileExists);
     }
 
     [Fact]
-    public void LogFileExists_ReturnsTrueWhenFileExists()
+    public void LogFileExistsReturnsTrueWhenFileExists()
     {
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
 
@@ -432,7 +432,7 @@ public class AuditLogReaderTests : IDisposable
 public class NullAuditLogWriterTests
 {
     [Fact]
-    public void Write_DoesNotThrow()
+    public void WriteDoesNotThrow()
     {
         var writer = NullAuditLogWriter.Instance;
 
@@ -441,7 +441,7 @@ public class NullAuditLogWriterTests
     }
 
     [Fact]
-    public void LogPath_ReturnsEmptyString()
+    public void LogPathReturnsEmptyString()
     {
         var writer = NullAuditLogWriter.Instance;
 
@@ -449,7 +449,7 @@ public class NullAuditLogWriterTests
     }
 
     [Fact]
-    public void Instance_ReturnsSameInstance()
+    public void InstanceReturnsSameInstance()
     {
         var writer1 = NullAuditLogWriter.Instance;
         var writer2 = NullAuditLogWriter.Instance;
@@ -493,7 +493,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public void Write_FileRemainsAccessible_WhenNotLocalSystem()
+    public void WriteFileRemainsAccessibleWhenNotLocalSystem()
     {
         // When not running as LocalSystem, ACL protection is skipped
         // File should remain fully accessible to the current user
@@ -514,7 +514,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public void Write_MultipleWrites_DoNotReapplyAcl()
+    public void WriteMultipleWritesDoNotReapplyAcl()
     {
         // ACL should only be applied once (on first write)
         // Subsequent writes should not attempt to reapply
@@ -529,7 +529,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public void Write_NewWriterInstance_WorksAfterFirstInstanceWrote()
+    public void WriteNewWriterInstanceWorksAfterFirstInstanceWrote()
     {
         // First writer creates file
         _writer.Write(AuditLogEntry.ApplyStarted("cli"));
@@ -543,7 +543,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public async Task Write_ConcurrentWrites_AllSucceed()
+    public async Task WriteConcurrentWritesAllSucceed()
     {
         // Test that concurrent writes from multiple threads work correctly
         var tasks = new Task[5];
@@ -566,7 +566,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public async Task Write_ConcurrentWritesFromMultipleInstances_TracksFailures()
+    public async Task WriteConcurrentWritesFromMultipleInstancesTracksFailures()
     {
         // Use a dedicated file for this test to avoid interference
         var testPath = Path.Combine(Path.GetTempPath(), $"audit_multi_{Guid.NewGuid():N}.log");
@@ -615,13 +615,13 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public void Write_FailedWriteCount_InitiallyZero()
+    public void WriteFailedWriteCountInitiallyZero()
     {
         Assert.Equal(0, _writer.FailedWriteCount);
     }
 
     [Fact]
-    public void Write_ToInvalidPath_IncrementsFailedWriteCount()
+    public void WriteToInvalidPathIncrementsFailedWriteCount()
     {
         // Create a writer with an invalid path (contains invalid characters)
         var invalidPath = "Z:\\<invalid>\\path\\audit.log";
@@ -635,7 +635,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public async Task Write_HighConcurrency_NoDataLoss()
+    public async Task WriteHighConcurrencyNoDataLoss()
     {
         // Use a dedicated file for this stress test
         var testPath = Path.Combine(Path.GetTempPath(), $"audit_stress_{Guid.NewGuid():N}.log");
@@ -675,7 +675,7 @@ public class AuditLogWriterAclTests : IDisposable
     }
 
     [Fact]
-    public void Write_WhileFileLockedByReader_StillSucceeds()
+    public void WriteWhileFileLockedByReaderStillSucceeds()
     {
         // Write initial entry
         _writer.Write(AuditLogEntry.ApplyStarted("initial"));
@@ -698,7 +698,7 @@ public class AuditLogWriterAclTests : IDisposable
 public class AuditLogsMessageTests
 {
     [Fact]
-    public void ParseRequest_ValidAuditLogsRequest_ReturnsRequest()
+    public void ParseRequestValidAuditLogsRequestReturnsRequest()
     {
         var json = """{"type":"audit-logs","tail":20}""";
 
@@ -712,7 +712,7 @@ public class AuditLogsMessageTests
     }
 
     [Fact]
-    public void ParseRequest_AuditLogsWithSince_ReturnsRequest()
+    public void ParseRequestAuditLogsWithSinceReturnsRequest()
     {
         var json = """{"type":"audit-logs","sinceMinutes":60}""";
 
@@ -726,7 +726,7 @@ public class AuditLogsMessageTests
     }
 
     [Fact]
-    public void ParseRequest_AuditLogsNoParams_ReturnsRequest()
+    public void ParseRequestAuditLogsNoParamsReturnsRequest()
     {
         var json = """{"type":"audit-logs"}""";
 
@@ -737,7 +737,7 @@ public class AuditLogsMessageTests
     }
 
     [Fact]
-    public void AuditLogsResponse_Success_HasExpectedFields()
+    public void AuditLogsResponseSuccessHasExpectedFields()
     {
         var entries = new List<AuditLogEntryDto>
         {
@@ -754,7 +754,7 @@ public class AuditLogsMessageTests
     }
 
     [Fact]
-    public void AuditLogsResponse_Failure_HasErrorMessage()
+    public void AuditLogsResponseFailureHasErrorMessage()
     {
         var response = AuditLogsResponse.Failure("Test error");
 

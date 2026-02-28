@@ -25,7 +25,7 @@ namespace WfpTrafficControl.Tests;
 public class WorkerElevationTests
 {
     [Fact]
-    public void ElevationCheck_ReturnsBoolean()
+    public void ElevationCheckReturnsBoolean()
     {
         // Arrange & Act - use the same pattern as Worker.IsRunningAsAdministrator()
         using var identity = WindowsIdentity.GetCurrent();
@@ -37,7 +37,7 @@ public class WorkerElevationTests
     }
 
     [Fact]
-    public void ElevationCheck_IdentityNotNull()
+    public void ElevationCheckIdentityNotNull()
     {
         // Arrange & Act
         using var identity = WindowsIdentity.GetCurrent();
@@ -54,7 +54,7 @@ public class WorkerElevationTests
 public class WorkerConfigurationTests
 {
     [Fact]
-    public void Configuration_AutoApplyLkg_DefaultIsFalse()
+    public void ConfigurationAutoApplyLkgDefaultIsFalse()
     {
         // Arrange - empty configuration
         var config = new ConfigurationBuilder()
@@ -69,7 +69,7 @@ public class WorkerConfigurationTests
     }
 
     [Fact]
-    public void Configuration_AutoApplyLkg_CanBeEnabled()
+    public void ConfigurationAutoApplyLkgCanBeEnabled()
     {
         // Arrange
         var config = new ConfigurationBuilder()
@@ -87,7 +87,7 @@ public class WorkerConfigurationTests
     }
 
     [Fact]
-    public void Configuration_DebounceMs_DefaultValue()
+    public void ConfigurationDebounceMsDefaultValue()
     {
         // Arrange - empty configuration
         var config = new ConfigurationBuilder()
@@ -103,7 +103,7 @@ public class WorkerConfigurationTests
     }
 
     [Fact]
-    public void Configuration_DebounceMs_CanBeConfigured()
+    public void ConfigurationDebounceMsCanBeConfigured()
     {
         // Arrange
         var config = new ConfigurationBuilder()
@@ -122,7 +122,7 @@ public class WorkerConfigurationTests
     }
 
     [Fact]
-    public void Configuration_DebounceMs_ValidRangeConstants()
+    public void ConfigurationDebounceMsValidRangeConstants()
     {
         // Assert - verify the constants are sensible
         Assert.True(PolicyFileWatcher.MinDebounceMs > 0);
@@ -151,7 +151,7 @@ public class WorkerLkgAutoApplyLogicTests : IDisposable
     }
 
     [Fact]
-    public void LkgAutoApply_NoLkg_ShouldFailOpen()
+    public void LkgAutoApplyNoLkgShouldFailOpen()
     {
         // Arrange - ensure no LKG
         LkgStore.Delete();
@@ -165,7 +165,7 @@ public class WorkerLkgAutoApplyLogicTests : IDisposable
     }
 
     [Fact]
-    public void LkgAutoApply_ValidLkg_ShouldLoadSuccessfully()
+    public void LkgAutoApplyValidLkgShouldLoadSuccessfully()
     {
         // Arrange - save a valid LKG
         var policyJson = """
@@ -198,7 +198,7 @@ public class WorkerLkgAutoApplyLogicTests : IDisposable
     }
 
     [Fact]
-    public void LkgAutoApply_ValidLkg_CanCompile()
+    public void LkgAutoApplyValidLkgCanCompile()
     {
         // Arrange
         var policyJson = """
@@ -230,7 +230,7 @@ public class WorkerLkgAutoApplyLogicTests : IDisposable
     }
 
     [Fact]
-    public void LkgAutoApply_CorruptLkg_ShouldFailOpen()
+    public void LkgAutoApplyCorruptLkgShouldFailOpen()
     {
         // Arrange - save a corrupt LKG (bad checksum)
         var lkgPath = WfpConstants.GetLkgPolicyPath();
@@ -252,7 +252,7 @@ public class WorkerLkgAutoApplyLogicTests : IDisposable
 public class WorkerVersionTests
 {
     [Fact]
-    public void WorkerAssembly_HasVersion()
+    public void WorkerAssemblyHasVersion()
     {
         // Arrange & Act
         var assembly = typeof(Worker).Assembly;
@@ -263,7 +263,7 @@ public class WorkerVersionTests
     }
 
     [Fact]
-    public void WorkerAssembly_VersionFormat()
+    public void WorkerAssemblyVersionFormat()
     {
         // Arrange & Act
         var assembly = typeof(Worker).Assembly;
@@ -313,7 +313,7 @@ public class WorkerManualTestScenarios
     //    - Expected: Some settings may require restart
 
     [Fact]
-    public void ManualTestDocumentation_Exists()
+    public void ManualTestDocumentationExists()
     {
         // This test just documents that manual testing scenarios exist
         Assert.True(true, "See comments above for manual test scenarios");
@@ -326,27 +326,27 @@ public class WorkerManualTestScenarios
 public class PolicyFileWatcherConfigTests
 {
     [Fact]
-    public void PolicyFileWatcher_DefaultDebounce_IsValid()
+    public void PolicyFileWatcherDefaultDebounceIsValid()
     {
         Assert.True(PolicyFileWatcher.DefaultDebounceMs >= PolicyFileWatcher.MinDebounceMs);
         Assert.True(PolicyFileWatcher.DefaultDebounceMs <= PolicyFileWatcher.MaxDebounceMs);
     }
 
     [Fact]
-    public void PolicyFileWatcher_MinDebounce_IsPositive()
+    public void PolicyFileWatcherMinDebounceIsPositive()
     {
         Assert.True(PolicyFileWatcher.MinDebounceMs > 0);
     }
 
     [Fact]
-    public void PolicyFileWatcher_MaxDebounce_IsReasonable()
+    public void PolicyFileWatcherMaxDebounceIsReasonable()
     {
         // 30 seconds max is reasonable for UI responsiveness
         Assert.Equal(30000, PolicyFileWatcher.MaxDebounceMs);
     }
 
     [Fact]
-    public void PolicyFileWatcher_Constants_HaveExpectedValues()
+    public void PolicyFileWatcherConstantsHaveExpectedValues()
     {
         Assert.Equal(100, PolicyFileWatcher.MinDebounceMs);
         Assert.Equal(1000, PolicyFileWatcher.DefaultDebounceMs);

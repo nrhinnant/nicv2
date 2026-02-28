@@ -124,7 +124,7 @@ public class LkgStoreTests : IDisposable
     #region Save Tests
 
     [Fact]
-    public void Save_ValidPolicy_CreatesLkgFile()
+    public void SaveValidPolicyCreatesLkgFile()
     {
         var policyJson = CreateValidPolicyJson();
 
@@ -135,7 +135,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Save_ValidPolicy_IncludesChecksum()
+    public void SaveValidPolicyIncludesChecksum()
     {
         var policyJson = CreateValidPolicyJson();
 
@@ -149,7 +149,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Save_ValidPolicy_PreservesSourcePath()
+    public void SaveValidPolicyPreservesSourcePath()
     {
         var policyJson = CreateValidPolicyJson();
         var sourcePath = "C:\\policies\\my-policy.json";
@@ -162,7 +162,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Save_EmptyPolicy_ReturnsFailure()
+    public void SaveEmptyPolicyReturnsFailure()
     {
         var result = LkgStore.Save("");
 
@@ -171,7 +171,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Save_WhitespacePolicy_ReturnsFailure()
+    public void SaveWhitespacePolicyReturnsFailure()
     {
         var result = LkgStore.Save("   \t\n  ");
 
@@ -180,7 +180,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Save_OverwritesExistingLkg()
+    public void SaveOverwritesExistingLkg()
     {
         var policy1 = CreateValidPolicyJson(version: "1.0.0");
         var policy2 = CreateValidPolicyJson(version: "2.0.0");
@@ -198,7 +198,7 @@ public class LkgStoreTests : IDisposable
     #region Load Tests
 
     [Fact]
-    public void Load_ValidLkg_ReturnsPolicy()
+    public void LoadValidLkgReturnsPolicy()
     {
         var policyJson = CreateValidPolicyJson(version: "1.2.3", ruleCount: 2);
         LkgStore.Save(policyJson);
@@ -212,7 +212,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_ValidLkg_ReturnsPolicyJson()
+    public void LoadValidLkgReturnsPolicyJson()
     {
         var policyJson = CreateValidPolicyJson();
         LkgStore.Save(policyJson);
@@ -225,7 +225,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_ValidLkg_ReturnsSavedAtTimestamp()
+    public void LoadValidLkgReturnsSavedAtTimestamp()
     {
         var policyJson = CreateValidPolicyJson();
         var before = DateTime.UtcNow;
@@ -241,7 +241,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_MissingLkg_ReturnsNotFound()
+    public void LoadMissingLkgReturnsNotFound()
     {
         // Ensure no LKG exists
         LkgStore.Delete();
@@ -254,7 +254,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_CorruptChecksum_ReturnsFailedWithError()
+    public void LoadCorruptChecksumReturnsFailedWithError()
     {
         var policyJson = CreateValidPolicyJson();
         WriteLkgFile("invalid_checksum_value", policyJson);
@@ -267,7 +267,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_InvalidJson_ReturnsFailedWithError()
+    public void LoadInvalidJsonReturnsFailedWithError()
     {
         var lkgPath = WfpConstants.GetLkgPolicyPath();
         Directory.CreateDirectory(Path.GetDirectoryName(lkgPath)!);
@@ -281,7 +281,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_EmptyFile_ReturnsFailedWithError()
+    public void LoadEmptyFileReturnsFailedWithError()
     {
         var lkgPath = WfpConstants.GetLkgPolicyPath();
         Directory.CreateDirectory(Path.GetDirectoryName(lkgPath)!);
@@ -294,7 +294,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_MissingPolicyJson_ReturnsFailedWithError()
+    public void LoadMissingPolicyJsonReturnsFailedWithError()
     {
         var lkgPath = WfpConstants.GetLkgPolicyPath();
         Directory.CreateDirectory(Path.GetDirectoryName(lkgPath)!);
@@ -307,7 +307,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Load_InvalidPolicyJson_ReturnsFailedWithError()
+    public void LoadInvalidPolicyJsonReturnsFailedWithError()
     {
         // Policy with invalid version format
         var invalidPolicy = """{ "version": "invalid", "defaultAction": "allow", "updatedAt": "2024-01-15T10:30:00Z", "rules": [] }""";
@@ -325,7 +325,7 @@ public class LkgStoreTests : IDisposable
     #region Exists Tests
 
     [Fact]
-    public void Exists_AfterSave_ReturnsTrue()
+    public void ExistsAfterSaveReturnsTrue()
     {
         var policyJson = CreateValidPolicyJson();
         LkgStore.Save(policyJson);
@@ -334,7 +334,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Exists_NoLkg_ReturnsFalse()
+    public void ExistsNoLkgReturnsFalse()
     {
         LkgStore.Delete();
 
@@ -346,7 +346,7 @@ public class LkgStoreTests : IDisposable
     #region Delete Tests
 
     [Fact]
-    public void Delete_ExistingLkg_RemovesFile()
+    public void DeleteExistingLkgRemovesFile()
     {
         var policyJson = CreateValidPolicyJson();
         LkgStore.Save(policyJson);
@@ -360,7 +360,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Delete_NoLkg_ReturnsFalse()
+    public void DeleteNoLkgReturnsFalse()
     {
         LkgStore.Delete(); // Ensure clean state
 
@@ -375,7 +375,7 @@ public class LkgStoreTests : IDisposable
     #region GetMetadata Tests
 
     [Fact]
-    public void GetMetadata_ValidLkg_ReturnsMetadata()
+    public void GetMetadataValidLkgReturnsMetadata()
     {
         var policyJson = CreateValidPolicyJson(version: "3.2.1", ruleCount: 5);
         LkgStore.Save(policyJson, "C:\\test\\source.json");
@@ -392,7 +392,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void GetMetadata_NoLkg_ReturnsNotExists()
+    public void GetMetadataNoLkgReturnsNotExists()
     {
         LkgStore.Delete();
 
@@ -404,7 +404,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void GetMetadata_CorruptLkg_ReturnsIsCorrupt()
+    public void GetMetadataCorruptLkgReturnsIsCorrupt()
     {
         var policyJson = CreateValidPolicyJson();
         WriteLkgFile("wrong_checksum", policyJson);
@@ -423,7 +423,7 @@ public class LkgStoreTests : IDisposable
     #region Checksum Tests
 
     [Fact]
-    public void Load_TamperedPolicy_DetectsCorruption()
+    public void LoadTamperedPolicyDetectsCorruption()
     {
         // Save a valid policy
         var originalPolicy = CreateValidPolicyJson(version: "1.0.0");
@@ -444,7 +444,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void Save_SamePolicy_ProducesSameChecksum()
+    public void SaveSamePolicyProducesSameChecksum()
     {
         var policyJson = CreateValidPolicyJson();
 
@@ -465,7 +465,7 @@ public class LkgStoreTests : IDisposable
     #region LkgLoadResult Tests
 
     [Fact]
-    public void LkgLoadResult_Success_SetsAllProperties()
+    public void LkgLoadResultSuccessSetsAllProperties()
     {
         var policyJson = CreateValidPolicyJson();
         LkgStore.Save(policyJson, "C:\\source.json");
@@ -481,7 +481,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void LkgLoadResult_NotFound_SetsExistsFalse()
+    public void LkgLoadResultNotFoundSetsExistsFalse()
     {
         LkgStore.Delete();
 
@@ -495,7 +495,7 @@ public class LkgStoreTests : IDisposable
     }
 
     [Fact]
-    public void LkgLoadResult_Failed_SetsError()
+    public void LkgLoadResultFailedSetsError()
     {
         // Create corrupt LKG
         WriteLkgFile("bad", "not valid policy json");
@@ -516,7 +516,7 @@ public class LkgStoreTests : IDisposable
 public class LkgIpcMessageTests
 {
     [Fact]
-    public void ParseRequest_LkgShowRequest_Succeeds()
+    public void ParseRequestLkgShowRequestSucceeds()
     {
         var json = """{ "type": "lkg-show" }""";
 
@@ -527,7 +527,7 @@ public class LkgIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_LkgRevertRequest_Succeeds()
+    public void ParseRequestLkgRevertRequestSucceeds()
     {
         var json = """{ "type": "lkg-revert" }""";
 
@@ -538,7 +538,7 @@ public class LkgIpcMessageTests
     }
 
     [Fact]
-    public void LkgShowResponse_NotFound_SerializesCorrectly()
+    public void LkgShowResponseNotFoundSerializesCorrectly()
     {
         var response = WfpTrafficControl.Shared.Ipc.LkgShowResponse.NotFound("C:\\ProgramData\\test.json");
 
@@ -549,7 +549,7 @@ public class LkgIpcMessageTests
     }
 
     [Fact]
-    public void LkgShowResponse_Found_SerializesCorrectly()
+    public void LkgShowResponseFoundSerializesCorrectly()
     {
         var response = WfpTrafficControl.Shared.Ipc.LkgShowResponse.Found(
             "1.0.0", 3, DateTime.UtcNow, "C:\\policy.json", "C:\\lkg.json");
@@ -563,7 +563,7 @@ public class LkgIpcMessageTests
     }
 
     [Fact]
-    public void LkgRevertResponse_Success_SerializesCorrectly()
+    public void LkgRevertResponseSuccessSerializesCorrectly()
     {
         var response = WfpTrafficControl.Shared.Ipc.LkgRevertResponse.Success(5, 2, 1, "1.0.0", 8);
 
@@ -577,7 +577,7 @@ public class LkgIpcMessageTests
     }
 
     [Fact]
-    public void LkgRevertResponse_NotFound_SerializesCorrectly()
+    public void LkgRevertResponseNotFoundSerializesCorrectly()
     {
         var response = WfpTrafficControl.Shared.Ipc.LkgRevertResponse.NotFound();
 
@@ -639,7 +639,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     // ========================================
 
     [Fact]
-    public async Task ConcurrentReads_AllSucceed()
+    public async Task ConcurrentReadsAllSucceed()
     {
         // Arrange - save a policy first
         var policyJson = CreateValidPolicyJson(version: "1.0.0", ruleCount: 3);
@@ -665,7 +665,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     }
 
     [Fact]
-    public async Task ConcurrentReads_NoExceptions()
+    public async Task ConcurrentReadsNoExceptions()
     {
         // Arrange
         var policyJson = CreateValidPolicyJson();
@@ -704,7 +704,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     // ========================================
 
     [Fact]
-    public async Task ConcurrentSaves_AtLeastOneSucceeds_NoCorruption()
+    public async Task ConcurrentSavesAtLeastOneSucceedsNoCorruption()
     {
         // Arrange
         var versions = Enumerable.Range(1, 10).Select(i => $"{i}.0.0").ToArray();
@@ -730,7 +730,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     }
 
     [Fact]
-    public async Task ConcurrentSaves_NoFileCorruption()
+    public async Task ConcurrentSavesNoFileCorruption()
     {
         // Arrange
         var iterations = 20;
@@ -773,7 +773,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     // ========================================
 
     [Fact]
-    public async Task ConcurrentReadAndWrite_NoCorruption()
+    public async Task ConcurrentReadAndWriteNoCorruption()
     {
         // Arrange - save initial policy
         var initialPolicy = CreateValidPolicyJson(version: "1.0.0");
@@ -852,7 +852,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     // ========================================
 
     [Fact]
-    public async Task ConcurrentDeletes_NoExceptions()
+    public async Task ConcurrentDeletesNoExceptions()
     {
         // Arrange
         var policyJson = CreateValidPolicyJson();
@@ -884,7 +884,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     }
 
     [Fact]
-    public async Task ConcurrentDeleteAndSave_NoExceptions()
+    public async Task ConcurrentDeleteAndSaveNoExceptions()
     {
         // Arrange
         var exceptions = new List<Exception>();
@@ -933,7 +933,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     // ========================================
 
     [Fact]
-    public async Task MixedConcurrentOperations_NoExceptions()
+    public async Task MixedConcurrentOperationsNoExceptions()
     {
         // Arrange - initial policy
         var initialPolicy = CreateValidPolicyJson();
@@ -990,7 +990,7 @@ public class LkgStoreConcurrentAccessTests : IDisposable
     }
 
     [Fact]
-    public async Task RapidSaveLoadCycles_MaintainsIntegrity()
+    public async Task RapidSaveLoadCyclesMaintainsIntegrity()
     {
         // Arrange
         var cycleCount = 50;

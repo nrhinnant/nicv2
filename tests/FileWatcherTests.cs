@@ -10,7 +10,7 @@ namespace WfpTrafficControl.Tests;
 public class WatchMessageParserTests
 {
     [Fact]
-    public void ParseRequest_ValidWatchSetRequest_ReturnsWatchSetRequest()
+    public void ParseRequestValidWatchSetRequestReturnsWatchSetRequest()
     {
         var json = """{"type":"watch-set","policyPath":"C:\\test\\policy.json"}""";
 
@@ -24,7 +24,7 @@ public class WatchMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_WatchSetRequestWithNullPath_ReturnsWatchSetRequest()
+    public void ParseRequestWatchSetRequestWithNullPathReturnsWatchSetRequest()
     {
         // Null path is valid (disables watching)
         var json = """{"type":"watch-set","policyPath":null}""";
@@ -38,7 +38,7 @@ public class WatchMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_WatchSetRequestMissingPath_ReturnsWatchSetRequest()
+    public void ParseRequestWatchSetRequestMissingPathReturnsWatchSetRequest()
     {
         // Missing path is valid (disables watching)
         var json = """{"type":"watch-set"}""";
@@ -52,7 +52,7 @@ public class WatchMessageParserTests
     }
 
     [Fact]
-    public void ParseRequest_ValidWatchStatusRequest_ReturnsWatchStatusRequest()
+    public void ParseRequestValidWatchStatusRequestReturnsWatchStatusRequest()
     {
         var json = """{"type":"watch-status"}""";
 
@@ -70,7 +70,7 @@ public class WatchMessageParserTests
 public class WatchResponseSerializationTests
 {
     [Fact]
-    public void SerializeResponse_WatchSetResponseSuccess_ContainsExpectedFields()
+    public void SerializeResponseWatchSetResponseSuccessContainsExpectedFields()
     {
         var response = WatchSetResponse.Success(
             watching: true,
@@ -88,7 +88,7 @@ public class WatchResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_WatchSetResponseWithWarning_ContainsWarning()
+    public void SerializeResponseWatchSetResponseWithWarningContainsWarning()
     {
         var response = WatchSetResponse.Success(
             watching: true,
@@ -103,7 +103,7 @@ public class WatchResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_WatchSetResponseDisabled_ContainsExpectedFields()
+    public void SerializeResponseWatchSetResponseDisabledContainsExpectedFields()
     {
         var response = WatchSetResponse.Disabled();
 
@@ -114,7 +114,7 @@ public class WatchResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_WatchSetResponseFailure_ContainsError()
+    public void SerializeResponseWatchSetResponseFailureContainsError()
     {
         var response = WatchSetResponse.Failure("File not found");
 
@@ -125,7 +125,7 @@ public class WatchResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_WatchStatusResponseActive_ContainsAllFields()
+    public void SerializeResponseWatchStatusResponseActiveContainsAllFields()
     {
         var lastApply = new DateTime(2025, 1, 15, 10, 30, 0, DateTimeKind.Utc);
         var response = WatchStatusResponse.Success(
@@ -150,7 +150,7 @@ public class WatchResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_WatchStatusResponseWithError_ContainsErrorFields()
+    public void SerializeResponseWatchStatusResponseWithErrorContainsErrorFields()
     {
         var lastError = new DateTime(2025, 1, 15, 10, 35, 0, DateTimeKind.Utc);
         var response = WatchStatusResponse.Success(
@@ -171,7 +171,7 @@ public class WatchResponseSerializationTests
     }
 
     [Fact]
-    public void SerializeResponse_WatchStatusResponseNotWatching_OmitsPath()
+    public void SerializeResponseWatchStatusResponseNotWatchingOmitsPath()
     {
         var response = WatchStatusResponse.Success(
             watching: false,
@@ -196,7 +196,7 @@ public class WatchResponseSerializationTests
 public class WatchMessageModelTests
 {
     [Fact]
-    public void WatchSetRequest_Type_IsWatchSet()
+    public void WatchSetRequestTypeIsWatchSet()
     {
         var request = new WatchSetRequest();
         Assert.Equal("watch-set", request.Type);
@@ -204,7 +204,7 @@ public class WatchMessageModelTests
     }
 
     [Fact]
-    public void WatchStatusRequest_Type_IsWatchStatus()
+    public void WatchStatusRequestTypeIsWatchStatus()
     {
         var request = new WatchStatusRequest();
         Assert.Equal("watch-status", request.Type);
@@ -212,7 +212,7 @@ public class WatchMessageModelTests
     }
 
     [Fact]
-    public void WatchSetResponse_Success_SetsAllFields()
+    public void WatchSetResponseSuccessSetsAllFields()
     {
         var response = WatchSetResponse.Success(true, "test.json", true, null);
 
@@ -225,7 +225,7 @@ public class WatchMessageModelTests
     }
 
     [Fact]
-    public void WatchSetResponse_Disabled_SetsCorrectState()
+    public void WatchSetResponseDisabledSetsCorrectState()
     {
         var response = WatchSetResponse.Disabled();
 
@@ -236,7 +236,7 @@ public class WatchMessageModelTests
     }
 
     [Fact]
-    public void WatchSetResponse_Failure_SetsError()
+    public void WatchSetResponseFailureSetsError()
     {
         var response = WatchSetResponse.Failure("Error message");
 
@@ -245,7 +245,7 @@ public class WatchMessageModelTests
     }
 
     [Fact]
-    public void WatchStatusResponse_Success_SetsAllFields()
+    public void WatchStatusResponseSuccessSetsAllFields()
     {
         var now = DateTime.UtcNow;
         var response = WatchStatusResponse.Success(
@@ -270,7 +270,7 @@ public class WatchMessageModelTests
     }
 
     [Fact]
-    public void WatchStatusResponse_Failure_SetsError()
+    public void WatchStatusResponseFailureSetsError()
     {
         var response = WatchStatusResponse.Failure("Status error");
 
@@ -285,7 +285,7 @@ public class WatchMessageModelTests
 public class DebounceConfigurationTests
 {
     [Fact]
-    public void DefaultDebounceMs_Is1000()
+    public void DefaultDebounceMsIs1000()
     {
         // Note: We're testing the constant value from WatchStatusResponse defaults
         var response = WatchStatusResponse.Success(
@@ -302,7 +302,7 @@ public class DebounceConfigurationTests
     }
 
     [Fact]
-    public void DebounceMs_CanBeConfiguredInRange()
+    public void DebounceMsCanBeConfiguredInRange()
     {
         // Test minimum valid value
         var minResponse = WatchStatusResponse.Success(

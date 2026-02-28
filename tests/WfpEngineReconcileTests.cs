@@ -62,7 +62,7 @@ public class WfpEngineReconcileTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_EmptyToSingle_CreatesOneFilter()
+    public void ApplyFiltersEmptyToSingleCreatesOneFilter()
     {
         // Arrange
         var filters = new List<CompiledFilter> { CreateFilter("rule1") };
@@ -79,7 +79,7 @@ public class WfpEngineReconcileTests
     }
 
     [Fact]
-    public void ApplyFilters_EmptyToMultiple_CreatesAllFilters()
+    public void ApplyFiltersEmptyToMultipleCreatesAllFilters()
     {
         // Arrange
         var filters = new List<CompiledFilter>
@@ -105,7 +105,7 @@ public class WfpEngineReconcileTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_SingleToEmpty_RemovesOneFilter()
+    public void ApplyFiltersSingleToEmptyRemovesOneFilter()
     {
         // Arrange
         var existingFilter = CreateFilter("rule1");
@@ -123,7 +123,7 @@ public class WfpEngineReconcileTests
     }
 
     [Fact]
-    public void ApplyFilters_MultipleToEmpty_RemovesAllFilters()
+    public void ApplyFiltersMultipleToEmptyRemovesAllFilters()
     {
         // Arrange
         _fake.AddExistingFilter(CreateFilter("rule1").FilterKey, 100);
@@ -146,7 +146,7 @@ public class WfpEngineReconcileTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_PartialOverlap_AddsAndRemoves()
+    public void ApplyFiltersPartialOverlapAddsAndRemoves()
     {
         // Arrange - existing: rule1, rule2
         _fake.AddExistingFilter(CreateFilter("rule1").FilterKey, 100);
@@ -171,7 +171,7 @@ public class WfpEngineReconcileTests
     }
 
     [Fact]
-    public void ApplyFilters_CompleteReplacement_RemovesAllAndAddsAll()
+    public void ApplyFiltersCompleteReplacementRemovesAllAndAddsAll()
     {
         // Arrange - existing: rule1, rule2
         _fake.AddExistingFilter(CreateFilter("rule1").FilterKey, 100);
@@ -200,7 +200,7 @@ public class WfpEngineReconcileTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_SamePolicy_NoChanges()
+    public void ApplyFiltersSamePolicyNoChanges()
     {
         // Arrange - apply initial policy
         var filters = new List<CompiledFilter>
@@ -226,7 +226,7 @@ public class WfpEngineReconcileTests
     }
 
     [Fact]
-    public void ApplyFilters_EmptyToEmpty_NoChanges()
+    public void ApplyFiltersEmptyToEmptyNoChanges()
     {
         // Act - apply empty policy to empty state
         var result = _engine.ApplyFilters(new List<CompiledFilter>());
@@ -243,7 +243,7 @@ public class WfpEngineReconcileTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_NullList_TreatedAsEmpty()
+    public void ApplyFiltersNullListTreatedAsEmpty()
     {
         // Arrange - add existing filter
         _fake.AddExistingFilter(CreateFilter("rule1").FilterKey, 100);
@@ -263,7 +263,7 @@ public class WfpEngineReconcileTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_EnumerationFailure_ReturnsError()
+    public void ApplyFiltersEnumerationFailureReturnsError()
     {
         // Arrange
         _fake.EnumerateFiltersError = new Error(ErrorCodes.WfpError, "Enumeration failed");
@@ -277,7 +277,7 @@ public class WfpEngineReconcileTests
     }
 
     [Fact]
-    public void ApplyFilters_AddFilterFailure_ReturnsError()
+    public void ApplyFiltersAddFilterFailureReturnsError()
     {
         // Arrange
         _fake.AddFilterError = new Error(ErrorCodes.WfpError, "Add filter failed");
@@ -291,7 +291,7 @@ public class WfpEngineReconcileTests
     }
 
     [Fact]
-    public void ApplyFilters_DeleteFilterFailure_ReturnsError()
+    public void ApplyFiltersDeleteFilterFailureReturnsError()
     {
         // Arrange
         _fake.AddExistingFilter(CreateFilter("rule1").FilterKey, 100);
@@ -341,7 +341,7 @@ public class WfpEngineRollbackTests
     // ========================================
 
     [Fact]
-    public void RemoveAllFilters_NoFilters_ReturnsZero()
+    public void RemoveAllFiltersNoFiltersReturnsZero()
     {
         // Act
         var result = _engine.RemoveAllFilters();
@@ -353,7 +353,7 @@ public class WfpEngineRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_SingleFilter_RemovesAndReturnsOne()
+    public void RemoveAllFiltersSingleFilterRemovesAndReturnsOne()
     {
         // Arrange
         _fake.AddExistingFilter(GenerateFilterKey("rule1"), 100, "Filter 1");
@@ -368,7 +368,7 @@ public class WfpEngineRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_MultipleFilters_RemovesAllAndReturnsCount()
+    public void RemoveAllFiltersMultipleFiltersRemovesAllAndReturnsCount()
     {
         // Arrange
         _fake.AddExistingFilter(GenerateFilterKey("rule1"), 100);
@@ -391,7 +391,7 @@ public class WfpEngineRollbackTests
     // ========================================
 
     [Fact]
-    public void RemoveAllFilters_CalledTwice_SecondCallReturnsZero()
+    public void RemoveAllFiltersCalledTwiceSecondCallReturnsZero()
     {
         // Arrange
         _fake.AddExistingFilter(GenerateFilterKey("rule1"), 100);
@@ -416,7 +416,7 @@ public class WfpEngineRollbackTests
     // ========================================
 
     [Fact]
-    public void RemoveAllFilters_EnumerationFailure_ReturnsError()
+    public void RemoveAllFiltersEnumerationFailureReturnsError()
     {
         // Arrange
         _fake.AddExistingFilter(GenerateFilterKey("rule1"), 100);
@@ -432,7 +432,7 @@ public class WfpEngineRollbackTests
     }
 
     [Fact]
-    public void RemoveAllFilters_DeleteFailure_ReturnsError()
+    public void RemoveAllFiltersDeleteFailureReturnsError()
     {
         // Arrange
         _fake.AddExistingFilter(GenerateFilterKey("rule1"), 100);
@@ -451,7 +451,7 @@ public class WfpEngineRollbackTests
     // ========================================
 
     [Fact]
-    public void RemoveAllFilters_DeletesById_NotByKey()
+    public void RemoveAllFiltersDeletesByIdNotByKey()
     {
         // Arrange
         _fake.AddExistingFilter(GenerateFilterKey("rule1"), 100);
@@ -475,7 +475,7 @@ public class WfpEngineRollbackTests
     // ========================================
 
     [Fact]
-    public void ApplyThenRollback_RemovesAllAppliedFilters()
+    public void ApplyThenRollbackRemovesAllAppliedFilters()
     {
         // Arrange - apply a policy
         var filter1 = new CompiledFilter
@@ -509,7 +509,7 @@ public class WfpEngineRollbackTests
     }
 
     [Fact]
-    public void RollbackThenApply_AppliesCorrectly()
+    public void RollbackThenApplyAppliesCorrectly()
     {
         // Arrange - add some existing filters
         _fake.AddExistingFilter(GenerateFilterKey("old1"), 100);
@@ -557,7 +557,7 @@ public class WfpEngineFakeBootstrapTests
     }
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_FromClean_CreatesBoth()
+    public void EnsureProviderAndSublayerExistFromCleanCreatesBoth()
     {
         // Arrange
         _fake.ProviderExistsValue = false;
@@ -575,7 +575,7 @@ public class WfpEngineFakeBootstrapTests
     }
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_AlreadyExist_NoCreation()
+    public void EnsureProviderAndSublayerExistAlreadyExistNoCreation()
     {
         // Arrange
         _fake.ProviderExistsValue = true;
@@ -591,7 +591,7 @@ public class WfpEngineFakeBootstrapTests
     }
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_ProviderFails_ReturnsError()
+    public void EnsureProviderAndSublayerExistProviderFailsReturnsError()
     {
         // Arrange
         _fake.ProviderExistsValue = false;
@@ -607,7 +607,7 @@ public class WfpEngineFakeBootstrapTests
     }
 
     [Fact]
-    public void RemoveProviderAndSublayer_WithFilters_FailsWithInUse()
+    public void RemoveProviderAndSublayerWithFiltersFailsWithInUse()
     {
         // Arrange
         _fake.ProviderExistsValue = true;
@@ -623,7 +623,7 @@ public class WfpEngineFakeBootstrapTests
     }
 
     [Fact]
-    public void RemoveProviderAndSublayer_NoFilters_Succeeds()
+    public void RemoveProviderAndSublayerNoFiltersSucceeds()
     {
         // Arrange
         _fake.ProviderExistsValue = true;
@@ -680,7 +680,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_BeginTransactionFails_ReturnsError()
+    public void ApplyFiltersBeginTransactionFailsReturnsError()
     {
         // Arrange
         _fakeTransaction.BeginError = 0x80320017; // FWP_E_SESSION_ABORTED
@@ -696,7 +696,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void RemoveAllFilters_BeginTransactionFails_ReturnsError()
+    public void RemoveAllFiltersBeginTransactionFailsReturnsError()
     {
         // Arrange
         _fake.AddExistingFilter(Guid.NewGuid(), 100);
@@ -712,7 +712,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_BeginTransactionFails_ReturnsError()
+    public void EnsureProviderAndSublayerExistBeginTransactionFailsReturnsError()
     {
         // Arrange
         _fake.ProviderExistsValue = false;
@@ -733,7 +733,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_CommitFails_ReturnsError()
+    public void ApplyFiltersCommitFailsReturnsError()
     {
         // Arrange
         _fakeTransaction.CommitError = 0x80320017; // FWP_E_SESSION_ABORTED
@@ -749,7 +749,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void RemoveAllFilters_CommitFails_ReturnsError()
+    public void RemoveAllFiltersCommitFailsReturnsError()
     {
         // Arrange
         _fake.AddExistingFilter(Guid.NewGuid(), 100);
@@ -768,7 +768,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_PartialAddFailure_TransactionAborted()
+    public void ApplyFiltersPartialAddFailureTransactionAborted()
     {
         // Arrange - set up failure on filter add
         var filters = new List<CompiledFilter>
@@ -791,7 +791,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void ApplyFilters_DeleteFailureDuringReconcile_TransactionAborted()
+    public void ApplyFiltersDeleteFailureDuringReconcileTransactionAborted()
     {
         // Arrange - existing filter that needs to be removed
         var existingKey = CreateFilter("old-rule").FilterKey;
@@ -809,7 +809,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void RemoveAllFilters_DeleteFailure_TransactionAborted()
+    public void RemoveAllFiltersDeleteFailureTransactionAborted()
     {
         // Arrange
         _fake.AddExistingFilter(Guid.NewGuid(), 100);
@@ -829,7 +829,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_Success_TransactionCommittedNotAborted()
+    public void ApplyFiltersSuccessTransactionCommittedNotAborted()
     {
         // Arrange
         var filters = new List<CompiledFilter> { CreateFilter("rule1") };
@@ -845,7 +845,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void RemoveAllFilters_Success_TransactionCommittedNotAborted()
+    public void RemoveAllFiltersSuccessTransactionCommittedNotAborted()
     {
         // Arrange
         _fake.AddExistingFilter(Guid.NewGuid(), 100);
@@ -860,7 +860,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_Success_TransactionCommittedNotAborted()
+    public void EnsureProviderAndSublayerExistSuccessTransactionCommittedNotAborted()
     {
         // Arrange
         _fake.ProviderExistsValue = false;
@@ -880,7 +880,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void ApplyFilters_OpenEngineFails_ReturnsError()
+    public void ApplyFiltersOpenEngineFailsReturnsError()
     {
         // Arrange
         _fake.OpenEngineError = new Error(ErrorCodes.WfpError, "Cannot open WFP engine");
@@ -896,7 +896,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void RemoveAllFilters_OpenEngineFails_ReturnsError()
+    public void RemoveAllFiltersOpenEngineFailsReturnsError()
     {
         // Arrange
         _fake.OpenEngineError = new Error(ErrorCodes.WfpError, "Cannot open WFP engine");
@@ -910,7 +910,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_OpenEngineFails_ReturnsError()
+    public void EnsureProviderAndSublayerExistOpenEngineFailsReturnsError()
     {
         // Arrange
         _fake.OpenEngineError = new Error(ErrorCodes.WfpError, "Cannot open WFP engine");
@@ -928,7 +928,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void EnsureProviderAndSublayerExist_SublayerFails_TransactionAborted()
+    public void EnsureProviderAndSublayerExistSublayerFailsTransactionAborted()
     {
         // Arrange
         _fake.ProviderExistsValue = false;
@@ -950,7 +950,7 @@ public class WfpEngineTransactionFailureTests
     // ========================================
 
     [Fact]
-    public void AddDemoBlockFilter_CommitFails_ReturnsError()
+    public void AddDemoBlockFilterCommitFailsReturnsError()
     {
         // Arrange
         _fakeTransaction.CommitError = 0x80320017;
@@ -963,7 +963,7 @@ public class WfpEngineTransactionFailureTests
     }
 
     [Fact]
-    public void RemoveDemoBlockFilter_CommitFails_ReturnsError()
+    public void RemoveDemoBlockFilterCommitFailsReturnsError()
     {
         // Arrange
         _fake.AddExistingFilter(WfpConstants.DemoBlockFilterGuid, 100);

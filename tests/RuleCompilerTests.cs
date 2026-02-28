@@ -16,7 +16,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_NullPolicy_ReturnsError()
+    public void CompileNullPolicyReturnsError()
     {
         var result = RuleCompiler.Compile(null!);
 
@@ -26,7 +26,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_EmptyPolicy_ReturnsNoFilters()
+    public void CompileEmptyPolicyReturnsNoFilters()
     {
         var policy = new Policy
         {
@@ -45,7 +45,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_ValidOutboundTcpRule_ReturnsOneFilter()
+    public void CompileValidOutboundTcpRuleReturnsOneFilter()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -73,7 +73,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_InboundDirection_Succeeds()
+    public void CompileInboundDirectionSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -92,7 +92,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_BothDirection_ReturnsError()
+    public void CompileBothDirectionReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -111,7 +111,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundDirection_Succeeds()
+    public void CompileOutboundDirectionSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -134,7 +134,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_InboundWithRemoteIpAndPort_Succeeds()
+    public void CompileInboundWithRemoteIpAndPortSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -157,7 +157,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_InboundWithCidr_Succeeds()
+    public void CompileInboundWithCidrSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -180,7 +180,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_InboundWithProcess_Succeeds()
+    public void CompileInboundWithProcessSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -204,7 +204,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_InboundDescription_ContainsInbound()
+    public void CompileInboundDescriptionContainsInbound()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -225,7 +225,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_MixedInboundOutbound_CreatesFiltersWithCorrectDirection()
+    public void CompileMixedInboundOutboundCreatesFiltersWithCorrectDirection()
     {
         var policy = new Policy
         {
@@ -255,7 +255,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_InboundWithPortRange_CreatesOneFilter()
+    public void CompileInboundWithPortRangeCreatesOneFilter()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -283,7 +283,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_InboundUdpProtocol_ReturnsError()
+    public void CompileInboundUdpProtocolReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -302,7 +302,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundUdpProtocol_Succeeds()
+    public void CompileOutboundUdpProtocolSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -321,7 +321,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundUdpWithRemoteIpAndPort_Succeeds()
+    public void CompileOutboundUdpWithRemoteIpAndPortSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -347,7 +347,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundUdpDescription_ContainsUdp()
+    public void CompileOutboundUdpDescriptionContainsUdp()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -368,7 +368,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundUdpWithCidr_Succeeds()
+    public void CompileOutboundUdpWithCidrSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -391,7 +391,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundUdpWithProcess_Succeeds()
+    public void CompileOutboundUdpWithProcessSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -415,7 +415,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_MixedTcpUdpOutbound_CreatesBothFilters()
+    public void CompileMixedTcpUdpOutboundCreatesBothFilters()
     {
         var policy = new Policy
         {
@@ -442,7 +442,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundAnyProtocol_CreatesTwoFilters()
+    public void CompileOutboundAnyProtocolCreatesTwoFilters()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -471,7 +471,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_InboundAnyProtocol_ReturnsError()
+    public void CompileInboundAnyProtocolReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -490,7 +490,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundAnyProtocolWithPorts_CreatesCorrectFilters()
+    public void CompileOutboundAnyProtocolWithPortsCreatesCorrectFilters()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -517,7 +517,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundAnyProtocolWithMultiplePorts_CreatesAllFilters()
+    public void CompileOutboundAnyProtocolWithMultiplePortsCreatesAllFilters()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -543,7 +543,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundAnyProtocol_GeneratesUniqueGuids()
+    public void CompileOutboundAnyProtocolGeneratesUniqueGuids()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -564,7 +564,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_OutboundAnyProtocol_DescriptionsShowSpecificProtocol()
+    public void CompileOutboundAnyProtocolDescriptionsShowSpecificProtocol()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -587,7 +587,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_UnknownProtocol_ReturnsError()
+    public void CompileUnknownProtocolReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -606,7 +606,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_TcpProtocol_Succeeds()
+    public void CompileTcpProtocolSucceeds()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -629,7 +629,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_LocalIp_ReturnsError()
+    public void CompileLocalIpReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -649,7 +649,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_LocalPorts_ReturnsError()
+    public void CompileLocalPortsReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -673,7 +673,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_RemoteIpv4_ParsesCorrectly()
+    public void CompileRemoteIpv4ParsesCorrectly()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -697,7 +697,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_RemoteCidr_ParsesMaskCorrectly()
+    public void CompileRemoteCidrParsesMaskCorrectly()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -722,7 +722,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_RemoteIpv6_ReturnsError()
+    public void CompileRemoteIpv6ReturnsError()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -746,7 +746,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_SinglePort_CreatesOneFilter()
+    public void CompileSinglePortCreatesOneFilter()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -769,7 +769,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_PortRange_CreatesOneFilter()
+    public void CompilePortRangeCreatesOneFilter()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -792,7 +792,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_CommaSeparatedPorts_CreatesMultipleFilters()
+    public void CompileCommaSeparatedPortsCreatesMultipleFilters()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -814,7 +814,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_MixedPortSpec_CreatesCorrectFilters()
+    public void CompileMixedPortSpecCreatesCorrectFilters()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -839,7 +839,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_NoPort_CreatesFilterWithoutPortCondition()
+    public void CompileNoPortCreatesFilterWithoutPortCondition()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -866,7 +866,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_DisabledRule_IsSkipped()
+    public void CompileDisabledRuleIsSkipped()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -887,7 +887,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_MixedEnabledDisabled_CompilesOnlyEnabled()
+    public void CompileMixedEnabledDisabledCompilesOnlyEnabled()
     {
         var policy = new Policy
         {
@@ -917,7 +917,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_BlockAction_SetsBlockAction()
+    public void CompileBlockActionSetsBlockAction()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -936,7 +936,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_AllowAction_SetsAllowAction()
+    public void CompileAllowActionSetsAllowAction()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -959,7 +959,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_PriorityAffectsWeight()
+    public void CompilePriorityAffectsWeight()
     {
         var policy = new Policy
         {
@@ -989,7 +989,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_ProcessPath_StoresPath()
+    public void CompileProcessPathStoresPath()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1009,7 +1009,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_NoProcess_HasNullProcessPath()
+    public void CompileNoProcessHasNullProcessPath()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1032,7 +1032,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_SameRuleId_GeneratesSameGuid()
+    public void CompileSameRuleIdGeneratesSameGuid()
     {
         var policy1 = CreatePolicy(new Rule
         {
@@ -1063,7 +1063,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_DifferentRuleId_GeneratesDifferentGuid()
+    public void CompileDifferentRuleIdGeneratesDifferentGuid()
     {
         var policy = new Policy
         {
@@ -1085,7 +1085,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_MultiplePortsFromSameRule_GenerateDifferentGuids()
+    public void CompileMultiplePortsFromSameRuleGenerateDifferentGuids()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1105,7 +1105,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_DifferentRemoteIp_GeneratesDifferentGuid()
+    public void CompileDifferentRemoteIpGeneratesDifferentGuid()
     {
         // Content-based GUID: different IP should produce different GUID
         var policy1 = CreatePolicy(new Rule
@@ -1137,7 +1137,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_DifferentAction_GeneratesDifferentGuid()
+    public void CompileDifferentActionGeneratesDifferentGuid()
     {
         // Content-based GUID: different action should produce different GUID
         var policy1 = CreatePolicy(new Rule
@@ -1167,7 +1167,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_DifferentProtocol_GeneratesDifferentGuid()
+    public void CompileDifferentProtocolGeneratesDifferentGuid()
     {
         // Content-based GUID: different protocol should produce different GUID
         var policy1 = CreatePolicy(new Rule
@@ -1197,7 +1197,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_DifferentDirection_GeneratesDifferentGuid()
+    public void CompileDifferentDirectionGeneratesDifferentGuid()
     {
         // Content-based GUID: different direction should produce different GUID
         var policy1 = CreatePolicy(new Rule
@@ -1227,7 +1227,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_GuidStability_AcrossCompilations()
+    public void CompileGuidStabilityAcrossCompilations()
     {
         // Verify deterministic GUID generation across multiple compilation calls
         var guids = new HashSet<Guid>();
@@ -1254,7 +1254,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_UnicodeRuleId_GeneratesValidGuid()
+    public void CompileUnicodeRuleIdGeneratesValidGuid()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1273,7 +1273,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_LongRuleId_GeneratesValidGuid()
+    public void CompileLongRuleIdGeneratesValidGuid()
     {
         var longId = new string('a', 1000);
         var policy = CreatePolicy(new Rule
@@ -1293,7 +1293,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_SpecialCharRuleId_GeneratesValidGuid()
+    public void CompileSpecialCharRuleIdGeneratesValidGuid()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1312,7 +1312,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_SimilarRules_GenerateUniqueGuids()
+    public void CompileSimilarRulesGenerateUniqueGuids()
     {
         // Test collision resistance for similar but not identical rules
         var policy = new Policy
@@ -1342,7 +1342,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_GeneratesDisplayName()
+    public void CompileGeneratesDisplayName()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1362,7 +1362,7 @@ public class RuleCompilerTests
     }
 
     [Fact]
-    public void Compile_GeneratesDescription()
+    public void CompileGeneratesDescription()
     {
         var policy = CreatePolicy(new Rule
         {
@@ -1388,7 +1388,7 @@ public class RuleCompilerTests
     // ========================================
 
     [Fact]
-    public void Compile_MultipleUnsupportedRules_ReturnsAllErrors()
+    public void CompileMultipleUnsupportedRulesReturnsAllErrors()
     {
         var policy = new Policy
         {
@@ -1434,14 +1434,14 @@ public class RuleCompilerTests
 public class ApplyIpcMessageTests
 {
     [Fact]
-    public void ApplyRequest_HasCorrectType()
+    public void ApplyRequestHasCorrectType()
     {
         var request = new ApplyRequest { PolicyPath = @"C:\test.json" };
         Assert.Equal("apply", request.Type);
     }
 
     [Fact]
-    public void ParseRequest_ApplyRequest_ParsesCorrectly()
+    public void ParseRequestApplyRequestParsesCorrectly()
     {
         var json = "{\"type\":\"apply\",\"policyPath\":\"C:\\\\test.json\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -1453,7 +1453,7 @@ public class ApplyIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_ApplyRequest_MissingPath_ReturnsError()
+    public void ParseRequestApplyRequestMissingPathReturnsError()
     {
         var json = "{\"type\":\"apply\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -1463,7 +1463,7 @@ public class ApplyIpcMessageTests
     }
 
     [Fact]
-    public void ApplyResponse_Success_SetsAllFields()
+    public void ApplyResponseSuccessSetsAllFields()
     {
         var response = ApplyResponse.Success(
             filtersCreated: 5,
@@ -1484,7 +1484,7 @@ public class ApplyIpcMessageTests
     }
 
     [Fact]
-    public void ApplyResponse_Failure_SetsError()
+    public void ApplyResponseFailureSetsError()
     {
         var response = ApplyResponse.Failure("Test error");
 
@@ -1493,7 +1493,7 @@ public class ApplyIpcMessageTests
     }
 
     [Fact]
-    public void ApplyResponse_CompilationFailed_IncludesErrors()
+    public void ApplyResponseCompilationFailedIncludesErrors()
     {
         var compilationResult = new CompilationResult();
         compilationResult.AddError("rule-1", "Error 1");
@@ -1510,7 +1510,7 @@ public class ApplyIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_ApplyResponse_ProducesValidJson()
+    public void SerializeResponseApplyResponseProducesValidJson()
     {
         var response = ApplyResponse.Success(5, 3, 2, "1.0.0", 10, new List<string>());
         var json = IpcMessageParser.SerializeResponse(response);

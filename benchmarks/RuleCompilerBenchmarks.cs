@@ -27,25 +27,25 @@ public class RuleCompilerBenchmarks
     }
 
     [Benchmark]
-    public CompilationResult Compile_1Rule() => RuleCompiler.Compile(_policy1Rule);
+    public CompilationResult Compile1Rule() => RuleCompiler.Compile(_policy1Rule);
 
     [Benchmark]
-    public CompilationResult Compile_10Rules() => RuleCompiler.Compile(_policy10Rules);
+    public CompilationResult Compile10Rules() => RuleCompiler.Compile(_policy10Rules);
 
     [Benchmark]
-    public CompilationResult Compile_100Rules() => RuleCompiler.Compile(_policy100Rules);
+    public CompilationResult Compile100Rules() => RuleCompiler.Compile(_policy100Rules);
 
     [Benchmark]
-    public CompilationResult Compile_500Rules() => RuleCompiler.Compile(_policy500Rules);
+    public CompilationResult Compile500Rules() => RuleCompiler.Compile(_policy500Rules);
 
     [Benchmark]
-    public CompilationResult Compile_WithCidr() => RuleCompiler.Compile(_policyCidr);
+    public CompilationResult CompileWithCidr() => RuleCompiler.Compile(_policyCidr);
 
     [Benchmark]
-    public CompilationResult Compile_WithPortRange() => RuleCompiler.Compile(_policyPortRange);
+    public CompilationResult CompileWithPortRange() => RuleCompiler.Compile(_policyPortRange);
 
     [Benchmark]
-    public CompilationResult Compile_MultiPort100() => RuleCompiler.Compile(_policyMultiPort100);
+    public CompilationResult CompileMultiPort100() => RuleCompiler.Compile(_policyMultiPort100);
 
     private static Policy CreatePolicy(int ruleCount)
     {

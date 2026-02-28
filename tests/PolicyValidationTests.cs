@@ -66,7 +66,7 @@ public class PolicyValidationTests
     #region Valid Policy Tests
 
     [Fact]
-    public void ValidateJson_MinimalValidPolicy_ReturnsValid()
+    public void ValidateJsonMinimalValidPolicyReturnsValid()
     {
         var json = CreatePolicyJson();
 
@@ -76,7 +76,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_PolicyWithOneRule_ReturnsValid()
+    public void ValidateJsonPolicyWithOneRuleReturnsValid()
     {
         var rule = CreateRuleJson(
             id: "test-rule-1",
@@ -89,7 +89,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_PolicyWithAllFields_ReturnsValid()
+    public void ValidateJsonPolicyWithAllFieldsReturnsValid()
     {
         var json = """
         {
@@ -123,7 +123,7 @@ public class PolicyValidationTests
     #region Empty/Null Input Tests
 
     [Fact]
-    public void ValidateJson_EmptyString_ReturnsError()
+    public void ValidateJsonEmptyStringReturnsError()
     {
         var result = PolicyValidator.ValidateJson("");
 
@@ -132,7 +132,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_WhitespaceOnly_ReturnsError()
+    public void ValidateJsonWhitespaceOnlyReturnsError()
     {
         var result = PolicyValidator.ValidateJson("   \n\t  ");
 
@@ -141,7 +141,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_InvalidJson_ReturnsError()
+    public void ValidateJsonInvalidJsonReturnsError()
     {
         var result = PolicyValidator.ValidateJson("not valid json");
 
@@ -150,7 +150,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_JsonArray_ReturnsError()
+    public void ValidateJsonJsonArrayReturnsError()
     {
         var result = PolicyValidator.ValidateJson("[]");
 
@@ -162,7 +162,7 @@ public class PolicyValidationTests
     #region Version Validation Tests
 
     [Fact]
-    public void ValidateJson_MissingVersion_ReturnsError()
+    public void ValidateJsonMissingVersionReturnsError()
     {
         var json = """
         {
@@ -179,7 +179,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_EmptyVersion_ReturnsError()
+    public void ValidateJsonEmptyVersionReturnsError()
     {
         var json = CreatePolicyJson(version: "");
 
@@ -195,7 +195,7 @@ public class PolicyValidationTests
     [InlineData("1.0.0-alpha")]
     [InlineData("1.0.0-beta.1")]
     [InlineData("1.0.0+build123")]
-    public void ValidateJson_ValidVersionFormats_ReturnsValid(string version)
+    public void ValidateJsonValidVersionFormatsReturnsValid(string version)
     {
         var json = CreatePolicyJson(version: version);
 
@@ -210,7 +210,7 @@ public class PolicyValidationTests
     [InlineData("v1.0.0")]
     [InlineData("1.0.0.0")]
     [InlineData("abc")]
-    public void ValidateJson_InvalidVersionFormats_ReturnsError(string version)
+    public void ValidateJsonInvalidVersionFormatsReturnsError(string version)
     {
         var json = CreatePolicyJson(version: version);
 
@@ -225,7 +225,7 @@ public class PolicyValidationTests
     #region DefaultAction Validation Tests
 
     [Fact]
-    public void ValidateJson_MissingDefaultAction_UsesDefaultAllow()
+    public void ValidateJsonMissingDefaultActionUsesDefaultAllow()
     {
         // When defaultAction is missing, JSON deserializer uses C# property default "allow"
         // This is valid behavior - default allow is safe for connectivity
@@ -244,7 +244,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_EmptyDefaultAction_ReturnsError()
+    public void ValidateJsonEmptyDefaultActionReturnsError()
     {
         var json = CreatePolicyJson(defaultAction: "");
 
@@ -261,7 +261,7 @@ public class PolicyValidationTests
     [InlineData("block")]
     [InlineData("Block")]
     [InlineData("BLOCK")]
-    public void ValidateJson_ValidDefaultActionValues_ReturnsValid(string action)
+    public void ValidateJsonValidDefaultActionValuesReturnsValid(string action)
     {
         var json = CreatePolicyJson(defaultAction: action);
 
@@ -274,7 +274,7 @@ public class PolicyValidationTests
     [InlineData("permit")]
     [InlineData("deny")]
     [InlineData("drop")]
-    public void ValidateJson_InvalidDefaultActionValues_ReturnsError(string action)
+    public void ValidateJsonInvalidDefaultActionValuesReturnsError(string action)
     {
         var json = CreatePolicyJson(defaultAction: action);
 
@@ -289,7 +289,7 @@ public class PolicyValidationTests
     #region UpdatedAt Validation Tests
 
     [Fact]
-    public void ValidateJson_MissingUpdatedAt_ReturnsError()
+    public void ValidateJsonMissingUpdatedAtReturnsError()
     {
         var json = """
         {
@@ -306,7 +306,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_FutureUpdatedAt_ReturnsError()
+    public void ValidateJsonFutureUpdatedAtReturnsError()
     {
         var futureDate = DateTime.UtcNow.AddHours(1).ToString("o");
         var json = CreatePolicyJson(updatedAt: futureDate);
@@ -322,7 +322,7 @@ public class PolicyValidationTests
     #region Rule ID Validation Tests
 
     [Fact]
-    public void ValidateJson_MissingRuleId_ReturnsError()
+    public void ValidateJsonMissingRuleIdReturnsError()
     {
         var json = """
         {
@@ -348,7 +348,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_DuplicateRuleIds_ReturnsError()
+    public void ValidateJsonDuplicateRuleIdsReturnsError()
     {
         var rule1 = CreateRuleJson(id: "duplicate-id", action: "block");
         var rule2 = CreateRuleJson(id: "duplicate-id", action: "allow", direction: "inbound", protocol: "udp");
@@ -361,7 +361,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_DuplicateRuleIdsCaseInsensitive_ReturnsError()
+    public void ValidateJsonDuplicateRuleIdsCaseInsensitiveReturnsError()
     {
         var rule1 = CreateRuleJson(id: "my-rule", action: "block");
         var rule2 = CreateRuleJson(id: "MY-RULE", action: "allow", direction: "inbound");
@@ -379,7 +379,7 @@ public class PolicyValidationTests
     [InlineData("ValidRuleId123")]
     [InlineData("rule-1")]
     [InlineData("a")]
-    public void ValidateJson_ValidRuleIdFormats_ReturnsValid(string ruleId)
+    public void ValidateJsonValidRuleIdFormatsReturnsValid(string ruleId)
     {
         var rule = CreateRuleJson(id: ruleId);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -394,7 +394,7 @@ public class PolicyValidationTests
     [InlineData("invalid.rule")]
     [InlineData("invalid@rule")]
     [InlineData("invalid/rule")]
-    public void ValidateJson_InvalidRuleIdFormats_ReturnsError(string ruleId)
+    public void ValidateJsonInvalidRuleIdFormatsReturnsError(string ruleId)
     {
         var rule = CreateRuleJson(id: ruleId);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -416,7 +416,7 @@ public class PolicyValidationTests
     [InlineData("block")]
     [InlineData("Block")]
     [InlineData("BLOCK")]
-    public void ValidateJson_ValidRuleActions_ReturnsValid(string action)
+    public void ValidateJsonValidRuleActionsReturnsValid(string action)
     {
         var rule = CreateRuleJson(action: action);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -431,7 +431,7 @@ public class PolicyValidationTests
     [InlineData("deny")]
     [InlineData("drop")]
     [InlineData("reject")]
-    public void ValidateJson_InvalidRuleActions_ReturnsError(string action)
+    public void ValidateJsonInvalidRuleActionsReturnsError(string action)
     {
         var rule = CreateRuleJson(action: action);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -452,7 +452,7 @@ public class PolicyValidationTests
     [InlineData("INBOUND")]
     [InlineData("outbound")]
     [InlineData("both")]
-    public void ValidateJson_ValidRuleDirections_ReturnsValid(string direction)
+    public void ValidateJsonValidRuleDirectionsReturnsValid(string direction)
     {
         var rule = CreateRuleJson(direction: direction);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -467,7 +467,7 @@ public class PolicyValidationTests
     [InlineData("out")]
     [InlineData("ingress")]
     [InlineData("egress")]
-    public void ValidateJson_InvalidRuleDirections_ReturnsError(string direction)
+    public void ValidateJsonInvalidRuleDirectionsReturnsError(string direction)
     {
         var rule = CreateRuleJson(direction: direction);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -489,7 +489,7 @@ public class PolicyValidationTests
     [InlineData("UDP")]
     [InlineData("any")]
     [InlineData("Any")]
-    public void ValidateJson_ValidRuleProtocols_ReturnsValid(string protocol)
+    public void ValidateJsonValidRuleProtocolsReturnsValid(string protocol)
     {
         var rule = CreateRuleJson(protocol: protocol);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -504,7 +504,7 @@ public class PolicyValidationTests
     [InlineData("ip")]
     [InlineData("http")]
     [InlineData("all")]
-    public void ValidateJson_InvalidRuleProtocols_ReturnsError(string protocol)
+    public void ValidateJsonInvalidRuleProtocolsReturnsError(string protocol)
     {
         var rule = CreateRuleJson(protocol: protocol);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -526,7 +526,7 @@ public class PolicyValidationTests
     [InlineData("\\\\\\\\server\\\\share\\\\app.exe")]
     [InlineData("app.exe")]
     [InlineData("my-app_v2.exe")]
-    public void ValidateJson_ValidProcessPaths_ReturnsValid(string process)
+    public void ValidateJsonValidProcessPathsReturnsValid(string process)
     {
         var rule = CreateRuleJson(process: process);
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -537,7 +537,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_ProcessPathTraversal_ReturnsError()
+    public void ValidateJsonProcessPathTraversalReturnsError()
     {
         var rule = CreateRuleJson(process: "C:\\\\Windows\\\\..\\\\secret.exe");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -564,7 +564,7 @@ public class PolicyValidationTests
     [InlineData("::1")]
     [InlineData("fe80::1")]
     [InlineData("2001:db8::/32")]
-    public void ValidateJson_ValidIpAddresses_ReturnsValid(string ip)
+    public void ValidateJsonValidIpAddressesReturnsValid(string ip)
     {
         var rule = CreateRuleJson(remote: $"{{ \"ip\": \"{ip}\" }}");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -582,7 +582,7 @@ public class PolicyValidationTests
     [InlineData("192.168.1.0/-1")]
     [InlineData("::1/129")]
     // Note: "192.168.1" is not included because IPAddress.TryParse accepts partial IPs
-    public void ValidateJson_InvalidIpAddresses_ReturnsError(string ip)
+    public void ValidateJsonInvalidIpAddressesReturnsError(string ip)
     {
         var rule = CreateRuleJson(remote: $"{{ \"ip\": \"{ip}\" }}");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -607,7 +607,7 @@ public class PolicyValidationTests
     [InlineData("80,443")]
     [InlineData("80,443,8080-8090")]
     [InlineData("22,80,443,3389,8080-8090")]
-    public void ValidateJson_ValidPortSpecs_ReturnsValid(string ports)
+    public void ValidateJsonValidPortSpecsReturnsValid(string ports)
     {
         var rule = CreateRuleJson(remote: $"{{ \"ports\": \"{ports}\" }}");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -624,7 +624,7 @@ public class PolicyValidationTests
     [InlineData("abc")]
     [InlineData("443-80")]
     [InlineData("80-")]
-    public void ValidateJson_InvalidPortSpecs_ReturnsError(string ports)
+    public void ValidateJsonInvalidPortSpecsReturnsError(string ports)
     {
         var rule = CreateRuleJson(remote: $"{{ \"ports\": \"{ports}\" }}");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -640,7 +640,7 @@ public class PolicyValidationTests
     #region Endpoint Filter Validation Tests
 
     [Fact]
-    public void ValidateJson_EndpointWithIpOnly_ReturnsValid()
+    public void ValidateJsonEndpointWithIpOnlyReturnsValid()
     {
         var rule = CreateRuleJson(remote: """{ "ip": "1.1.1.1" }""");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -651,7 +651,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_EndpointWithPortsOnly_ReturnsValid()
+    public void ValidateJsonEndpointWithPortsOnlyReturnsValid()
     {
         var rule = CreateRuleJson(remote: """{ "ports": "443" }""");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -662,7 +662,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_EmptyEndpointFilter_ReturnsError()
+    public void ValidateJsonEmptyEndpointFilterReturnsError()
     {
         var rule = CreateRuleJson(remote: "{ }");
         var json = CreatePolicyJson(rules: $"[{rule}]");
@@ -678,7 +678,7 @@ public class PolicyValidationTests
     #region Multiple Error Collection Tests
 
     [Fact]
-    public void ValidateJson_MultipleErrors_CollectsAllErrors()
+    public void ValidateJsonMultipleErrorsCollectsAllErrors()
     {
         var json = """
         {
@@ -705,7 +705,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_MultipleRulesWithErrors_CollectsAllErrors()
+    public void ValidateJsonMultipleRulesWithErrorsCollectsAllErrors()
     {
         var rule1 = CreateRuleJson(id: "rule1", action: "invalid");
         var rule2 = CreateRuleJson(id: "rule2", direction: "invalid");
@@ -724,7 +724,7 @@ public class PolicyValidationTests
     #region Size Limit Tests
 
     [Fact]
-    public void ValidateJson_TooManyRules_ReturnsError()
+    public void ValidateJsonTooManyRulesReturnsError()
     {
         // Generate 10001 rules with minimal JSON to stay under size limit
         // Each rule is ~100 bytes, 10001 rules ~1MB which may hit size limit
@@ -752,7 +752,7 @@ public class PolicyValidationTests
     }
 
     [Fact]
-    public void ValidateJson_RuleIdTooLong_ReturnsError()
+    public void ValidateJsonRuleIdTooLongReturnsError()
     {
         var longId = new string('a', 129);
         var rule = CreateRuleJson(id: longId);
@@ -780,7 +780,7 @@ public class NetworkUtilsTests
     [InlineData("0.0.0.0/0", true, 0)]
     [InlineData("::1", true, 128)]
     [InlineData("::1/64", true, 64)]
-    public void TryParseCidr_ValidInputs_ReturnsExpectedValues(string input, bool expectedSuccess, int expectedPrefix)
+    public void TryParseCidrValidInputsReturnsExpectedValues(string input, bool expectedSuccess, int expectedPrefix)
     {
         var success = NetworkUtils.TryParseCidr(input, out var ip, out var prefix);
 
@@ -798,7 +798,7 @@ public class NetworkUtilsTests
     [InlineData("invalid")]
     [InlineData("192.168.1.0/33")]
     [InlineData("192.168.1.0/-1")]
-    public void TryParseCidr_InvalidInputs_ReturnsFalse(string input)
+    public void TryParseCidrInvalidInputsReturnsFalse(string input)
     {
         var success = NetworkUtils.TryParseCidr(input, out _, out _);
 
@@ -814,7 +814,7 @@ public class NetworkUtilsTests
     [InlineData("80-443", 1)]
     [InlineData("80,443", 2)]
     [InlineData("80,443,8080-8090", 3)]
-    public void TryParsePorts_ValidInputs_ReturnsExpectedRangeCount(string input, int expectedRangeCount)
+    public void TryParsePortsValidInputsReturnsExpectedRangeCount(string input, int expectedRangeCount)
     {
         var success = NetworkUtils.TryParsePorts(input, out var ranges);
 
@@ -823,7 +823,7 @@ public class NetworkUtilsTests
     }
 
     [Fact]
-    public void TryParsePorts_SinglePort_ReturnsCorrectRange()
+    public void TryParsePortsSinglePortReturnsCorrectRange()
     {
         var success = NetworkUtils.TryParsePorts("443", out var ranges);
 
@@ -834,7 +834,7 @@ public class NetworkUtilsTests
     }
 
     [Fact]
-    public void TryParsePorts_PortRange_ReturnsCorrectRange()
+    public void TryParsePortsPortRangeReturnsCorrectRange()
     {
         var success = NetworkUtils.TryParsePorts("8080-8090", out var ranges);
 
@@ -851,7 +851,7 @@ public class NetworkUtilsTests
     [InlineData("65536")]
     [InlineData("abc")]
     [InlineData("443-80")]
-    public void TryParsePorts_InvalidInputs_ReturnsFalse(string input)
+    public void TryParsePortsInvalidInputsReturnsFalse(string input)
     {
         var success = NetworkUtils.TryParsePorts(input, out _);
 
@@ -872,7 +872,7 @@ public class NetworkUtilsTests
     [InlineData("1", false)]
     [InlineData("v1.0.0", false)]
     [InlineData("", false)]
-    public void ValidateVersion_ReturnsExpectedResult(string version, bool expectedValid)
+    public void ValidateVersionReturnsExpectedResult(string version, bool expectedValid)
     {
         var isValid = NetworkUtils.ValidateVersion(version, out var error);
 
@@ -895,7 +895,7 @@ public class NetworkUtilsTests
     [InlineData("my-app_v2.exe", true)]
     [InlineData("C:\\path\\..\\secret.exe", false)]
     [InlineData("", false)]
-    public void ValidateProcessPath_ReturnsExpectedResult(string path, bool expectedValid)
+    public void ValidateProcessPathReturnsExpectedResult(string path, bool expectedValid)
     {
         var isValid = NetworkUtils.ValidateProcessPath(path, out var error);
 
@@ -922,7 +922,7 @@ public class PolicyFilePathValidationTests
     [InlineData(@"C:\ProgramData\WfpTrafficControl\policy.json")]
     [InlineData(@"D:\configs\firewall\rules.json")]
     [InlineData(@"E:\policy.json")]
-    public void ValidatePolicyFilePath_ValidLocalPaths_ReturnsTrue(string path)
+    public void ValidatePolicyFilePathValidLocalPathsReturnsTrue(string path)
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
 
@@ -935,7 +935,7 @@ public class PolicyFilePathValidationTests
     #region Empty/Null Path Tests
 
     [Fact]
-    public void ValidatePolicyFilePath_EmptyPath_ReturnsFalse()
+    public void ValidatePolicyFilePathEmptyPathReturnsFalse()
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath("", out var error);
 
@@ -944,7 +944,7 @@ public class PolicyFilePathValidationTests
     }
 
     [Fact]
-    public void ValidatePolicyFilePath_WhitespacePath_ReturnsFalse()
+    public void ValidatePolicyFilePathWhitespacePathReturnsFalse()
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath("   ", out var error);
 
@@ -953,7 +953,7 @@ public class PolicyFilePathValidationTests
     }
 
     [Fact]
-    public void ValidatePolicyFilePath_NullPath_ReturnsFalse()
+    public void ValidatePolicyFilePathNullPathReturnsFalse()
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath(null, out var error);
 
@@ -969,7 +969,7 @@ public class PolicyFilePathValidationTests
     [InlineData(@"C:\test\..\secret.json")]
     [InlineData(@"C:\Users\..\..\..\Windows\System32\config.json")]
     [InlineData(@"D:\app\config\..\..\..\sensitive.json")]
-    public void ValidatePolicyFilePath_PathTraversal_ReturnsFalse(string path)
+    public void ValidatePolicyFilePathPathTraversalReturnsFalse(string path)
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
 
@@ -985,7 +985,7 @@ public class PolicyFilePathValidationTests
     [InlineData(@"C:\policy.json::$DATA")]
     [InlineData(@"C:\policy.json:hidden_stream")]
     [InlineData(@"D:\test:secret:hidden")]
-    public void ValidatePolicyFilePath_AlternateDataStream_ReturnsFalse(string path)
+    public void ValidatePolicyFilePathAlternateDataStreamReturnsFalse(string path)
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
 
@@ -1001,7 +1001,7 @@ public class PolicyFilePathValidationTests
     [InlineData(@"\\server\share\policy.json")]
     [InlineData(@"\\192.168.1.1\c$\policy.json")]
     [InlineData(@"\\attacker.com\malware\payload.json")]
-    public void ValidatePolicyFilePath_UncPath_ReturnsFalse(string path)
+    public void ValidatePolicyFilePathUncPathReturnsFalse(string path)
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
 
@@ -1018,7 +1018,7 @@ public class PolicyFilePathValidationTests
     [InlineData(@"\\?\C:\policy.json")]
     [InlineData(@"\\.\PhysicalDrive0")]
     [InlineData(@"\\?\GLOBALROOT\Device\HarddiskVolume1\policy.json")]
-    public void ValidatePolicyFilePath_DevicePath_ReturnsFalse(string path)
+    public void ValidatePolicyFilePathDevicePathReturnsFalse(string path)
     {
         var isValid = NetworkUtils.ValidatePolicyFilePath(path, out var error);
 
@@ -1037,7 +1037,7 @@ public class PolicyFilePathValidationTests
     #region Invalid Character Tests
 
     [Fact]
-    public void ValidatePolicyFilePath_NullCharacter_ReturnsFalse()
+    public void ValidatePolicyFilePathNullCharacterReturnsFalse()
     {
         var path = "C:\\policy\0.json";
 

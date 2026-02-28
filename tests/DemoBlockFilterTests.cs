@@ -95,7 +95,7 @@ public class DemoBlockFilterTests
     // ========================================
 
     [Fact]
-    public void AddDemoBlockFilter_WhenNotExists_CreatesFilter()
+    public void AddDemoBlockFilterWhenNotExistsCreatesFilter()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -115,7 +115,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void AddDemoBlockFilter_WhenAlreadyExists_IsIdempotent()
+    public void AddDemoBlockFilterWhenAlreadyExistsIsIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -135,7 +135,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void AddDemoBlockFilter_OnFailure_ReturnsError()
+    public void AddDemoBlockFilterOnFailureReturnsError()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -158,7 +158,7 @@ public class DemoBlockFilterTests
     // ========================================
 
     [Fact]
-    public void RemoveDemoBlockFilter_WhenExists_RemovesFilter()
+    public void RemoveDemoBlockFilterWhenExistsRemovesFilter()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -176,7 +176,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void RemoveDemoBlockFilter_WhenNotExists_IsIdempotent()
+    public void RemoveDemoBlockFilterWhenNotExistsIsIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -195,7 +195,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void RemoveDemoBlockFilter_OnFailure_ReturnsError()
+    public void RemoveDemoBlockFilterOnFailureReturnsError()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -219,7 +219,7 @@ public class DemoBlockFilterTests
     // ========================================
 
     [Fact]
-    public void DemoBlockFilterExists_WhenTrue_ReturnsTrue()
+    public void DemoBlockFilterExistsWhenTrueReturnsTrue()
     {
         var engine = new MockWfpEngine { DemoBlockFilterExistsValue = true };
         var result = engine.DemoBlockFilterExists();
@@ -229,7 +229,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void DemoBlockFilterExists_WhenFalse_ReturnsFalse()
+    public void DemoBlockFilterExistsWhenFalseReturnsFalse()
     {
         var engine = new MockWfpEngine { DemoBlockFilterExistsValue = false };
         var result = engine.DemoBlockFilterExists();
@@ -243,7 +243,7 @@ public class DemoBlockFilterTests
     // ========================================
 
     [Fact]
-    public void RemoveAllFilters_RemovesDemoBlockFilter()
+    public void RemoveAllFiltersRemovesDemoBlockFilter()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -261,7 +261,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void RemoveAllFilters_WhenNoFilters_IsIdempotent()
+    public void RemoveAllFiltersWhenNoFiltersIsIdempotent()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -282,7 +282,7 @@ public class DemoBlockFilterTests
     // ========================================
 
     [Fact]
-    public void FullLifecycle_EnableThenDisable_Works()
+    public void FullLifecycleEnableThenDisableWorks()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -304,7 +304,7 @@ public class DemoBlockFilterTests
     }
 
     [Fact]
-    public void FullLifecycle_EnableThenRollback_Works()
+    public void FullLifecycleEnableThenRollbackWorks()
     {
         // Arrange
         var engine = new MockWfpEngine
@@ -332,35 +332,35 @@ public class DemoBlockFilterTests
 public class DemoBlockIpcMessageTests
 {
     [Fact]
-    public void DemoBlockEnableRequest_HasCorrectType()
+    public void DemoBlockEnableRequestHasCorrectType()
     {
         var request = new DemoBlockEnableRequest();
         Assert.Equal("demo-block-enable", request.Type);
     }
 
     [Fact]
-    public void DemoBlockDisableRequest_HasCorrectType()
+    public void DemoBlockDisableRequestHasCorrectType()
     {
         var request = new DemoBlockDisableRequest();
         Assert.Equal("demo-block-disable", request.Type);
     }
 
     [Fact]
-    public void DemoBlockStatusRequest_HasCorrectType()
+    public void DemoBlockStatusRequestHasCorrectType()
     {
         var request = new DemoBlockStatusRequest();
         Assert.Equal("demo-block-status", request.Type);
     }
 
     [Fact]
-    public void RollbackRequest_HasCorrectType()
+    public void RollbackRequestHasCorrectType()
     {
         var request = new RollbackRequest();
         Assert.Equal("rollback", request.Type);
     }
 
     [Fact]
-    public void ParseRequest_DemoBlockEnableRequest_ParsesCorrectly()
+    public void ParseRequestDemoBlockEnableRequestParsesCorrectly()
     {
         var json = "{\"type\":\"demo-block-enable\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -370,7 +370,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_DemoBlockDisableRequest_ParsesCorrectly()
+    public void ParseRequestDemoBlockDisableRequestParsesCorrectly()
     {
         var json = "{\"type\":\"demo-block-disable\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -380,7 +380,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_DemoBlockStatusRequest_ParsesCorrectly()
+    public void ParseRequestDemoBlockStatusRequestParsesCorrectly()
     {
         var json = "{\"type\":\"demo-block-status\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -390,7 +390,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void ParseRequest_RollbackRequest_ParsesCorrectly()
+    public void ParseRequestRollbackRequestParsesCorrectly()
     {
         var json = "{\"type\":\"rollback\"}";
         var result = IpcMessageParser.ParseRequest(json);
@@ -400,7 +400,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void DemoBlockEnableResponse_Success_SetsProperties()
+    public void DemoBlockEnableResponseSuccessSetsProperties()
     {
         var response = DemoBlockEnableResponse.Success(filterEnabled: true);
 
@@ -410,7 +410,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void DemoBlockEnableResponse_Failure_SetsError()
+    public void DemoBlockEnableResponseFailureSetsError()
     {
         var response = DemoBlockEnableResponse.Failure("Test error");
 
@@ -419,7 +419,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void DemoBlockDisableResponse_Success_SetsProperties()
+    public void DemoBlockDisableResponseSuccessSetsProperties()
     {
         var response = DemoBlockDisableResponse.Success(filterDisabled: true);
 
@@ -429,7 +429,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void DemoBlockStatusResponse_Success_WhenActive_IncludesBlockedTarget()
+    public void DemoBlockStatusResponseSuccessWhenActiveIncludesBlockedTarget()
     {
         var response = DemoBlockStatusResponse.Success(filterActive: true);
 
@@ -440,7 +440,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void DemoBlockStatusResponse_Success_WhenInactive_NoBlockedTarget()
+    public void DemoBlockStatusResponseSuccessWhenInactiveNoBlockedTarget()
     {
         var response = DemoBlockStatusResponse.Success(filterActive: false);
 
@@ -450,7 +450,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void RollbackResponse_Success_SetsProperties()
+    public void RollbackResponseSuccessSetsProperties()
     {
         var response = RollbackResponse.Success(filtersRemoved: 3);
 
@@ -460,7 +460,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void RollbackResponse_Failure_SetsError()
+    public void RollbackResponseFailureSetsError()
     {
         var response = RollbackResponse.Failure("Rollback failed");
 
@@ -469,7 +469,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_DemoBlockEnableResponse_ProducesValidJson()
+    public void SerializeResponseDemoBlockEnableResponseProducesValidJson()
     {
         var response = DemoBlockEnableResponse.Success(filterEnabled: true);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -479,7 +479,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_DemoBlockStatusResponse_ProducesValidJson()
+    public void SerializeResponseDemoBlockStatusResponseProducesValidJson()
     {
         var response = DemoBlockStatusResponse.Success(filterActive: true);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -490,7 +490,7 @@ public class DemoBlockIpcMessageTests
     }
 
     [Fact]
-    public void SerializeResponse_RollbackResponse_ProducesValidJson()
+    public void SerializeResponseRollbackResponseProducesValidJson()
     {
         var response = RollbackResponse.Success(filtersRemoved: 5);
         var json = IpcMessageParser.SerializeResponse(response);
@@ -506,39 +506,39 @@ public class DemoBlockIpcMessageTests
 public class DemoBlockConstantsTests
 {
     [Fact]
-    public void DemoBlockFilterGuid_IsValid()
+    public void DemoBlockFilterGuidIsValid()
     {
         Assert.NotEqual(Guid.Empty, WfpConstants.DemoBlockFilterGuid);
     }
 
     [Fact]
-    public void DemoBlockFilterGuid_IsDifferentFromOtherGuids()
+    public void DemoBlockFilterGuidIsDifferentFromOtherGuids()
     {
         Assert.NotEqual(WfpConstants.ProviderGuid, WfpConstants.DemoBlockFilterGuid);
         Assert.NotEqual(WfpConstants.SublayerGuid, WfpConstants.DemoBlockFilterGuid);
     }
 
     [Fact]
-    public void DemoBlockFilterName_IsNotEmpty()
+    public void DemoBlockFilterNameIsNotEmpty()
     {
         Assert.False(string.IsNullOrWhiteSpace(WfpConstants.DemoBlockFilterName));
     }
 
     [Fact]
-    public void DemoBlockRemoteIp_Is_1_1_1_1()
+    public void DemoBlockRemoteIpIs1111()
     {
         // 1.1.1.1 in host byte order: 0x01010101
         Assert.Equal(0x01010101u, WfpConstants.DemoBlockRemoteIp);
     }
 
     [Fact]
-    public void DemoBlockRemotePort_Is443()
+    public void DemoBlockRemotePortIs443()
     {
         Assert.Equal((ushort)443, WfpConstants.DemoBlockRemotePort);
     }
 
     [Fact]
-    public void ProtocolTcp_Is6()
+    public void ProtocolTcpIs6()
     {
         Assert.Equal((byte)6, WfpConstants.ProtocolTcp);
     }

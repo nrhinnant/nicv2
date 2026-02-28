@@ -13,7 +13,7 @@ namespace WfpTrafficControl.Tests;
 public class CliRequestSerializerTests
 {
     [Fact]
-    public void Serialize_PingRequest_ReturnsCorrectJson()
+    public void SerializePingRequestReturnsCorrectJson()
     {
         var request = new PingRequest();
 
@@ -23,7 +23,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void Serialize_PingRequest_ContainsTypeField()
+    public void SerializePingRequestContainsTypeField()
     {
         var request = new PingRequest();
 
@@ -34,7 +34,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void SerializeToWireFormat_PingRequest_HasCorrectLengthPrefix()
+    public void SerializeToWireFormatPingRequestHasCorrectLengthPrefix()
     {
         var request = new PingRequest();
 
@@ -48,7 +48,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void SerializeToWireFormat_PingRequest_HasCorrectTotalLength()
+    public void SerializeToWireFormatPingRequestHasCorrectTotalLength()
     {
         var request = new PingRequest();
 
@@ -59,7 +59,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void SerializeToWireFormat_PingRequest_HasCorrectJsonBody()
+    public void SerializeToWireFormatPingRequestHasCorrectJsonBody()
     {
         var request = new PingRequest();
 
@@ -74,7 +74,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void SerializeToWireFormat_PingRequest_LengthPrefixMatchesBodyLength()
+    public void SerializeToWireFormatPingRequestLengthPrefixMatchesBodyLength()
     {
         var request = new PingRequest();
 
@@ -89,7 +89,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void SerializeToWireFormat_PingRequest_IsLittleEndian()
+    public void SerializeToWireFormatPingRequestIsLittleEndian()
     {
         var request = new PingRequest();
 
@@ -104,7 +104,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void Serialize_PingRequest_MatchesServerExpectedFormat()
+    public void SerializePingRequestMatchesServerExpectedFormat()
     {
         // This test verifies that the CLI serialization matches
         // what the server's IpcMessageParser expects
@@ -120,7 +120,7 @@ public class CliRequestSerializerTests
     }
 
     [Fact]
-    public void SerializeToWireFormat_PingRequest_BodyIsValidUtf8()
+    public void SerializeToWireFormatPingRequestBodyIsValidUtf8()
     {
         var request = new PingRequest();
 

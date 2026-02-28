@@ -29,13 +29,13 @@ public class WfpErrorTranslatorTests
     #region IsSuccess Tests
 
     [Fact]
-    public void IsSuccess_WithZero_ReturnsTrue()
+    public void IsSuccessWithZeroReturnsTrue()
     {
         Assert.True(WfpErrorTranslator.IsSuccess(ERROR_SUCCESS));
     }
 
     [Fact]
-    public void IsSuccess_WithNonZero_ReturnsFalse()
+    public void IsSuccessWithNonZeroReturnsFalse()
     {
         Assert.False(WfpErrorTranslator.IsSuccess(ERROR_ACCESS_DENIED));
         Assert.False(WfpErrorTranslator.IsSuccess(FWP_E_NOT_FOUND));
@@ -46,14 +46,14 @@ public class WfpErrorTranslatorTests
     #region TranslateError Tests
 
     [Fact]
-    public void TranslateError_WithSuccess_ReturnsNull()
+    public void TranslateErrorWithSuccessReturnsNull()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_SUCCESS);
         Assert.Null(error);
     }
 
     [Fact]
-    public void TranslateError_WithAccessDenied_ReturnsAccessDeniedError()
+    public void TranslateErrorWithAccessDeniedReturnsAccessDeniedError()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_ACCESS_DENIED);
 
@@ -64,7 +64,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithInvalidParameter_ReturnsInvalidArgumentError()
+    public void TranslateErrorWithInvalidParameterReturnsInvalidArgumentError()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_INVALID_PARAMETER);
 
@@ -74,7 +74,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithNotFound_ReturnsNotFoundError()
+    public void TranslateErrorWithNotFoundReturnsNotFoundError()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_NOT_FOUND);
 
@@ -84,7 +84,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpAlreadyExists_ReturnsWfpError()
+    public void TranslateErrorWithFwpAlreadyExistsReturnsWfpError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_ALREADY_EXISTS);
 
@@ -94,7 +94,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpInUse_ReturnsWfpError()
+    public void TranslateErrorWithFwpInUseReturnsWfpError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_IN_USE);
 
@@ -104,7 +104,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpProviderNotFound_ReturnsNotFoundError()
+    public void TranslateErrorWithFwpProviderNotFoundReturnsNotFoundError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_PROVIDER_NOT_FOUND);
 
@@ -115,7 +115,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpSublayerNotFound_ReturnsNotFoundError()
+    public void TranslateErrorWithFwpSublayerNotFoundReturnsNotFoundError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_SUBLAYER_NOT_FOUND);
 
@@ -126,7 +126,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpFilterNotFound_ReturnsNotFoundError()
+    public void TranslateErrorWithFwpFilterNotFoundReturnsNotFoundError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_FILTER_NOT_FOUND);
 
@@ -137,7 +137,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpNotFound_ReturnsNotFoundError()
+    public void TranslateErrorWithFwpNotFoundReturnsNotFoundError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_NOT_FOUND);
 
@@ -147,7 +147,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpSessionAborted_ReturnsWfpError()
+    public void TranslateErrorWithFwpSessionAbortedReturnsWfpError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_SESSION_ABORTED);
 
@@ -158,7 +158,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithFwpInvalidParameter_ReturnsInvalidArgumentError()
+    public void TranslateErrorWithFwpInvalidParameterReturnsInvalidArgumentError()
     {
         var error = WfpErrorTranslator.TranslateError(FWP_E_INVALID_PARAMETER);
 
@@ -168,7 +168,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithUnknownError_ReturnsWfpErrorWithHexCode()
+    public void TranslateErrorWithUnknownErrorReturnsWfpErrorWithHexCode()
     {
         const uint unknownError = 0xDEADBEEF;
         var error = WfpErrorTranslator.TranslateError(unknownError);
@@ -180,7 +180,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithContext_IncludesContextInMessage()
+    public void TranslateErrorWithContextIncludesContextInMessage()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_ACCESS_DENIED, "opening WFP engine");
 
@@ -189,7 +189,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithNullContext_OmitsContext()
+    public void TranslateErrorWithNullContextOmitsContext()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_ACCESS_DENIED, null);
 
@@ -198,7 +198,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithEmptyContext_OmitsContext()
+    public void TranslateErrorWithEmptyContextOmitsContext()
     {
         var error = WfpErrorTranslator.TranslateError(ERROR_ACCESS_DENIED, "");
 
@@ -211,7 +211,7 @@ public class WfpErrorTranslatorTests
     #region ToFailedResult<T> Tests
 
     [Fact]
-    public void ToFailedResultT_WithError_ReturnsFailedResult()
+    public void ToFailedResultTWithErrorReturnsFailedResult()
     {
         var result = WfpErrorTranslator.ToFailedResult<int>(ERROR_ACCESS_DENIED);
 
@@ -220,7 +220,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void ToFailedResultT_WithContext_IncludesContextInError()
+    public void ToFailedResultTWithContextIncludesContextInError()
     {
         var result = WfpErrorTranslator.ToFailedResult<int>(ERROR_ACCESS_DENIED, "test operation");
 
@@ -229,7 +229,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void ToFailedResultT_WithSuccess_ThrowsArgumentException()
+    public void ToFailedResultTWithSuccessThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
             WfpErrorTranslator.ToFailedResult<int>(ERROR_SUCCESS));
@@ -240,7 +240,7 @@ public class WfpErrorTranslatorTests
     #region ToFailedResult (non-generic) Tests
 
     [Fact]
-    public void ToFailedResult_WithError_ReturnsFailedResult()
+    public void ToFailedResultWithErrorReturnsFailedResult()
     {
         var result = WfpErrorTranslator.ToFailedResult(ERROR_ACCESS_DENIED);
 
@@ -249,7 +249,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void ToFailedResult_WithContext_IncludesContextInError()
+    public void ToFailedResultWithContextIncludesContextInError()
     {
         var result = WfpErrorTranslator.ToFailedResult(ERROR_ACCESS_DENIED, "test operation");
 
@@ -258,7 +258,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void ToFailedResult_WithSuccess_ThrowsArgumentException()
+    public void ToFailedResultWithSuccessThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() =>
             WfpErrorTranslator.ToFailedResult(ERROR_SUCCESS));
@@ -274,7 +274,7 @@ public class WfpErrorTranslatorTests
     [InlineData(3u)]      // ERROR_PATH_NOT_FOUND
     [InlineData(50u)]     // ERROR_NOT_SUPPORTED
     [InlineData(1450u)]   // ERROR_NO_SYSTEM_RESOURCES
-    public void TranslateError_WithVariousWin32Errors_ReturnsWfpError(uint errorCode)
+    public void TranslateErrorWithVariousWin32ErrorsReturnsWfpError(uint errorCode)
     {
         var error = WfpErrorTranslator.TranslateError(errorCode);
 
@@ -284,7 +284,7 @@ public class WfpErrorTranslatorTests
     }
 
     [Fact]
-    public void TranslateError_WithMaxUint_HandlesGracefully()
+    public void TranslateErrorWithMaxUintHandlesGracefully()
     {
         var error = WfpErrorTranslator.TranslateError(uint.MaxValue);
 

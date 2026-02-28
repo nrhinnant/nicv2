@@ -198,7 +198,7 @@ public class PipeServerBootstrapTests
     }
 
     [Fact]
-    public void ProcessBootstrapRequest_Success_ReturnsOk()
+    public void ProcessBootstrapRequestSuccessReturnsOk()
     {
         // Arrange
         var request = new BootstrapRequest();
@@ -214,7 +214,7 @@ public class PipeServerBootstrapTests
     }
 
     [Fact]
-    public void ProcessBootstrapRequest_EngineError_ReturnsFailure()
+    public void ProcessBootstrapRequestEngineErrorReturnsFailure()
     {
         // Arrange
         _mockEngine.EnsureProviderAndSublayerExistError = new Error(ErrorCodes.WfpError, "WFP error");
@@ -231,7 +231,7 @@ public class PipeServerBootstrapTests
     }
 
     [Fact]
-    public void ProcessBootstrapRequest_ReportsProviderAndSublayerState()
+    public void ProcessBootstrapRequestReportsProviderAndSublayerState()
     {
         // Arrange
         _mockEngine.ProviderExistsValue = true;
@@ -294,7 +294,7 @@ public class PipeServerTeardownTests
     }
 
     [Fact]
-    public void ProcessTeardownRequest_Success_ReturnsOk()
+    public void ProcessTeardownRequestSuccessReturnsOk()
     {
         // Arrange
         _mockEngine.ProviderExistsValue = true;
@@ -312,7 +312,7 @@ public class PipeServerTeardownTests
     }
 
     [Fact]
-    public void ProcessTeardownRequest_WritesAuditLog()
+    public void ProcessTeardownRequestWritesAuditLog()
     {
         // Arrange
         _mockEngine.ProviderExistsValue = true;
@@ -328,7 +328,7 @@ public class PipeServerTeardownTests
     }
 
     [Fact]
-    public void ProcessTeardownRequest_EngineError_ReturnsFailure()
+    public void ProcessTeardownRequestEngineErrorReturnsFailure()
     {
         // Arrange
         _mockEngine.RemoveProviderAndSublayerError = new Error(ErrorCodes.WfpError, "Cannot remove");
@@ -344,7 +344,7 @@ public class PipeServerTeardownTests
     }
 
     [Fact]
-    public void ProcessTeardownRequest_Failure_WritesFailedAuditEntry()
+    public void ProcessTeardownRequestFailureWritesFailedAuditEntry()
     {
         // Arrange
         _mockEngine.RemoveProviderAndSublayerError = new Error(ErrorCodes.WfpError, "Error");
@@ -401,7 +401,7 @@ public class PipeServerDemoBlockTests
     }
 
     [Fact]
-    public void ProcessDemoBlockEnableRequest_Success_ReturnsOk()
+    public void ProcessDemoBlockEnableRequestSuccessReturnsOk()
     {
         // Arrange
         var request = new DemoBlockEnableRequest();
@@ -418,7 +418,7 @@ public class PipeServerDemoBlockTests
     }
 
     [Fact]
-    public void ProcessDemoBlockEnableRequest_BootstrapFirst()
+    public void ProcessDemoBlockEnableRequestBootstrapFirst()
     {
         // Arrange
         var request = new DemoBlockEnableRequest();
@@ -432,7 +432,7 @@ public class PipeServerDemoBlockTests
     }
 
     [Fact]
-    public void ProcessDemoBlockEnableRequest_BootstrapFails_ReturnsError()
+    public void ProcessDemoBlockEnableRequestBootstrapFailsReturnsError()
     {
         // Arrange
         _mockEngine.EnsureProviderAndSublayerExistError = new Error(ErrorCodes.WfpError, "Bootstrap failed");
@@ -449,7 +449,7 @@ public class PipeServerDemoBlockTests
     }
 
     [Fact]
-    public void ProcessDemoBlockDisableRequest_Success_ReturnsOk()
+    public void ProcessDemoBlockDisableRequestSuccessReturnsOk()
     {
         // Arrange
         _mockEngine.DemoBlockFilterExistsValue = true;
@@ -467,7 +467,7 @@ public class PipeServerDemoBlockTests
     }
 
     [Fact]
-    public void ProcessDemoBlockStatusRequest_FilterExists_ReturnsActive()
+    public void ProcessDemoBlockStatusRequestFilterExistsReturnsActive()
     {
         // Arrange
         _mockEngine.DemoBlockFilterExistsValue = true;
@@ -484,7 +484,7 @@ public class PipeServerDemoBlockTests
     }
 
     [Fact]
-    public void ProcessDemoBlockStatusRequest_FilterNotExists_ReturnsInactive()
+    public void ProcessDemoBlockStatusRequestFilterNotExistsReturnsInactive()
     {
         // Arrange
         _mockEngine.DemoBlockFilterExistsValue = false;
@@ -542,7 +542,7 @@ public class PipeServerRollbackTests
     }
 
     [Fact]
-    public void ProcessRollbackRequest_Success_ReturnsFilterCount()
+    public void ProcessRollbackRequestSuccessReturnsFilterCount()
     {
         // Arrange
         _mockEngine.FilterCount = 5;
@@ -560,7 +560,7 @@ public class PipeServerRollbackTests
     }
 
     [Fact]
-    public void ProcessRollbackRequest_WritesAuditLog()
+    public void ProcessRollbackRequestWritesAuditLog()
     {
         // Arrange
         _mockEngine.FilterCount = 3;
@@ -575,7 +575,7 @@ public class PipeServerRollbackTests
     }
 
     [Fact]
-    public void ProcessRollbackRequest_Failure_WritesFailedAuditEntry()
+    public void ProcessRollbackRequestFailureWritesFailedAuditEntry()
     {
         // Arrange
         _mockEngine.RemoveAllFiltersError = new Error(ErrorCodes.WfpError, "Rollback failed");
@@ -590,7 +590,7 @@ public class PipeServerRollbackTests
     }
 
     [Fact]
-    public void ProcessRollbackRequest_EngineError_ReturnsFailure()
+    public void ProcessRollbackRequestEngineErrorReturnsFailure()
     {
         // Arrange
         _mockEngine.RemoveAllFiltersError = new Error(ErrorCodes.WfpError, "WFP error");
@@ -648,7 +648,7 @@ public class PipeServerValidateTests
     }
 
     [Fact]
-    public void ProcessValidateRequest_ValidPolicy_ReturnsOk()
+    public void ProcessValidateRequestValidPolicyReturnsOk()
     {
         // Arrange
         var validPolicyJson = """
@@ -672,7 +672,7 @@ public class PipeServerValidateTests
     }
 
     [Fact]
-    public void ProcessValidateRequest_InvalidPolicy_ReturnsValidationErrors()
+    public void ProcessValidateRequestInvalidPolicyReturnsValidationErrors()
     {
         // Arrange
         var invalidPolicyJson = """
@@ -696,7 +696,7 @@ public class PipeServerValidateTests
     }
 
     [Fact]
-    public void ProcessValidateRequest_InvalidJson_ReturnsError()
+    public void ProcessValidateRequestInvalidJsonReturnsError()
     {
         // Arrange
         var request = new ValidateRequest { PolicyJson = "not valid json" };
@@ -711,7 +711,7 @@ public class PipeServerValidateTests
     }
 
     [Fact]
-    public void ProcessValidateRequest_ValidPolicyWithRules_ReturnsRuleCount()
+    public void ProcessValidateRequestValidPolicyWithRulesReturnsRuleCount()
     {
         // Arrange
         var policyWithRules = """
@@ -809,7 +809,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_EmptyPath_ReturnsError()
+    public void ProcessApplyRequestEmptyPathReturnsError()
     {
         // Arrange
         var request = new ApplyRequest { PolicyPath = "" };
@@ -824,7 +824,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_PathTraversal_ReturnsError()
+    public void ProcessApplyRequestPathTraversalReturnsError()
     {
         // Arrange - path traversal attack using explicit .. in path
         var request = new ApplyRequest { PolicyPath = "test..path" };
@@ -839,7 +839,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_PathWithDotDotSequence_ReturnsError()
+    public void ProcessApplyRequestPathWithDotDotSequenceReturnsError()
     {
         // Arrange - path with .. sequence
         var request = new ApplyRequest { PolicyPath = @"C:\policies\.." };
@@ -854,7 +854,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_PathWithEmbeddedDotDot_ReturnsError()
+    public void ProcessApplyRequestPathWithEmbeddedDotDotReturnsError()
     {
         // Arrange - path with embedded ..
         var request = new ApplyRequest { PolicyPath = @"policy..json" };
@@ -869,7 +869,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_FileNotFound_ReturnsError()
+    public void ProcessApplyRequestFileNotFoundReturnsError()
     {
         // Arrange
         var request = new ApplyRequest { PolicyPath = @"C:\nonexistent\policy.json" };
@@ -885,7 +885,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_ValidFile_AppliesPolicy()
+    public void ProcessApplyRequestValidFileAppliesPolicy()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "test-policy.json");
@@ -919,7 +919,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_WritesAuditLog()
+    public void ProcessApplyRequestWritesAuditLog()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "audit-test.json");
@@ -943,7 +943,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_InvalidPolicy_ReturnsValidationError()
+    public void ProcessApplyRequestInvalidPolicyReturnsValidationError()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "invalid-policy.json");
@@ -969,7 +969,7 @@ public class PipeServerApplySecurityTests : IDisposable
     }
 
     [Fact]
-    public void ProcessApplyRequest_EngineFailure_ReturnsError()
+    public void ProcessApplyRequestEngineFailureReturnsError()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "engine-fail.json");
@@ -1060,7 +1060,7 @@ public class PipeServerLkgTests : IDisposable
     }
 
     [Fact]
-    public void ProcessLkgShowRequest_NoLkg_ReturnsNotFound()
+    public void ProcessLkgShowRequestNoLkgReturnsNotFound()
     {
         // Arrange
         LkgStore.Delete(); // Ensure no LKG
@@ -1077,7 +1077,7 @@ public class PipeServerLkgTests : IDisposable
     }
 
     [Fact]
-    public void ProcessLkgShowRequest_LkgExists_ReturnsMetadata()
+    public void ProcessLkgShowRequestLkgExistsReturnsMetadata()
     {
         // Arrange - ensure clean state first
         LkgStore.Delete();
@@ -1106,7 +1106,7 @@ public class PipeServerLkgTests : IDisposable
     }
 
     [Fact]
-    public void ProcessLkgRevertRequest_NoLkg_ReturnsNotFound()
+    public void ProcessLkgRevertRequestNoLkgReturnsNotFound()
     {
         // Arrange - ensure no LKG exists by deleting and verifying
         LkgStore.Delete();
@@ -1124,7 +1124,7 @@ public class PipeServerLkgTests : IDisposable
     }
 
     [Fact]
-    public void ProcessLkgRevertRequest_ValidLkg_AppliesPolicy()
+    public void ProcessLkgRevertRequestValidLkgAppliesPolicy()
     {
         // Arrange
         var policyJson = """
@@ -1151,7 +1151,7 @@ public class PipeServerLkgTests : IDisposable
     }
 
     [Fact]
-    public void ProcessLkgRevertRequest_WritesAuditLog()
+    public void ProcessLkgRevertRequestWritesAuditLog()
     {
         // Arrange
         var policyJson = """
@@ -1231,7 +1231,7 @@ public class PipeServerWatchTests : IDisposable
     }
 
     [Fact]
-    public void ProcessWatchStatusRequest_NotWatching_ReturnsCorrectState()
+    public void ProcessWatchStatusRequestNotWatchingReturnsCorrectState()
     {
         // Arrange
         var request = new WatchStatusRequest();
@@ -1248,7 +1248,7 @@ public class PipeServerWatchTests : IDisposable
     }
 
     [Fact]
-    public void ProcessWatchSetRequest_EmptyPath_DisablesWatching()
+    public void ProcessWatchSetRequestEmptyPathDisablesWatching()
     {
         // Arrange
         var request = new WatchSetRequest { PolicyPath = "" };
@@ -1263,7 +1263,7 @@ public class PipeServerWatchTests : IDisposable
     }
 
     [Fact]
-    public void ProcessWatchSetRequest_PathTraversal_ReturnsError()
+    public void ProcessWatchSetRequestPathTraversalReturnsError()
     {
         // Arrange - path with .. sequence triggers traversal check
         var request = new WatchSetRequest { PolicyPath = "policy..json" };
@@ -1278,7 +1278,7 @@ public class PipeServerWatchTests : IDisposable
     }
 
     [Fact]
-    public void ProcessWatchSetRequest_FileNotFound_ReturnsError()
+    public void ProcessWatchSetRequestFileNotFoundReturnsError()
     {
         // Arrange
         var request = new WatchSetRequest { PolicyPath = @"C:\nonexistent\policy.json" };
@@ -1293,7 +1293,7 @@ public class PipeServerWatchTests : IDisposable
     }
 
     [Fact]
-    public void ProcessWatchSetRequest_ValidFile_EnablesWatching()
+    public void ProcessWatchSetRequestValidFileEnablesWatching()
     {
         // Arrange
         var policyPath = Path.Combine(_testDirectory, "watch-policy.json");
@@ -1361,7 +1361,7 @@ public class PipeServerAuditLogsTests
     }
 
     [Fact]
-    public void ProcessAuditLogsRequest_DefaultTail_ReturnsEntries()
+    public void ProcessAuditLogsRequestDefaultTailReturnsEntries()
     {
         // Arrange
         var request = new AuditLogsRequest();
@@ -1376,7 +1376,7 @@ public class PipeServerAuditLogsTests
     }
 
     [Fact]
-    public void ProcessAuditLogsRequest_WithTail_ReturnsTailEntries()
+    public void ProcessAuditLogsRequestWithTailReturnsTailEntries()
     {
         // Arrange
         var request = new AuditLogsRequest { Tail = 5 };
@@ -1390,7 +1390,7 @@ public class PipeServerAuditLogsTests
     }
 
     [Fact]
-    public void ProcessAuditLogsRequest_WithSinceMinutes_ReturnsRecentEntries()
+    public void ProcessAuditLogsRequestWithSinceMinutesReturnsRecentEntries()
     {
         // Arrange
         var request = new AuditLogsRequest { SinceMinutes = 30 };
@@ -1446,7 +1446,7 @@ public class PipeServerPingTests
     }
 
     [Fact]
-    public void ProcessPingRequest_ReturnsServiceVersion()
+    public void ProcessPingRequestReturnsServiceVersion()
     {
         // Arrange
         var request = new PingRequest();
@@ -1462,7 +1462,7 @@ public class PipeServerPingTests
     }
 
     [Fact]
-    public void ProcessPingRequest_IncludesProtocolVersion()
+    public void ProcessPingRequestIncludesProtocolVersion()
     {
         // Arrange
         var request = new PingRequest();
@@ -1518,7 +1518,7 @@ public class PipeServerUnknownRequestTests
     }
 
     [Fact]
-    public void ProcessRequest_UnknownType_ReturnsError()
+    public void ProcessRequestUnknownTypeReturnsError()
     {
         // Arrange - create a custom request with unknown type
         var unknownRequest = new UnknownTestRequest();

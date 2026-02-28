@@ -11,7 +11,7 @@ public class RateLimiterTests
     #region Constructor Tests
 
     [Fact]
-    public void Constructor_WithDefaults_UsesDefaultValues()
+    public void ConstructorWithDefaultsUsesDefaultValues()
     {
         var limiter = new RateLimiter();
 
@@ -21,7 +21,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void Constructor_WithCustomValues_SetsCorrectly()
+    public void ConstructorWithCustomValuesSetsCorrectly()
     {
         var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 30, globalMaxTokens: 50);
 
@@ -31,43 +31,43 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void Constructor_WithZeroMaxTokens_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithZeroMaxTokensThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(maxTokens: 0));
     }
 
     [Fact]
-    public void Constructor_WithNegativeMaxTokens_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithNegativeMaxTokensThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(maxTokens: -1));
     }
 
     [Fact]
-    public void Constructor_WithZeroWindowSeconds_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithZeroWindowSecondsThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(windowSeconds: 0));
     }
 
     [Fact]
-    public void Constructor_WithNegativeWindowSeconds_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithNegativeWindowSecondsThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(windowSeconds: -1));
     }
 
     [Fact]
-    public void Constructor_WithZeroGlobalMaxTokens_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithZeroGlobalMaxTokensThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(globalMaxTokens: 0));
     }
 
     [Fact]
-    public void Constructor_WithNegativeGlobalMaxTokens_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithNegativeGlobalMaxTokensThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(globalMaxTokens: -1));
     }
 
     [Fact]
-    public void Constructor_WithGlobalMaxTokensLessThanMaxTokens_ThrowsArgumentOutOfRangeException()
+    public void ConstructorWithGlobalMaxTokensLessThanMaxTokensThrowsArgumentOutOfRangeException()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new RateLimiter(maxTokens: 100, globalMaxTokens: 50));
     }
@@ -77,7 +77,7 @@ public class RateLimiterTests
     #region TryAcquire Basic Tests
 
     [Fact]
-    public void TryAcquire_FirstRequest_AllowsRequest()
+    public void TryAcquireFirstRequestAllowsRequest()
     {
         var limiter = new RateLimiter(maxTokens: 10);
 
@@ -87,7 +87,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_WithinLimit_AllowsAllRequests()
+    public void TryAcquireWithinLimitAllowsAllRequests()
     {
         var limiter = new RateLimiter(maxTokens: 5);
 
@@ -98,7 +98,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_ExceedingLimit_BlocksExcessRequests()
+    public void TryAcquireExceedingLimitBlocksExcessRequests()
     {
         var limiter = new RateLimiter(maxTokens: 5);
 
@@ -113,7 +113,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_NullClientIdentity_DeniesRequest()
+    public void TryAcquireNullClientIdentityDeniesRequest()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 
@@ -122,7 +122,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_EmptyClientIdentity_DeniesRequest()
+    public void TryAcquireEmptyClientIdentityDeniesRequest()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 
@@ -135,7 +135,7 @@ public class RateLimiterTests
     #region Client Isolation Tests
 
     [Fact]
-    public void TryAcquire_DifferentClients_TrackedSeparately()
+    public void TryAcquireDifferentClientsTrackedSeparately()
     {
         var limiter = new RateLimiter(maxTokens: 2);
 
@@ -151,7 +151,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_CaseSensitiveIdentities_TrackedSeparately()
+    public void TryAcquireCaseSensitiveIdentitiesTrackedSeparately()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 
@@ -167,7 +167,7 @@ public class RateLimiterTests
     #region GetTokensRemaining Tests
 
     [Fact]
-    public void GetTokensRemaining_NewClient_ReturnsNegativeOne()
+    public void GetTokensRemainingNewClientReturnsNegativeOne()
     {
         var limiter = new RateLimiter(maxTokens: 10);
 
@@ -177,7 +177,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void GetTokensRemaining_AfterOneRequest_ReturnsCorrectCount()
+    public void GetTokensRemainingAfterOneRequestReturnsCorrectCount()
     {
         var limiter = new RateLimiter(maxTokens: 10);
 
@@ -188,7 +188,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void GetTokensRemaining_AfterExhaustion_ReturnsZero()
+    public void GetTokensRemainingAfterExhaustionReturnsZero()
     {
         var limiter = new RateLimiter(maxTokens: 3);
 
@@ -202,7 +202,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void GetTokensRemaining_NullIdentity_ReturnsNegativeOne()
+    public void GetTokensRemainingNullIdentityReturnsNegativeOne()
     {
         var limiter = new RateLimiter();
 
@@ -210,7 +210,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void GetTokensRemaining_EmptyIdentity_ReturnsNegativeOne()
+    public void GetTokensRemainingEmptyIdentityReturnsNegativeOne()
     {
         var limiter = new RateLimiter();
 
@@ -222,7 +222,7 @@ public class RateLimiterTests
     #region Reset Tests
 
     [Fact]
-    public void Reset_ClearsAllClientState()
+    public void ResetClearsAllClientState()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 
@@ -246,7 +246,7 @@ public class RateLimiterTests
     #region Rapid Request Tests (Simulating DoS)
 
     [Fact]
-    public void TryAcquire_RapidRequests_BlocksAfterLimit()
+    public void TryAcquireRapidRequestsBlocksAfterLimit()
     {
         // This is the key test requested:
         // "Add test that sends 20 rapid requests, verify first 10 succeed, remaining fail"
@@ -274,7 +274,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_MultipleClientsRapidRequests_EachLimitedIndependently()
+    public void TryAcquireMultipleClientsRapidRequestsEachLimitedIndependently()
     {
         var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 10);
 
@@ -297,7 +297,7 @@ public class RateLimiterTests
     #region Global Rate Limiting Tests
 
     [Fact]
-    public void TryAcquire_GlobalLimit_EnforcedAcrossAllClients()
+    public void TryAcquireGlobalLimitEnforcedAcrossAllClients()
     {
         // Set per-client limit to 10, global limit to 15
         // This means 2 clients with 10 tokens each would need 20, but only 15 are globally available
@@ -323,7 +323,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void GetGlobalTokensRemaining_ReturnsCorrectValue()
+    public void GetGlobalTokensRemainingReturnsCorrectValue()
     {
         var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 60, globalMaxTokens: 10);
 
@@ -337,7 +337,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void Reset_ClearsGlobalState()
+    public void ResetClearsGlobalState()
     {
         var limiter = new RateLimiter(maxTokens: 5, windowSeconds: 60, globalMaxTokens: 10);
 
@@ -357,7 +357,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_GlobalLimitReached_BlocksAllClients()
+    public void TryAcquireGlobalLimitReachedBlocksAllClients()
     {
         // Use 3 clients with per-user limit of 5 each (15 total potential)
         // But global limit is 8, so not all can get their full quota
@@ -387,7 +387,7 @@ public class RateLimiterTests
     #region Thread Safety Tests
 
     [Fact]
-    public async Task TryAcquire_ConcurrentAccess_ThreadSafe()
+    public async Task TryAcquireConcurrentAccessThreadSafe()
     {
         var limiter = new RateLimiter(maxTokens: 100, windowSeconds: 60, globalMaxTokens: 200);
         var client = "concurrent_user";
@@ -416,7 +416,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public async Task TryAcquire_ConcurrentDifferentClients_NoInterference()
+    public async Task TryAcquireConcurrentDifferentClientsNoInterference()
     {
         // Set globalMaxTokens high enough for 5 clients x 10 tokens each = 50 total
         var limiter = new RateLimiter(maxTokens: 10, windowSeconds: 60, globalMaxTokens: 100);
@@ -453,7 +453,7 @@ public class RateLimiterTests
     #region Default Constants Tests
 
     [Fact]
-    public void DefaultConstants_HaveExpectedValues()
+    public void DefaultConstantsHaveExpectedValues()
     {
         Assert.Equal(10, RateLimiter.DefaultMaxTokens);
         Assert.Equal(10, RateLimiter.DefaultWindowSeconds);
@@ -465,7 +465,7 @@ public class RateLimiterTests
     #region Edge Cases
 
     [Fact]
-    public void TryAcquire_SingleTokenLimit_WorksCorrectly()
+    public void TryAcquireSingleTokenLimitWorksCorrectly()
     {
         var limiter = new RateLimiter(maxTokens: 1, windowSeconds: 60);
 
@@ -475,7 +475,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_LargeTokenLimit_WorksCorrectly()
+    public void TryAcquireLargeTokenLimitWorksCorrectly()
     {
         var limiter = new RateLimiter(maxTokens: 10000, windowSeconds: 1, globalMaxTokens: 20000);
 
@@ -488,7 +488,7 @@ public class RateLimiterTests
     }
 
     [Fact]
-    public void TryAcquire_SpecialCharactersInIdentity_TrackedCorrectly()
+    public void TryAcquireSpecialCharactersInIdentityTrackedCorrectly()
     {
         var limiter = new RateLimiter(maxTokens: 1);
 

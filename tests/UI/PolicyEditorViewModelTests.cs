@@ -24,7 +24,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void NewPolicyCommand_CreatesEmptyPolicy()
+    public void NewPolicyCommandCreatesEmptyPolicy()
     {
         // Act
         _viewModel.NewPolicyCommand.Execute(null);
@@ -38,7 +38,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void NewPolicyCommand_WithUnsavedChanges_AsksConfirmation()
+    public void NewPolicyCommandWithUnsavedChangesAsksConfirmation()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -54,7 +54,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void AddRuleCommand_AddsNewRule()
+    public void AddRuleCommandAddsNewRule()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -73,7 +73,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void DeleteRuleCommand_RemovesSelectedRule()
+    public void DeleteRuleCommandRemovesSelectedRule()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -91,7 +91,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void DeleteRuleCommand_WhenUserCancels_DoesNotDelete()
+    public void DeleteRuleCommandWhenUserCancelsDoesNotDelete()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -106,7 +106,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void MoveRuleUpCommand_MovesRule()
+    public void MoveRuleUpCommandMovesRule()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -124,7 +124,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void MoveRuleDownCommand_MovesRule()
+    public void MoveRuleDownCommandMovesRule()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -143,7 +143,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public async Task ValidatePolicyCommand_WhenNoPolicy_ShowsWarning()
+    public async Task ValidatePolicyCommandWhenNoPolicyShowsWarning()
     {
         // Act
         await _viewModel.ValidatePolicyCommand.ExecuteAsync(null);
@@ -154,7 +154,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public async Task ValidatePolicyCommand_WhenValid_ShowsValidMessage()
+    public async Task ValidatePolicyCommandWhenValidShowsValidMessage()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -170,7 +170,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public async Task ValidatePolicyCommand_WhenInvalid_ShowsErrors()
+    public async Task ValidatePolicyCommandWhenInvalidShowsErrors()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -190,7 +190,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public async Task ApplyPolicyCommand_WhenNoPolicy_ShowsWarning()
+    public async Task ApplyPolicyCommandWhenNoPolicyShowsWarning()
     {
         // Act
         await _viewModel.ApplyPolicyCommand.ExecuteAsync(null);
@@ -201,7 +201,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void RuleViewModel_SummaryIncludesRelevantInfo()
+    public void RuleViewModelSummaryIncludesRelevantInfo()
     {
         // Arrange
         var rule = new RuleViewModel
@@ -221,7 +221,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void RuleViewModel_SummaryHandlesEmptyFields()
+    public void RuleViewModelSummaryHandlesEmptyFields()
     {
         // Arrange
         var rule = new RuleViewModel();
@@ -234,7 +234,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void PolicyVersion_ChangeSetsUnsavedChanges()
+    public void PolicyVersionChangeSetsUnsavedChanges()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -248,7 +248,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void DefaultAction_ChangeSetsUnsavedChanges()
+    public void DefaultActionChangeSetsUnsavedChanges()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -262,7 +262,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void RuleViewModel_HasCorrectStaticOptions()
+    public void RuleViewModelHasCorrectStaticOptions()
     {
         // Assert
         Assert.Contains("allow", RuleViewModel.AvailableActions);
@@ -280,7 +280,7 @@ public class PolicyEditorViewModelTests
     // ========================================
 
     [Fact]
-    public void Templates_AreLoadedOnConstruction()
+    public void TemplatesAreLoadedOnConstruction()
     {
         // Assert
         Assert.NotEmpty(_viewModel.Templates);
@@ -288,7 +288,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void LoadFromTemplateCommand_WithNullTemplate_DoesNothing()
+    public void LoadFromTemplateCommandWithNullTemplateDoesNothing()
     {
         // Act
         _viewModel.LoadFromTemplateCommand.Execute(null);
@@ -298,7 +298,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void LoadFromTemplateCommand_LoadsTemplate()
+    public void LoadFromTemplateCommandLoadsTemplate()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
@@ -314,7 +314,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void LoadFromTemplateCommand_WithWarningTemplate_ShowsWarning()
+    public void LoadFromTemplateCommandWithWarningTemplateShowsWarning()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => !string.IsNullOrEmpty(t.Warning));
@@ -327,7 +327,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void LoadFromTemplateCommand_UserCancelsWarning_DoesNotLoad()
+    public void LoadFromTemplateCommandUserCancelsWarningDoesNotLoad()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => !string.IsNullOrEmpty(t.Warning));
@@ -342,7 +342,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void LoadFromTemplateCommand_WithUnsavedChanges_AsksConfirmation()
+    public void LoadFromTemplateCommandWithUnsavedChangesAsksConfirmation()
     {
         // Arrange
         _viewModel.NewPolicyCommand.Execute(null);
@@ -359,7 +359,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void LoadFromTemplateCommand_ClearsFilePath()
+    public void LoadFromTemplateCommandClearsFilePath()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
@@ -372,7 +372,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void BlockCloudflareDnsTemplate_HasExpectedRules()
+    public void BlockCloudflareDnsTemplateHasExpectedRules()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
@@ -388,7 +388,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void BlockAllTrafficTemplate_HasDefaultDeny()
+    public void BlockAllTrafficTemplateHasDefaultDeny()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => t.Id == "block-all-traffic");
@@ -402,7 +402,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void Templates_HaveUniqueIds()
+    public void TemplatesHaveUniqueIds()
     {
         // Assert
         var ids = _viewModel.Templates.Select(t => t.Id).ToList();
@@ -410,7 +410,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void Templates_HaveRequiredProperties()
+    public void TemplatesHaveRequiredProperties()
     {
         // Assert
         foreach (var template in _viewModel.Templates)
@@ -427,7 +427,7 @@ public class PolicyEditorViewModelTests
     }
 
     [Fact]
-    public void Templates_CreateFreshPoliciesEachTime()
+    public void TemplatesCreateFreshPoliciesEachTime()
     {
         // Arrange
         var template = _viewModel.Templates.First(t => t.Id == "block-cloudflare-dns");
