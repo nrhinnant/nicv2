@@ -36,7 +36,9 @@
       "Bash(Select-Object Name, Length, LastWriteTime)",
       "Bash(Get-Service -Name \"WfpTrafficControl\" -ErrorAction SilentlyContinue)",
       "Bash(Select-Object Name, Status, StartType)",
-      "Bash(dotnet restore:*)"
+      "Bash(dotnet restore:*)",
+      "Bash(pwsh -File scripts/Fix-CA1707.ps1:*)",
+      "Bash(pwsh -File:*)"
     ]
   }
 }
