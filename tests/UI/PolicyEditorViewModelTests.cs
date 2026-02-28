@@ -166,7 +166,7 @@ public class PolicyEditorViewModelTests
         // Assert
         Assert.Equal(1, _mockService.ValidateCallCount);
         Assert.True(_viewModel.IsValid);
-        Assert.Contains("valid", _viewModel.ValidationMessage.ToLower());
+        Assert.Contains("valid", _viewModel.ValidationMessage.ToLowerInvariant());
     }
 
     [Fact]
@@ -186,7 +186,7 @@ public class PolicyEditorViewModelTests
         // Assert
         Assert.False(_viewModel.IsValid);
         Assert.Single(_viewModel.ValidationErrors);
-        Assert.Contains("error", _viewModel.ValidationMessage.ToLower());
+        Assert.Contains("error", _viewModel.ValidationMessage.ToLowerInvariant());
     }
 
     [Fact]

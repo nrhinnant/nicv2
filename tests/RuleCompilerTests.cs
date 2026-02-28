@@ -22,7 +22,7 @@ public class RuleCompilerTests
 
         Assert.False(result.IsSuccess);
         Assert.Single(result.Errors);
-        Assert.Contains("null", result.Errors[0].Message.ToLower());
+        Assert.Contains("null", result.Errors[0].Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class RuleCompilerTests
         Assert.True(result.IsSuccess);
         Assert.Empty(result.Filters);
         Assert.Single(result.Warnings);
-        Assert.Contains("no rules", result.Warnings[0].ToLower());
+        Assert.Contains("no rules", result.Warnings[0].ToLowerInvariant());
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class RuleCompilerTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Filters);
-        Assert.Contains("inbound", result.Filters[0].Description.ToLower());
+        Assert.Contains("inbound", result.Filters[0].Description.ToLowerInvariant());
         Assert.Contains("1.1.1.1", result.Filters[0].Description);
     }
 
@@ -363,8 +363,8 @@ public class RuleCompilerTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Filters);
-        Assert.Contains("udp", result.Filters[0].Description.ToLower());
-        Assert.Contains("outbound", result.Filters[0].Description.ToLower());
+        Assert.Contains("udp", result.Filters[0].Description.ToLowerInvariant());
+        Assert.Contains("outbound", result.Filters[0].Description.ToLowerInvariant());
     }
 
     [Fact]
@@ -486,7 +486,7 @@ public class RuleCompilerTests
 
         Assert.False(result.IsSuccess);
         Assert.Single(result.Errors);
-        Assert.Contains("not supported", result.Errors[0].Message.ToLower());
+        Assert.Contains("not supported", result.Errors[0].Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -582,8 +582,8 @@ public class RuleCompilerTests
         var tcpFilter = result.Filters.First(f => f.Protocol == 6);
         var udpFilter = result.Filters.First(f => f.Protocol == 17);
 
-        Assert.Contains("tcp", tcpFilter.Description.ToLower());
-        Assert.Contains("udp", udpFilter.Description.ToLower());
+        Assert.Contains("tcp", tcpFilter.Description.ToLowerInvariant());
+        Assert.Contains("udp", udpFilter.Description.ToLowerInvariant());
     }
 
     [Fact]
@@ -883,7 +883,7 @@ public class RuleCompilerTests
         Assert.Empty(result.Filters);
         Assert.Equal(1, result.SkippedRules);
         Assert.Single(result.Warnings);
-        Assert.Contains("disabled", result.Warnings[0].ToLower());
+        Assert.Contains("disabled", result.Warnings[0].ToLowerInvariant());
     }
 
     [Fact]
@@ -1378,8 +1378,8 @@ public class RuleCompilerTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Filters);
-        Assert.Contains("block", result.Filters[0].Description.ToLower());
-        Assert.Contains("tcp", result.Filters[0].Description.ToLower());
+        Assert.Contains("block", result.Filters[0].Description.ToLowerInvariant());
+        Assert.Contains("tcp", result.Filters[0].Description.ToLowerInvariant());
         Assert.Contains("1.1.1.1", result.Filters[0].Description);
     }
 
@@ -1503,7 +1503,7 @@ public class ApplyIpcMessageTests
         var response = ApplyResponse.CompilationFailed(compilationResult);
 
         Assert.False(response.Ok);
-        Assert.Contains("compilation failed", response.Error!.ToLower());
+        Assert.Contains("compilation failed", response.Error!.ToLowerInvariant());
         Assert.Equal(2, response.CompilationErrors.Count);
         Assert.Equal("rule-1", response.CompilationErrors[0].RuleId);
         Assert.Single(response.Warnings);

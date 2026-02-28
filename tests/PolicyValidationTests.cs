@@ -46,7 +46,7 @@ public class PolicyValidationTests
             $"\"direction\": \"{direction}\"",
             $"\"protocol\": \"{protocol}\"",
             $"\"priority\": {priority}",
-            $"\"enabled\": {enabled.ToString().ToLower()}"
+            $"\"enabled\": {enabled.ToString().ToLowerInvariant()}"
         };
 
         if (process != null)

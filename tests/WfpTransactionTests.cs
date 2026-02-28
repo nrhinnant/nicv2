@@ -80,7 +80,7 @@ public class WfpTransactionTests
         // Assert
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorCodes.InvalidArgument, result.Error.Code);
-        Assert.Contains("zero", result.Error.Message.ToLower());
+        Assert.Contains("zero", result.Error.Message.ToLowerInvariant());
         Assert.Equal(0, mockNative.BeginCallCount); // Should not call native
     }
 

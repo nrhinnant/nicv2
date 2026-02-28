@@ -428,7 +428,7 @@ public class WfpEngineRollbackTests
         // Assert
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorCodes.WfpError, result.Error.Code);
-        Assert.Contains("enumerate", result.Error.Message.ToLower());
+        Assert.Contains("enumerate", result.Error.Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -619,7 +619,7 @@ public class WfpEngineFakeBootstrapTests
 
         // Assert
         Assert.True(result.IsFailure);
-        Assert.Contains("filters still exist", result.Error.Message.ToLower());
+        Assert.Contains("filters still exist", result.Error.Message.ToLowerInvariant());
     }
 
     [Fact]

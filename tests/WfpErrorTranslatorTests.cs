@@ -110,8 +110,8 @@ public class WfpErrorTranslatorTests
 
         Assert.NotNull(error);
         Assert.Equal(ErrorCodes.NotFound, error.Code);
-        Assert.Contains("provider", error.Message.ToLower());
-        Assert.Contains("not found", error.Message.ToLower());
+        Assert.Contains("provider", error.Message.ToLowerInvariant());
+        Assert.Contains("not found", error.Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -121,8 +121,8 @@ public class WfpErrorTranslatorTests
 
         Assert.NotNull(error);
         Assert.Equal(ErrorCodes.NotFound, error.Code);
-        Assert.Contains("sublayer", error.Message.ToLower());
-        Assert.Contains("not found", error.Message.ToLower());
+        Assert.Contains("sublayer", error.Message.ToLowerInvariant());
+        Assert.Contains("not found", error.Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -132,8 +132,8 @@ public class WfpErrorTranslatorTests
 
         Assert.NotNull(error);
         Assert.Equal(ErrorCodes.NotFound, error.Code);
-        Assert.Contains("filter", error.Message.ToLower());
-        Assert.Contains("not found", error.Message.ToLower());
+        Assert.Contains("filter", error.Message.ToLowerInvariant());
+        Assert.Contains("not found", error.Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class WfpErrorTranslatorTests
 
         Assert.NotNull(error);
         Assert.Equal(ErrorCodes.NotFound, error.Code);
-        Assert.Contains("not found", error.Message.ToLower());
+        Assert.Contains("not found", error.Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -153,8 +153,8 @@ public class WfpErrorTranslatorTests
 
         Assert.NotNull(error);
         Assert.Equal(ErrorCodes.WfpError, error.Code);
-        Assert.Contains("session", error.Message.ToLower());
-        Assert.Contains("aborted", error.Message.ToLower());
+        Assert.Contains("session", error.Message.ToLowerInvariant());
+        Assert.Contains("aborted", error.Message.ToLowerInvariant());
     }
 
     [Fact]
@@ -176,7 +176,7 @@ public class WfpErrorTranslatorTests
         Assert.NotNull(error);
         Assert.Equal(ErrorCodes.WfpError, error.Code);
         // The error message contains the hex code (case-insensitive check)
-        Assert.Contains("DEADBEEF", error.Message.ToUpper());
+        Assert.Contains("DEADBEEF", error.Message.ToUpperInvariant());
     }
 
     [Fact]
