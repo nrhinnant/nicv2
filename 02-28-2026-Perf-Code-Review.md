@@ -1,9 +1,9 @@
 # Performance Code Review Report
 
 **Generated:** 2026-02-28
-**Status:** ✅ COMPLETE - All actionable items addressed
+**Status:** ✅ COMPLETE - All actionable items addressed, deferrals confirmed
 **Reviewed By:** Claude Code (Opus 4.5)
-**Fixes Applied:** 10 issues fixed, 8 deferred as acceptable for use case
+**Fixes Applied:** 10 issues fixed, 8 deferred (confirmed appropriate after re-analysis)
 
 ---
 
@@ -221,6 +221,23 @@ The codebase demonstrates several good performance practices:
 - PERF-006: FileWatcher CTS allocation (file events are infrequent)
 - PERF-009: AuditLogWriter FileStream (audit events are infrequent)
 - PERF-010 through PERF-015, PERF-018: Minimal impact in practice
+
+### Deferral Confirmation Analysis (2026-02-28)
+
+All 8 deferrals were re-analyzed by reviewing the actual code. Each was confirmed appropriate:
+
+| ID | Issue | Frequency | Analysis |
+|----|-------|-----------|----------|
+| PERF-006 | CTS per file change | Per file save (~seconds apart) | Debounce pattern requires fresh CTS; proper disposal; not hot path |
+| PERF-009 | FileStream per audit write | Per policy apply (~minutes apart) | Enables concurrent readers; simplifies rotation; audit events rare |
+| PERF-010 | SHA256 byte array | Per LKG save | LKG save is admin-initiated; one allocation is negligible |
+| PERF-011 | 4-byte arrays for IPC | Per CLI invocation | CLI terminates after command; 8 bytes total is trivial |
+| PERF-012 | ValidatePorts string split | Per rule during policy load | One-time batch operation; not per-packet |
+| PERF-014 | ParsePortSpecs List | Per rule during compilation | One-time batch; even 10K rules is milliseconds |
+| PERF-015 | New pipe per UI request | Per user click | Human-initiated; simpler connection model |
+| PERF-018 | JsonDocument for type | Per IPC request | IPC is user-initiated; JsonDocument pools buffers |
+
+**Conclusion:** All deferrals target cold paths (admin operations, user clicks, file saves). The implemented fixes correctly prioritized hot paths with measurable impact.
 
 ---
 
