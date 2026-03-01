@@ -158,6 +158,25 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<GetConnectionsRequest, GetConnectionsResponse>(request, ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<GetSyslogConfigResponse>> GetSyslogConfigAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<GetSyslogConfigRequest, GetSyslogConfigResponse>(new GetSyslogConfigRequest(), ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<SetSyslogConfigResponse>> SetSyslogConfigAsync(SyslogConfig config, CancellationToken ct = default)
+    {
+        var request = new SetSyslogConfigRequest { Config = config };
+        return await SendRequestAsync<SetSyslogConfigRequest, SetSyslogConfigResponse>(request, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<TestSyslogResponse>> TestSyslogAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<TestSyslogRequest, TestSyslogResponse>(new TestSyslogRequest(), ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

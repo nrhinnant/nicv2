@@ -763,6 +763,9 @@ public static class IpcMessageParser
                 PolicyHistoryRevertRequest.RequestType => ParsePolicyHistoryRevertRequest(json),
                 PolicyHistoryGetRequest.RequestType => ParsePolicyHistoryGetRequest(json),
                 GetConnectionsRequest.RequestType => ParseGetConnectionsRequest(json),
+                GetSyslogConfigRequest.RequestType => Result<IpcRequest>.Success(new GetSyslogConfigRequest()),
+                SetSyslogConfigRequest.RequestType => ParseSetSyslogConfigRequest(json),
+                TestSyslogRequest.RequestType => Result<IpcRequest>.Success(new TestSyslogRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -1034,6 +1037,30 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid get-connections request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a set-syslog-config request.
+    /// </summary>
+    private static Result<IpcRequest> ParseSetSyslogConfigRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<SetSyslogConfigRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse set-syslog-config request.");
+            }
+            if (request.Config == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'config' field in set-syslog-config request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid set-syslog-config request JSON: {ex.Message}");
         }
     }
 }

@@ -598,6 +598,73 @@ public class MockServiceClient : IServiceClient
             GetConnectionsResponse.Success(filtered)));
     }
 
+    // Syslog Configuration
+    public SyslogConfig SyslogConfig { get; set; } = new()
+    {
+        Enabled = false,
+        Host = "localhost",
+        Port = 514,
+        Protocol = SyslogProtocol.Udp,
+        Format = SyslogFormat.Rfc5424
+    };
+    public int GetSyslogConfigCallCount { get; private set; }
+    public int SetSyslogConfigCallCount { get; private set; }
+    public int TestSyslogCallCount { get; private set; }
+    public SyslogConfig? LastSyslogConfig { get; private set; }
+
+    public Task<Result<GetSyslogConfigResponse>> GetSyslogConfigAsync(CancellationToken ct = default)
+    {
+        GetSyslogConfigCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<GetSyslogConfigResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        return Task.FromResult(Result<GetSyslogConfigResponse>.Success(
+            GetSyslogConfigResponse.Success(SyslogConfig)));
+    }
+
+    public Task<Result<SetSyslogConfigResponse>> SetSyslogConfigAsync(SyslogConfig config, CancellationToken ct = default)
+    {
+        SetSyslogConfigCallCount++;
+        LastSyslogConfig = config;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<SetSyslogConfigResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        SyslogConfig = config;
+        return Task.FromResult(Result<SetSyslogConfigResponse>.Success(
+            SetSyslogConfigResponse.Success()));
+    }
+
+    public Task<Result<TestSyslogResponse>> TestSyslogAsync(CancellationToken ct = default)
+    {
+        TestSyslogCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<TestSyslogResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        if (!SyslogConfig.Enabled)
+        {
+            return Task.FromResult(Result<TestSyslogResponse>.Success(
+                TestSyslogResponse.NotEnabled()));
+        }
+
+        return Task.FromResult(Result<TestSyslogResponse>.Success(
+            TestSyslogResponse.Success(rttMs: 5)));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -617,6 +684,9 @@ public class MockServiceClient : IServiceClient
         RevertToHistoryCallCount = 0;
         GetPolicyFromHistoryCallCount = 0;
         GetConnectionsCallCount = 0;
+        GetSyslogConfigCallCount = 0;
+        SetSyslogConfigCallCount = 0;
+        TestSyslogCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;
@@ -624,5 +694,6 @@ public class MockServiceClient : IServiceClient
         LastWatchSetPath = null;
         LastSimulateRequest = null;
         LastHistoryEntryId = null;
+        LastSyslogConfig = null;
     }
 }

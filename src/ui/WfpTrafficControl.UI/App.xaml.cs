@@ -95,6 +95,7 @@ public partial class App : Application
         services.AddTransient<PolicyHistoryViewModel>();
         services.AddTransient<ConnectionMonitorViewModel>();
         services.AddTransient<AnalyticsDashboardViewModel>();
+        services.AddTransient<SyslogSettingsViewModel>();
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)

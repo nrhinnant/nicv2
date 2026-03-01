@@ -1,0 +1,260 @@
+<Window x:Class="WfpTrafficControl.UI.Views.SyslogSettingsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:WfpTrafficControl.UI.ViewModels"
+        xmlns:converters="clr-namespace:WfpTrafficControl.UI.Converters"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:SyslogSettingsViewModel}"
+        Title="Syslog/SIEM Export Settings"
+        Height="600" Width="500"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BackgroundBrush}"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibility" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="24">
+            <StackPanel>
+                <!-- Enable/Disable Toggle -->
+                <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Enable Syslog Export"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="Forward audit events to a syslog server"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+
+                        <CheckBox Grid.Column="1"
+                                  IsChecked="{Binding Enabled}"
+                                  VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Server Settings -->
+                <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Server Settings"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,16" />
+
+                        <!-- Host -->
+                        <TextBlock Text="Host"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <TextBox Text="{Binding Host, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding Enabled}"
+                                 Margin="0,0,0,12" />
+
+                        <!-- Port -->
+                        <TextBlock Text="Port"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <TextBox Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding Enabled}"
+                                 Width="100"
+                                 HorizontalAlignment="Left"
+                                 Margin="0,0,0,12" />
+
+                        <!-- Protocol -->
+                        <TextBlock Text="Protocol"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ComboBox ItemsSource="{x:Static vm:SyslogSettingsViewModel.AvailableProtocols}"
+                                  SelectedValue="{Binding SelectedProtocol}"
+                                  IsEnabled="{Binding Enabled}"
+                                  Width="120"
+                                  HorizontalAlignment="Left"
+                                  Margin="0,0,0,12" />
+
+                        <!-- TLS Certificate Verification -->
+                        <StackPanel Visibility="{Binding ShowTlsOptions, Converter={StaticResource BoolToVisibility}}"
+                                    Margin="0,0,0,12">
+                            <CheckBox Content="Verify TLS Certificate"
+                                      IsChecked="{Binding VerifyCertificate}"
+                                      IsEnabled="{Binding Enabled}" />
+                            <TextBlock Text="Disable for self-signed certificates (not recommended)"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="24,4,0,0" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Format Settings -->
+                <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="Format Settings"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,16" />
+
+                        <!-- Format -->
+                        <TextBlock Text="Message Format"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ComboBox ItemsSource="{x:Static vm:SyslogSettingsViewModel.AvailableFormats}"
+                                  SelectedValue="{Binding SelectedFormat}"
+                                  IsEnabled="{Binding Enabled}"
+                                  Width="180"
+                                  HorizontalAlignment="Left"
+                                  Margin="0,0,0,12" />
+
+                        <!-- Facility -->
+                        <TextBlock Text="Facility"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ComboBox ItemsSource="{x:Static vm:SyslogSettingsViewModel.AvailableFacilities}"
+                                  SelectedValue="{Binding Facility}"
+                                  SelectedValuePath="Key"
+                                  DisplayMemberPath="Value"
+                                  IsEnabled="{Binding Enabled}"
+                                  Width="150"
+                                  HorizontalAlignment="Left"
+                                  Margin="0,0,0,12" />
+
+                        <!-- App Name -->
+                        <TextBlock Text="Application Name"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <TextBox Text="{Binding AppName, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding Enabled}"
+                                 Width="200"
+                                 HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Test Connection -->
+                <Border Style="{StaticResource CardStyle}" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="Test Connection"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8" />
+
+                        <TextBlock Text="Send a test message to verify connectivity"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,0,12" />
+
+                        <Button Content="Test Connection"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding TestConnectionCommand}"
+                                IsEnabled="{Binding Enabled}"
+                                Padding="16,8"
+                                HorizontalAlignment="Left" />
+
+                        <!-- Test Result -->
+                        <Border Margin="0,12,0,0"
+                                Padding="12"
+                                CornerRadius="4"
+                                Visibility="{Binding TestResult, Converter={StaticResource StringNotEmptyToVisibility}, FallbackValue=Collapsed}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{DynamicResource ErrorBackgroundBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding TestSucceeded}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource SuccessBackgroundBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding TestResult}" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TestSucceeded}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="24,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding StatusMessage}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Content="Reset"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Command="{Binding ResetToDefaultsCommand}"
+                            Padding="16,8"
+                            Margin="0,0,8,0" />
+                    <Button Content="Save"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Command="{Binding SaveConfigCommand}"
+                            Padding="24,8"
+                            Margin="0,0,8,0" />
+                    <Button Content="Close"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="CloseButton_Click"
+                            Padding="16,8" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="{DynamicResource BackgroundBrush}"
+                Opacity="0.9"
+                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="Loading..."
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="16"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+        </Border>
+    </Grid>
+</Window>

@@ -74,6 +74,12 @@
                             Padding="12,6"
                             Margin="0,0,8,0"
                             ToolTip="View and revert to previous policy versions" />
+                    <Button Content="Syslog"
+                            Style="{DynamicResource SecondaryButtonStyle}"
+                            Command="{Binding OpenSyslogSettingsCommand}"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="Configure syslog/SIEM export settings" />
                     <Button Content="{Binding ThemeButtonText}"
                             Style="{DynamicResource SecondaryButtonStyle}"
                             Command="{Binding ToggleThemeCommand}"

@@ -122,4 +122,20 @@ public interface IServiceClient
     /// <param name="includeTcp">Whether to include TCP connections.</param>
     /// <param name="includeUdp">Whether to include UDP connections.</param>
     Task<Result<GetConnectionsResponse>> GetConnectionsAsync(bool includeTcp = true, bool includeUdp = true, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the current syslog configuration.
+    /// </summary>
+    Task<Result<GetSyslogConfigResponse>> GetSyslogConfigAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Sets the syslog configuration.
+    /// </summary>
+    /// <param name="config">The new syslog configuration.</param>
+    Task<Result<SetSyslogConfigResponse>> SetSyslogConfigAsync(SyslogConfig config, CancellationToken ct = default);
+
+    /// <summary>
+    /// Tests the syslog connection.
+    /// </summary>
+    Task<Result<TestSyslogResponse>> TestSyslogAsync(CancellationToken ct = default);
 }

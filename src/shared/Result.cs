@@ -46,6 +46,7 @@ public static class ErrorCodes
     public const string ServiceError = "SERVICE_ERROR";
     public const string ServiceUnavailable = "SERVICE_UNAVAILABLE";
     public const string IpcError = "IPC_ERROR";
+    public const string NetworkError = "NETWORK_ERROR";
 }
 
 /// <summary>

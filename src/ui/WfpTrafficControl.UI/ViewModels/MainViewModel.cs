@@ -145,6 +145,17 @@ public partial class MainViewModel : ObservableObject
         dialog.ShowDialog();
     }
 
+    [RelayCommand]
+    private void OpenSyslogSettings()
+    {
+        var viewModel = App.Services.GetRequiredService<SyslogSettingsViewModel>();
+        var dialog = new SyslogSettingsView(viewModel)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
     private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
     {
         UpdateThemeButtonText(e.IsDarkTheme);
