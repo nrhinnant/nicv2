@@ -113,6 +113,17 @@ public partial class MainViewModel : ObservableObject
         dialog.ShowDialog();
     }
 
+    [RelayCommand]
+    private void OpenPolicyDiff()
+    {
+        var viewModel = App.Services.GetRequiredService<PolicyDiffViewModel>();
+        var dialog = new PolicyDiffView(viewModel)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
     private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
     {
         UpdateThemeButtonText(e.IsDarkTheme);

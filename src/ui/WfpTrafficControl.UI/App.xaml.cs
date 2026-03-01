@@ -90,6 +90,7 @@ public partial class App : Application
         services.AddTransient<LogsViewModel>();
         services.AddTransient<BlockRulesViewModel>();
         services.AddTransient<RuleSimulatorViewModel>();
+        services.AddTransient<PolicyDiffViewModel>();
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)

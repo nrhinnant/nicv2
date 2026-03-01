@@ -62,6 +62,12 @@
                             Padding="12,6"
                             Margin="0,0,8,0"
                             ToolTip="Test if a connection would be allowed or blocked" />
+                    <Button Content="Compare"
+                            Style="{DynamicResource SecondaryButtonStyle}"
+                            Command="{Binding OpenPolicyDiffCommand}"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="Compare two policy files side by side" />
                     <Button Content="{Binding ThemeButtonText}"
                             Style="{DynamicResource SecondaryButtonStyle}"
                             Command="{Binding ToggleThemeCommand}"
