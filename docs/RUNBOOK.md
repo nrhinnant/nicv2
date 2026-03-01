@@ -202,6 +202,30 @@ The WfpTrafficControl UI is a WPF desktop application providing a graphical inte
 .\bin\ui\WfpTrafficControl.UI.exe
 ```
 
+#### System Tray Icon
+
+The application displays a system tray icon providing quick status visibility:
+
+| Icon Color | Status |
+|------------|--------|
+| Green | Service connected, filters active |
+| Yellow | Service connected, no policy applied |
+| Gray | Service offline |
+
+**Tray icon features:**
+- **Hover tooltip** — Shows connection status, filter count, and service version
+- **Double-click** — Restores the main window
+- **Right-click menu:**
+  - Status display (connected/offline, filter count)
+  - Show Window — Restore the main window
+  - Refresh Status — Update status from service
+  - Exit — Close the application
+
+**Minimize-to-tray behavior:**
+- Minimizing the window hides it to the system tray
+- Closing the window (X button) minimizes to tray instead of exiting
+- Use the "Exit" menu item in the tray icon to fully close the application
+
 **The UI has three main tabs:**
 
 #### Dashboard Tab
