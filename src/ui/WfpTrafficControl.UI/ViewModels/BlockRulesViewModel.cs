@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WfpTrafficControl.Shared.Ipc;
@@ -39,6 +41,18 @@ public partial class BlockRulesViewModel : ObservableObject
     [ObservableProperty]
     private BlockRuleDto? _selectedRule;
 
+    // Search/Filter
+    [ObservableProperty]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private string _directionFilter = "all";
+
+    [ObservableProperty]
+    private string _protocolFilter = "all";
+
+    private ICollectionView? _blockRulesView;
+
     /// <summary>
     /// Explanation shown in UI about the simplified nature of this view.
     /// </summary>
@@ -50,6 +64,85 @@ public partial class BlockRulesViewModel : ObservableObject
     public BlockRulesViewModel(IServiceClient serviceClient)
     {
         _serviceClient = serviceClient;
+        SetupBlockRulesView();
+    }
+
+    /// <summary>
+    /// Gets the filtered view of block rules for data binding.
+    /// </summary>
+    public ICollectionView BlockRulesView => _blockRulesView ??= SetupBlockRulesView();
+
+    /// <summary>
+    /// Gets the count of visible (filtered) block rules.
+    /// </summary>
+    public int FilteredRuleCount => _blockRulesView?.Cast<object>().Count() ?? BlockRules.Count;
+
+    /// <summary>
+    /// Available direction filters.
+    /// </summary>
+    public static string[] AvailableDirectionFilters => new[] { "all", "inbound", "outbound", "both" };
+
+    /// <summary>
+    /// Available protocol filters.
+    /// </summary>
+    public static string[] AvailableProtocolFilters => new[] { "all", "tcp", "udp", "any" };
+
+    private ICollectionView SetupBlockRulesView()
+    {
+        _blockRulesView = CollectionViewSource.GetDefaultView(BlockRules);
+        _blockRulesView.Filter = FilterBlockRules;
+        return _blockRulesView;
+    }
+
+    private bool FilterBlockRules(object obj)
+    {
+        if (obj is not BlockRuleDto rule)
+            return false;
+
+        // Apply direction filter
+        if (DirectionFilter != "all" && !rule.Direction.Equals(DirectionFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Apply protocol filter
+        if (ProtocolFilter != "all" && !(rule.Protocol?.Equals(ProtocolFilter, StringComparison.OrdinalIgnoreCase) ?? false))
+            return false;
+
+        // Apply search text filter
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var searchLower = SearchText.ToLowerInvariant();
+            return rule.Id.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   rule.Direction.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   (rule.Protocol?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.Process?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.RemoteIp?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.RemotePorts?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.Summary?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.Comment?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false);
+        }
+
+        return true;
+    }
+
+    private void RefreshBlockRulesFilter()
+    {
+        _blockRulesView?.Refresh();
+        OnPropertyChanged(nameof(FilteredRuleCount));
+    }
+
+    partial void OnSearchTextChanged(string value) => RefreshBlockRulesFilter();
+    partial void OnDirectionFilterChanged(string value) => RefreshBlockRulesFilter();
+    partial void OnProtocolFilterChanged(string value) => RefreshBlockRulesFilter();
+
+    /// <summary>
+    /// Clears the search filter.
+    /// </summary>
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchText = "";
+        DirectionFilter = "all";
+        ProtocolFilter = "all";
     }
 
     /// <summary>

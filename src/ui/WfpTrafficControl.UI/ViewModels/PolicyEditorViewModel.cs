@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WfpTrafficControl.Shared.Policy;
@@ -47,6 +49,15 @@ public partial class PolicyEditorViewModel : ObservableObject
     [ObservableProperty]
     private RuleViewModel? _selectedRule;
 
+    // Search/Filter
+    [ObservableProperty]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private string _actionFilter = "all";
+
+    private ICollectionView? _rulesView;
+
     // Validation
     [ObservableProperty]
     private bool _isValid = true;
@@ -82,6 +93,78 @@ public partial class PolicyEditorViewModel : ObservableObject
         {
             Templates.Add(template);
         }
+
+        // Setup collection view for filtering
+        SetupRulesView();
+    }
+
+    /// <summary>
+    /// Gets the filtered view of rules for data binding.
+    /// </summary>
+    public ICollectionView RulesView => _rulesView ??= SetupRulesView();
+
+    /// <summary>
+    /// Gets the count of visible (filtered) rules.
+    /// </summary>
+    public int FilteredRuleCount => _rulesView?.Cast<object>().Count() ?? Rules.Count;
+
+    /// <summary>
+    /// Available action filters.
+    /// </summary>
+    public static string[] AvailableActionFilters => new[] { "all", "allow", "block" };
+
+    private ICollectionView SetupRulesView()
+    {
+        _rulesView = CollectionViewSource.GetDefaultView(Rules);
+        _rulesView.Filter = FilterRules;
+        return _rulesView;
+    }
+
+    private bool FilterRules(object obj)
+    {
+        if (obj is not RuleViewModel rule)
+            return false;
+
+        // Apply action filter
+        if (ActionFilter != "all" && !rule.Action.Equals(ActionFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Apply search text filter
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var searchLower = SearchText.ToLowerInvariant();
+            return rule.Id.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   rule.Action.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   rule.Direction.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   rule.Protocol.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   (rule.Process?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.RemoteIp?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.RemotePorts?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.LocalIp?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.LocalPorts?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (rule.Comment?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false);
+        }
+
+        return true;
+    }
+
+    private void RefreshRulesFilter()
+    {
+        _rulesView?.Refresh();
+        OnPropertyChanged(nameof(FilteredRuleCount));
+    }
+
+    partial void OnSearchTextChanged(string value) => RefreshRulesFilter();
+    partial void OnActionFilterChanged(string value) => RefreshRulesFilter();
+
+    /// <summary>
+    /// Clears the search filter.
+    /// </summary>
+    [RelayCommand]
+    private void ClearSearch()
+    {
+        SearchText = "";
+        ActionFilter = "all";
     }
 
     /// <summary>

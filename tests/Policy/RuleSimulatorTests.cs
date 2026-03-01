@@ -86,7 +86,7 @@ public sealed class RuleSimulatorTests
             Action = "allow",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ports = "443" },
+            Remote = new EndpointFilter { Ports = "443" },
             Enabled = true
         });
 
@@ -240,7 +240,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ip = "192.168.1.100" },
+            Remote = new EndpointFilter { Ip = "192.168.1.100" },
             Enabled = true
         });
 
@@ -269,7 +269,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ip = "192.168.1.100" },
+            Remote = new EndpointFilter { Ip = "192.168.1.100" },
             Enabled = true
         });
 
@@ -299,7 +299,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ip = "192.168.1.0/24" },
+            Remote = new EndpointFilter { Ip = "192.168.1.0/24" },
             Enabled = true
         });
 
@@ -328,7 +328,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ip = "192.168.1.0/24" },
+            Remote = new EndpointFilter { Ip = "192.168.1.0/24" },
             Enabled = true
         });
 
@@ -359,7 +359,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ports = "443" },
+            Remote = new EndpointFilter { Ports = "443" },
             Enabled = true
         });
 
@@ -389,7 +389,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ports = "80-443" },
+            Remote = new EndpointFilter { Ports = "80-443" },
             Enabled = true
         });
 
@@ -419,7 +419,7 @@ public sealed class RuleSimulatorTests
             Action = "block",
             Direction = "outbound",
             Protocol = "tcp",
-            Remote = new Endpoint { Ports = "443" },
+            Remote = new EndpointFilter { Ports = "443" },
             Enabled = true
         });
 

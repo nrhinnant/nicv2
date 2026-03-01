@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:WfpTrafficControl.UI.ViewModels"
              xmlns:converters="clr-namespace:WfpTrafficControl.UI.Converters"
+             xmlns:controls="clr-namespace:WfpTrafficControl.UI.Controls"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:BlockRulesViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000"
@@ -61,49 +62,106 @@
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,12">
+                Padding="16,8">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                <!-- Title -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Block Rules"
-                               FontSize="16"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <TextBlock Text="(Policy-Based View)"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
+                <!-- First Row: Title and Actions -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Title -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="Block Rules"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="(Policy-Based View)"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0" />
+                    </StackPanel>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button Content="Refresh"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding RefreshBlockRulesCommand}"
+                                Padding="16,6"
+                                Margin="0,0,8,0" />
+
+                        <Button Content="Copy Rule"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CopyRuleSummaryCommand}"
+                                IsEnabled="{Binding SelectedRule, Converter={StaticResource BoolToVisibility}, ConverterParameter=NotNull}"
+                                Padding="12,6" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Second Row: Search and Filters -->
+                <Grid Grid.Row="1" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MaxWidth="300" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Search Box -->
+                    <controls:SearchFilterControl Grid.Column="0"
+                                                  SearchText="{Binding SearchText, Mode=TwoWay}"
+                                                  Placeholder="Search rules..." />
+
+                    <!-- Direction Filter -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0">
+                        <TextBlock Text="Direction:"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{x:Static vm:BlockRulesViewModel.AvailableDirectionFilters}"
+                                  SelectedValue="{Binding DirectionFilter}"
+                                  Width="100" />
+                    </StackPanel>
+
+                    <!-- Protocol Filter -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0,0,0">
+                        <TextBlock Text="Protocol:"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{x:Static vm:BlockRulesViewModel.AvailableProtocolFilters}"
+                                  SelectedValue="{Binding ProtocolFilter}"
+                                  Width="80" />
+                    </StackPanel>
+
+                    <!-- Filtered Count -->
+                    <TextBlock Grid.Column="3"
+                               HorizontalAlignment="Right"
                                VerticalAlignment="Center"
-                               Margin="8,0,0,0" />
-                </StackPanel>
-
-                <!-- Action Buttons -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="Refresh"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Command="{Binding RefreshBlockRulesCommand}"
-                            Padding="16,6"
-                            Margin="0,0,8,0" />
-
-                    <Button Content="Copy Rule"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{Binding CopyRuleSummaryCommand}"
-                            IsEnabled="{Binding SelectedRule, Converter={StaticResource BoolToVisibility}, ConverterParameter=NotNull}"
-                            Padding="12,6" />
-                </StackPanel>
+                               Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="Showing " />
+                        <Run Text="{Binding FilteredRuleCount, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text=" of " />
+                        <Run Text="{Binding BlockRules.Count, Mode=OneWay}" />
+                        <Run Text=" rules" />
+                    </TextBlock>
+                </Grid>
             </Grid>
         </Border>
 
         <!-- Block Rules Grid -->
         <Border Grid.Row="2" Margin="16" Style="{StaticResource CardStyle}" Padding="0">
             <Grid>
-                <DataGrid ItemsSource="{Binding BlockRules}"
+                <DataGrid ItemsSource="{Binding BlockRulesView}"
                           SelectedItem="{Binding SelectedRule}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"

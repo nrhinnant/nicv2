@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:WfpTrafficControl.UI.ViewModels"
              xmlns:converters="clr-namespace:WfpTrafficControl.UI.Converters"
+             xmlns:controls="clr-namespace:WfpTrafficControl.UI.Controls"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:LogsViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000"
@@ -31,66 +32,123 @@
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
-                Padding="16,12">
+                Padding="16,8">
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                <!-- Filter Options -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <RadioButton Content="Last N entries"
-                                 IsChecked="{Binding UseTailFilter}"
+                <!-- First Row: Load Options and Actions -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Filter Options -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <RadioButton Content="Last N entries"
+                                     IsChecked="{Binding UseTailFilter}"
+                                     VerticalAlignment="Center"
+                                     Margin="0,0,8,0" />
+                        <TextBox Text="{Binding TailCount, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="60"
                                  VerticalAlignment="Center"
-                                 Margin="0,0,8,0" />
-                    <TextBox Text="{Binding TailCount, UpdateSourceTrigger=PropertyChanged}"
-                             Width="60"
-                             VerticalAlignment="Center"
-                             IsEnabled="{Binding UseTailFilter}"
-                             Margin="0,0,24,0" />
+                                 IsEnabled="{Binding UseTailFilter}"
+                                 Margin="0,0,24,0" />
 
-                    <RadioButton Content="Since (minutes)"
-                                 IsChecked="{Binding UseTailFilter, Converter={StaticResource InverseBool}}"
+                        <RadioButton Content="Since (minutes)"
+                                     IsChecked="{Binding UseTailFilter, Converter={StaticResource InverseBool}}"
+                                     VerticalAlignment="Center"
+                                     Margin="0,0,8,0" />
+                        <TextBox Text="{Binding SinceMinutes, UpdateSourceTrigger=PropertyChanged}"
+                                 Width="60"
                                  VerticalAlignment="Center"
-                                 Margin="0,0,8,0" />
-                    <TextBox Text="{Binding SinceMinutes, UpdateSourceTrigger=PropertyChanged}"
-                             Width="60"
-                             VerticalAlignment="Center"
-                             IsEnabled="{Binding UseTailFilter, Converter={StaticResource InverseBool}}"
-                             Margin="0,0,16,0" />
-                </StackPanel>
+                                 IsEnabled="{Binding UseTailFilter, Converter={StaticResource InverseBool}}"
+                                 Margin="0,0,16,0" />
+                    </StackPanel>
 
-                <!-- Action Buttons -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="Refresh"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Command="{Binding RefreshLogsCommand}"
-                            Padding="16,6"
-                            Margin="0,0,8,0" />
+                    <!-- Action Buttons -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="Refresh"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding RefreshLogsCommand}"
+                                Padding="16,6"
+                                Margin="0,0,8,0" />
 
-                    <Button Content="Clear Filter"
+                        <Button Content="Clear Filter"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding ClearFilterCommand}"
+                                Padding="12,6"
+                                Margin="0,0,8,0" />
+                    </StackPanel>
+
+                    <!-- Export Button -->
+                    <Button Grid.Column="3"
+                            Content="Export to CSV"
                             Style="{StaticResource SecondaryButtonStyle}"
-                            Command="{Binding ClearFilterCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0" />
-                </StackPanel>
+                            Command="{Binding ExportToCsvCommand}"
+                            Padding="12,6" />
+                </Grid>
 
-                <!-- Export Button -->
-                <Button Grid.Column="3"
-                        Content="Export to CSV"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Command="{Binding ExportToCsvCommand}"
-                        Padding="12,6" />
+                <!-- Second Row: Search and Filter -->
+                <Grid Grid.Row="1" Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MaxWidth="300" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Search Box -->
+                    <controls:SearchFilterControl Grid.Column="0"
+                                                  SearchText="{Binding SearchText, Mode=TwoWay}"
+                                                  Placeholder="Search logs..." />
+
+                    <!-- Event Filter -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="16,0,0,0">
+                        <TextBlock Text="Event:"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{x:Static vm:LogsViewModel.AvailableEventFilters}"
+                                  SelectedValue="{Binding EventFilter}"
+                                  Width="100" />
+                    </StackPanel>
+
+                    <!-- Status Filter -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="16,0,0,0">
+                        <TextBlock Text="Status:"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{x:Static vm:LogsViewModel.AvailableStatusFilters}"
+                                  SelectedValue="{Binding StatusFilter}"
+                                  Width="100" />
+                    </StackPanel>
+
+                    <!-- Filtered Count -->
+                    <TextBlock Grid.Column="3"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}">
+                        <Run Text="Showing " />
+                        <Run Text="{Binding FilteredLogCount, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text=" of " />
+                        <Run Text="{Binding LogEntries.Count, Mode=OneWay}" />
+                        <Run Text=" entries" />
+                    </TextBlock>
+                </Grid>
             </Grid>
         </Border>
 
         <!-- Log Entries Grid -->
         <Border Grid.Row="1" Margin="16" Style="{StaticResource CardStyle}" Padding="0">
             <Grid>
-                <DataGrid ItemsSource="{Binding LogEntries}"
+                <DataGrid ItemsSource="{Binding LogEntriesView}"
                           SelectedItem="{Binding SelectedEntry}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"

@@ -5,6 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:WfpTrafficControl.UI.ViewModels"
              xmlns:converters="clr-namespace:WfpTrafficControl.UI.Converters"
+             xmlns:controls="clr-namespace:WfpTrafficControl.UI.Controls"
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:PolicyEditorViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000"
@@ -352,20 +353,48 @@
                             </Grid>
                         </Border>
 
-                        <!-- Rules Header -->
+                        <!-- Rules Header with Search -->
                         <Border Grid.Row="1"
-                                Background="#F8F8F8"
-                                Padding="12,8">
-                            <TextBlock FontWeight="SemiBold">
-                                <Run Text="Rules (" />
-                                <Run Text="{Binding Rules.Count, Mode=OneWay}" />
-                                <Run Text=")" />
-                            </TextBlock>
+                                Background="{DynamicResource CardBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="0,0,0,1"
+                                Padding="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Rules Count and Filter -->
+                                <Grid Grid.Row="0" Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" FontWeight="SemiBold" VerticalAlignment="Center">
+                                        <Run Text="Rules (" />
+                                        <Run Text="{Binding FilteredRuleCount, Mode=OneWay}" />
+                                        <Run Text="/" />
+                                        <Run Text="{Binding Rules.Count, Mode=OneWay}" />
+                                        <Run Text=")" />
+                                    </TextBlock>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{x:Static vm:PolicyEditorViewModel.AvailableActionFilters}"
+                                              SelectedValue="{Binding ActionFilter}"
+                                              Width="70"
+                                              ToolTip="Filter by action" />
+                                </Grid>
+
+                                <!-- Search Box -->
+                                <controls:SearchFilterControl Grid.Row="1"
+                                                              SearchText="{Binding SearchText, Mode=TwoWay}"
+                                                              Placeholder="Search rules..." />
+                            </Grid>
                         </Border>
 
                         <!-- Rules List -->
                         <ListBox Grid.Row="2"
-                                 ItemsSource="{Binding Rules}"
+                                 ItemsSource="{Binding RulesView}"
                                  SelectedItem="{Binding SelectedRule}"
                                  Style="{StaticResource RulesListBoxStyle}">
                             <ListBox.ItemTemplate>

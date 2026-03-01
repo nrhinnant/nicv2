@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using WfpTrafficControl.Shared.Ipc;
@@ -45,11 +47,90 @@ public partial class LogsViewModel : ObservableObject
     [ObservableProperty]
     private AuditLogEntryDto? _selectedEntry;
 
+    // Search/Filter
+    [ObservableProperty]
+    private string _searchText = "";
+
+    [ObservableProperty]
+    private string _eventFilter = "all";
+
+    [ObservableProperty]
+    private string _statusFilter = "all";
+
+    private ICollectionView? _logEntriesView;
+
     public LogsViewModel(IServiceClient serviceClient, IDialogService dialogService)
     {
         _serviceClient = serviceClient;
         _dialogService = dialogService;
+
+        SetupLogEntriesView();
     }
+
+    /// <summary>
+    /// Gets the filtered view of log entries for data binding.
+    /// </summary>
+    public ICollectionView LogEntriesView => _logEntriesView ??= SetupLogEntriesView();
+
+    /// <summary>
+    /// Gets the count of visible (filtered) log entries.
+    /// </summary>
+    public int FilteredLogCount => _logEntriesView?.Cast<object>().Count() ?? LogEntries.Count;
+
+    /// <summary>
+    /// Available event type filters.
+    /// </summary>
+    public static string[] AvailableEventFilters => new[] { "all", "apply", "rollback", "startup", "shutdown" };
+
+    /// <summary>
+    /// Available status filters.
+    /// </summary>
+    public static string[] AvailableStatusFilters => new[] { "all", "success", "failure" };
+
+    private ICollectionView SetupLogEntriesView()
+    {
+        _logEntriesView = CollectionViewSource.GetDefaultView(LogEntries);
+        _logEntriesView.Filter = FilterLogEntries;
+        return _logEntriesView;
+    }
+
+    private bool FilterLogEntries(object obj)
+    {
+        if (obj is not AuditLogEntryDto entry)
+            return false;
+
+        // Apply event filter
+        if (EventFilter != "all" && !entry.Event.Contains(EventFilter, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        // Apply status filter
+        if (StatusFilter != "all" && !(entry.Status?.Equals(StatusFilter, StringComparison.OrdinalIgnoreCase) ?? false))
+            return false;
+
+        // Apply search text filter
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var searchLower = SearchText.ToLowerInvariant();
+            return entry.Timestamp.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   entry.Event.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ||
+                   (entry.Source?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (entry.Status?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (entry.PolicyVersion?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                   (entry.ErrorMessage?.Contains(searchLower, StringComparison.OrdinalIgnoreCase) ?? false);
+        }
+
+        return true;
+    }
+
+    private void RefreshLogEntriesFilter()
+    {
+        _logEntriesView?.Refresh();
+        OnPropertyChanged(nameof(FilteredLogCount));
+    }
+
+    partial void OnSearchTextChanged(string value) => RefreshLogEntriesFilter();
+    partial void OnEventFilterChanged(string value) => RefreshLogEntriesFilter();
+    partial void OnStatusFilterChanged(string value) => RefreshLogEntriesFilter();
 
     /// <summary>
     /// Initializes the logs view by loading initial data.
@@ -176,6 +257,9 @@ public partial class LogsViewModel : ObservableObject
         UseTailFilter = true;
         TailCount = 50;
         SinceMinutes = 0;
+        SearchText = "";
+        EventFilter = "all";
+        StatusFilter = "all";
     }
 
     private static string CsvEscape(string value)
