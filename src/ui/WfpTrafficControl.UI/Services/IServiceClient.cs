@@ -51,4 +51,15 @@ public interface IServiceClient
     /// </summary>
     /// <param name="policyJson">The policy JSON to validate.</param>
     Task<Result<ValidateResponse>> ValidateAsync(string policyJson, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sets (enables or disables) file watching for hot reload.
+    /// </summary>
+    /// <param name="policyPath">Path to watch, or null to disable watching.</param>
+    Task<Result<WatchSetResponse>> WatchSetAsync(string? policyPath, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the current file watch status.
+    /// </summary>
+    Task<Result<WatchStatusResponse>> WatchStatusAsync(CancellationToken ct = default);
 }

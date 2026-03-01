@@ -289,4 +289,122 @@ public class DashboardViewModelTests
         Assert.True(wasLoading);
         Assert.False(_viewModel.IsLoading); // Should be false after completion
     }
+
+    // ===== Hot Reload (Watch) Tests =====
+
+    [Fact]
+    public async Task RefreshStatusAsyncCallsWatchStatus()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+
+        // Act
+        await _viewModel.RefreshStatusAsync();
+
+        // Assert
+        Assert.Equal(1, _mockService.WatchStatusCallCount);
+    }
+
+    [Fact]
+    public async Task RefreshStatusAsyncWhenWatchingUpdatesWatchStatus()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.WatchIsWatching = true;
+        _mockService.WatchPolicyPath = @"C:\test\policy.json";
+        _mockService.WatchApplyCount = 5;
+        _mockService.WatchErrorCount = 1;
+
+        // Act
+        await _viewModel.RefreshStatusAsync();
+
+        // Assert
+        Assert.True(_viewModel.IsWatching);
+        Assert.Equal(@"C:\test\policy.json", _viewModel.WatchedFilePath);
+        Assert.Equal(5, _viewModel.WatchApplyCount);
+        Assert.Equal(1, _viewModel.WatchErrorCount);
+    }
+
+    [Fact]
+    public async Task EnableWatchCommandWhenUserCancelsDoesNotEnable()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockDialog.OpenFileResult = null; // User cancels
+
+        // Act
+        await _viewModel.EnableWatchCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.WatchSetCallCount);
+    }
+
+    [Fact]
+    public async Task EnableWatchCommandWhenSuccessfulShowsSuccessDialog()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = true;
+        _mockDialog.OpenFileResult = @"C:\test\policy.json";
+
+        // Act
+        await _viewModel.EnableWatchCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.WatchSetCallCount);
+        Assert.Equal(@"C:\test\policy.json", _mockService.LastWatchSetPath);
+        Assert.Equal(1, _mockDialog.SuccessCount);
+        Assert.True(_viewModel.IsWatching);
+    }
+
+    [Fact]
+    public async Task DisableWatchCommandWhenNotWatchingDoesNothing()
+    {
+        // Arrange
+        _viewModel.GetType().GetProperty("IsWatching")?.SetValue(_viewModel, false);
+
+        // Act
+        await _viewModel.DisableWatchCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.WatchSetCallCount);
+    }
+
+    [Fact]
+    public async Task DisableWatchCommandWhenUserCancelsDoesNotDisable()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.WatchIsWatching = true;
+        _mockService.WatchPolicyPath = @"C:\test\policy.json";
+        await _viewModel.RefreshStatusAsync(); // Set IsWatching to true
+        _mockDialog.ConfirmResult = false; // User cancels
+
+        // Act
+        await _viewModel.DisableWatchCommand.ExecuteAsync(null);
+
+        // Assert - WatchSetCallCount should still be 0 (only called during enable, not disable cancel)
+        Assert.True(_viewModel.IsWatching); // Should still be watching
+    }
+
+    [Fact]
+    public async Task DisableWatchCommandWhenSuccessfulShowsSuccessDialog()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = true;
+        _mockService.WatchIsWatching = true;
+        _mockService.WatchPolicyPath = @"C:\test\policy.json";
+        await _viewModel.RefreshStatusAsync(); // Set IsWatching to true
+        _mockDialog.ConfirmResult = true;
+
+        // Act
+        await _viewModel.DisableWatchCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.WatchSetCallCount);
+        Assert.Null(_mockService.LastWatchSetPath); // Should pass null to disable
+        Assert.Equal(1, _mockDialog.SuccessCount);
+        Assert.False(_viewModel.IsWatching);
+    }
 }

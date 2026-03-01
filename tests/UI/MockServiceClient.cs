@@ -35,6 +35,14 @@ public class MockServiceClient : IServiceClient
     public int? LastLogsTail { get; set; }
     public int? LastLogsSinceMinutes { get; set; }
 
+    // Watch Configuration
+    public bool WatchIsWatching { get; set; } = false;
+    public string? WatchPolicyPath { get; set; }
+    public int WatchApplyCount { get; set; } = 0;
+    public int WatchErrorCount { get; set; } = 0;
+    public string? WatchLastError { get; set; }
+    public string? LastWatchSetPath { get; set; }
+
     // Call tracking
     public int PingCallCount { get; private set; }
     public int ApplyCallCount { get; private set; }
@@ -43,6 +51,8 @@ public class MockServiceClient : IServiceClient
     public int RevertToLkgCallCount { get; private set; }
     public int GetLogsCallCount { get; private set; }
     public int ValidateCallCount { get; private set; }
+    public int WatchSetCallCount { get; private set; }
+    public int WatchStatusCallCount { get; private set; }
     public string? LastApplyPath { get; private set; }
     public string? LastValidateJson { get; private set; }
 
@@ -215,6 +225,66 @@ public class MockServiceClient : IServiceClient
         }));
     }
 
+    public Task<Result<WatchSetResponse>> WatchSetAsync(string? policyPath, CancellationToken ct = default)
+    {
+        WatchSetCallCount++;
+        LastWatchSetPath = policyPath;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<WatchSetResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        // Simulate enabling/disabling watch
+        if (policyPath != null)
+        {
+            WatchIsWatching = true;
+            WatchPolicyPath = policyPath;
+        }
+        else
+        {
+            WatchIsWatching = false;
+            WatchPolicyPath = null;
+        }
+
+        return Task.FromResult(Result<WatchSetResponse>.Success(new WatchSetResponse
+        {
+            Ok = ShouldSucceed,
+            Watching = WatchIsWatching,
+            PolicyPath = WatchPolicyPath,
+            InitialApplySuccess = ShouldSucceed,
+            Warning = null,
+            Error = ShouldSucceed ? null : ErrorMessage
+        }));
+    }
+
+    public Task<Result<WatchStatusResponse>> WatchStatusAsync(CancellationToken ct = default)
+    {
+        WatchStatusCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<WatchStatusResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        return Task.FromResult(Result<WatchStatusResponse>.Success(new WatchStatusResponse
+        {
+            Ok = true,
+            Watching = WatchIsWatching,
+            PolicyPath = WatchPolicyPath,
+            DebounceMs = 2000,
+            LastApplyTime = WatchIsWatching ? DateTime.UtcNow.ToString("o") : null,
+            LastError = WatchLastError,
+            LastErrorTime = WatchLastError != null ? DateTime.UtcNow.ToString("o") : null,
+            ApplyCount = WatchApplyCount,
+            ErrorCount = WatchErrorCount
+        }));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -224,9 +294,12 @@ public class MockServiceClient : IServiceClient
         RevertToLkgCallCount = 0;
         GetLogsCallCount = 0;
         ValidateCallCount = 0;
+        WatchSetCallCount = 0;
+        WatchStatusCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;
         LastLogsSinceMinutes = null;
+        LastWatchSetPath = null;
     }
 }

@@ -75,6 +75,19 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<ValidateRequest, ValidateResponse>(request, ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<WatchSetResponse>> WatchSetAsync(string? policyPath, CancellationToken ct = default)
+    {
+        var request = new WatchSetRequest { PolicyPath = policyPath };
+        return await SendRequestAsync<WatchSetRequest, WatchSetResponse>(request, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<WatchStatusResponse>> WatchStatusAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<WatchStatusRequest, WatchStatusResponse>(new WatchStatusRequest(), ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

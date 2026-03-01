@@ -53,6 +53,28 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private int _lkgRuleCount;
 
+    // Hot Reload (File Watch) Status
+    [ObservableProperty]
+    private bool _isWatching;
+
+    [ObservableProperty]
+    private string _watchStatusText = "Not watching";
+
+    [ObservableProperty]
+    private string _watchedFilePath = "";
+
+    [ObservableProperty]
+    private int _watchApplyCount;
+
+    [ObservableProperty]
+    private int _watchErrorCount;
+
+    [ObservableProperty]
+    private string _watchLastError = "";
+
+    [ObservableProperty]
+    private bool _isSettingWatch;
+
     // Loading States
     [ObservableProperty]
     private bool _isLoading;
@@ -109,6 +131,9 @@ public partial class DashboardViewModel : ObservableObject
 
                 // Get LKG status
                 await RefreshLkgStatusAsync();
+
+                // Get watch status
+                await RefreshWatchStatusAsync();
 
                 // Get recent audit logs
                 await RefreshRecentActivityAsync();
@@ -167,6 +192,145 @@ public partial class DashboardViewModel : ObservableObject
         {
             HasLkg = false;
             LkgStatusText = "Unknown";
+        }
+    }
+
+    private async Task RefreshWatchStatusAsync()
+    {
+        var watchResult = await _serviceClient.WatchStatusAsync();
+
+        if (watchResult.IsSuccess && watchResult.Value.Ok)
+        {
+            var status = watchResult.Value;
+            IsWatching = status.Watching;
+            WatchedFilePath = status.PolicyPath ?? "";
+            WatchApplyCount = status.ApplyCount;
+            WatchErrorCount = status.ErrorCount;
+            WatchLastError = status.LastError ?? "";
+
+            if (status.Watching)
+            {
+                WatchStatusText = $"Watching ({status.ApplyCount} applies, {status.ErrorCount} errors)";
+            }
+            else
+            {
+                WatchStatusText = "Not watching";
+            }
+        }
+        else
+        {
+            IsWatching = false;
+            WatchStatusText = "Unknown";
+        }
+    }
+
+    /// <summary>
+    /// Enables file watching for hot reload.
+    /// </summary>
+    [RelayCommand]
+    private async Task EnableWatchAsync()
+    {
+        var filePath = _dialogService.ShowOpenFileDialog(
+            "JSON files (*.json)|*.json|All files (*.*)|*.*",
+            "Select Policy File to Watch");
+
+        if (string.IsNullOrEmpty(filePath))
+            return;
+
+        IsSettingWatch = true;
+
+        try
+        {
+            var result = await _serviceClient.WatchSetAsync(filePath);
+
+            if (result.IsSuccess && result.Value.Ok)
+            {
+                var response = result.Value;
+                IsWatching = response.Watching;
+                WatchedFilePath = response.PolicyPath ?? "";
+
+                if (response.Watching)
+                {
+                    var message = $"Hot reload enabled!\n\nWatching: {response.PolicyPath}";
+                    if (!response.InitialApplySuccess)
+                    {
+                        message += "\n\nWarning: Initial policy apply failed. Fix the policy file and save to trigger reload.";
+                    }
+                    if (!string.IsNullOrEmpty(response.Warning))
+                    {
+                        message += $"\n\nWarning: {response.Warning}";
+                    }
+
+                    _dialogService.ShowSuccess(message, "Hot Reload Enabled");
+                    await RefreshWatchStatusAsync();
+                    await RefreshRecentActivityAsync();
+                    RaiseStatusUpdated();
+                }
+            }
+            else
+            {
+                var errorMsg = result.IsFailure
+                    ? result.Error.Message
+                    : result.Value.Error ?? "Unknown error";
+                _dialogService.ShowError($"Failed to enable hot reload:\n\n{errorMsg}", "Hot Reload Failed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Error enabling hot reload:\n\n{ex.Message}", "Error");
+        }
+        finally
+        {
+            IsSettingWatch = false;
+        }
+    }
+
+    /// <summary>
+    /// Disables file watching.
+    /// </summary>
+    [RelayCommand]
+    private async Task DisableWatchAsync()
+    {
+        if (!IsWatching)
+            return;
+
+        if (!_dialogService.Confirm(
+                $"Disable hot reload?\n\nCurrently watching:\n{WatchedFilePath}",
+                "Confirm Disable"))
+        {
+            return;
+        }
+
+        IsSettingWatch = true;
+
+        try
+        {
+            var result = await _serviceClient.WatchSetAsync(null);
+
+            if (result.IsSuccess && result.Value.Ok)
+            {
+                IsWatching = false;
+                WatchedFilePath = "";
+                WatchStatusText = "Not watching";
+
+                _dialogService.ShowSuccess("Hot reload disabled.", "Hot Reload Disabled");
+                RaiseStatusUpdated();
+            }
+            else
+            {
+                var errorMsg = result.IsFailure
+                    ? result.Error.Message
+                    : result.Value.Error ?? "Unknown error";
+                _dialogService.ShowError($"Failed to disable hot reload:\n\n{errorMsg}", "Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Error disabling hot reload:\n\n{ex.Message}", "Error");
+        }
+        finally
+        {
+            IsSettingWatch = false;
         }
     }
 

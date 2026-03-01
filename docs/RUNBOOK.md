@@ -207,6 +207,7 @@ The WfpTrafficControl UI is a WPF desktop application providing a graphical inte
 #### Dashboard Tab
 - **System Status Cards** — View service connection state, active filter count, current policy version, and LKG status at a glance
 - **Quick Actions** — One-click buttons to apply a policy file, rollback all filters, or revert to the last known good policy
+- **Hot Reload Section** — Enable/disable file watching for automatic policy reload when the policy file changes (useful for development)
 - **Recent Activity** — Table showing recent audit log entries (apply, rollback, revert operations with timestamps and filter counts)
 
 #### Policy Editor Tab
