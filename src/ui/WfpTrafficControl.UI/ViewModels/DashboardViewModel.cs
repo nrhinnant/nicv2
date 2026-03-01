@@ -88,6 +88,12 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isRevertingToLkg;
 
+    [ObservableProperty]
+    private bool _isBootstrapping;
+
+    [ObservableProperty]
+    private bool _isTearingDown;
+
     // Recent Activity
     [ObservableProperty]
     private ObservableCollection<AuditLogEntryDto> _recentActivity = new();
@@ -331,6 +337,122 @@ public partial class DashboardViewModel : ObservableObject
         finally
         {
             IsSettingWatch = false;
+        }
+    }
+
+    /// <summary>
+    /// Initializes WFP provider and sublayer.
+    /// </summary>
+    [RelayCommand]
+    private async Task BootstrapAsync()
+    {
+        if (!_dialogService.Confirm(
+                "Initialize WFP infrastructure?\n\n" +
+                "This creates the WFP provider and sublayer if they don't exist.\n" +
+                "This is normally done automatically when the service starts.",
+                "Confirm Bootstrap"))
+        {
+            return;
+        }
+
+        IsBootstrapping = true;
+
+        try
+        {
+            var result = await _serviceClient.BootstrapAsync();
+
+            if (result.IsSuccess && result.Value.Ok)
+            {
+                var response = result.Value;
+                var message = "WFP infrastructure initialized.\n\n";
+                message += response.ProviderExists ? "Provider: exists\n" : "Provider: created\n";
+                message += response.SublayerExists ? "Sublayer: exists" : "Sublayer: created";
+
+                _dialogService.ShowSuccess(message, "Bootstrap Complete");
+                await RefreshStatusAsync();
+            }
+            else
+            {
+                var errorMsg = result.IsFailure
+                    ? result.Error.Message
+                    : result.Value.Error ?? "Unknown error";
+                _dialogService.ShowError($"Bootstrap failed:\n\n{errorMsg}", "Bootstrap Failed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Error during bootstrap:\n\n{ex.Message}", "Error");
+        }
+        finally
+        {
+            IsBootstrapping = false;
+        }
+    }
+
+    /// <summary>
+    /// Removes all WFP objects (emergency recovery).
+    /// </summary>
+    [RelayCommand]
+    private async Task TeardownAsync()
+    {
+        if (!_dialogService.ConfirmWarning(
+                "DANGER: Remove ALL WFP objects?\n\n" +
+                "This will:\n" +
+                "- Remove all firewall filters\n" +
+                "- Delete the WFP sublayer\n" +
+                "- Delete the WFP provider\n\n" +
+                "Use this only for emergency recovery.\n" +
+                "All traffic will be unfiltered afterward.",
+                "Confirm Teardown"))
+        {
+            return;
+        }
+
+        // Second confirmation for this dangerous operation
+        if (!_dialogService.ConfirmWarning(
+                "Are you absolutely sure?\n\n" +
+                "This operation cannot be undone.\n" +
+                "You will need to apply a policy to restore filtering.",
+                "Final Confirmation"))
+        {
+            return;
+        }
+
+        IsTearingDown = true;
+
+        try
+        {
+            var result = await _serviceClient.TeardownAsync();
+
+            if (result.IsSuccess && result.Value.Ok)
+            {
+                var response = result.Value;
+                FilterCount = 0;
+                PolicyVersion = "No policy applied";
+                HasPolicyApplied = false;
+
+                var message = "WFP teardown complete.\n\n";
+                message += response.ProviderRemoved ? "Provider: removed\n" : "Provider: not found\n";
+                message += response.SublayerRemoved ? "Sublayer: removed" : "Sublayer: not found";
+
+                _dialogService.ShowSuccess(message, "Teardown Complete");
+                await RefreshStatusAsync();
+            }
+            else
+            {
+                var errorMsg = result.IsFailure
+                    ? result.Error.Message
+                    : result.Value.Error ?? "Unknown error";
+                _dialogService.ShowError($"Teardown failed:\n\n{errorMsg}", "Teardown Failed");
+            }
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Error during teardown:\n\n{ex.Message}", "Error");
+        }
+        finally
+        {
+            IsTearingDown = false;
         }
     }
 

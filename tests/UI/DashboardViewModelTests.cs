@@ -407,4 +407,134 @@ public class DashboardViewModelTests
         Assert.Equal(1, _mockDialog.SuccessCount);
         Assert.False(_viewModel.IsWatching);
     }
+
+    // ===== Bootstrap/Teardown Tests =====
+
+    [Fact]
+    public async Task BootstrapCommandWhenUserCancelsDoesNotBootstrap()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockDialog.ConfirmResult = false; // User cancels
+
+        // Act
+        await _viewModel.BootstrapCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.BootstrapCallCount);
+    }
+
+    [Fact]
+    public async Task BootstrapCommandWhenSuccessfulShowsSuccessDialog()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = true;
+        _mockService.BootstrapProviderExists = false; // Will show "created"
+        _mockService.BootstrapSublayerExists = false; // Will show "created"
+        _mockDialog.ConfirmResult = true;
+
+        // Act
+        await _viewModel.BootstrapCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.BootstrapCallCount);
+        Assert.Equal(1, _mockDialog.SuccessCount);
+        Assert.Contains("created", _mockDialog.LastSuccessMessage);
+    }
+
+    [Fact]
+    public async Task BootstrapCommandShowsExistsWhenAlreadyInitialized()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = true;
+        _mockService.BootstrapProviderExists = true;
+        _mockService.BootstrapSublayerExists = true;
+        _mockDialog.ConfirmResult = true;
+
+        // Act
+        await _viewModel.BootstrapCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.BootstrapCallCount);
+        Assert.Equal(1, _mockDialog.SuccessCount);
+        Assert.Contains("exists", _mockDialog.LastSuccessMessage);
+    }
+
+    [Fact]
+    public async Task TeardownCommandRequiresDoubleConfirmation()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = true;
+        // First confirmation: yes, Second confirmation: no
+        _mockDialog.ConfirmWarningResults = new Queue<bool>(new[] { true, false });
+
+        // Act
+        await _viewModel.TeardownCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.TeardownCallCount); // Should not call service
+        Assert.Equal(2, _mockDialog.ConfirmWarningCount); // But should ask twice
+    }
+
+    [Fact]
+    public async Task TeardownCommandWhenUserCancelsFirstDoesNotTeardown()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockDialog.ConfirmWarningResults = new Queue<bool>(new[] { false }); // Cancel first
+
+        // Act
+        await _viewModel.TeardownCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.TeardownCallCount);
+        Assert.Equal(1, _mockDialog.ConfirmWarningCount);
+    }
+
+    [Fact]
+    public async Task TeardownCommandWhenSuccessfulClearsState()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = true;
+        _mockService.TeardownProviderRemoved = true;
+        _mockService.TeardownSublayerRemoved = true;
+        _mockService.LogEntryCount = 0; // No logs so RefreshStatusAsync doesn't restore FilterCount
+        _mockDialog.ConfirmWarningResults = new Queue<bool>(new[] { true, true }); // Confirm both
+
+        // Set initial state
+        _viewModel.GetType().GetProperty("FilterCount")?.SetValue(_viewModel, 10);
+        _viewModel.GetType().GetProperty("HasPolicyApplied")?.SetValue(_viewModel, true);
+
+        // Act
+        await _viewModel.TeardownCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.TeardownCallCount);
+        Assert.Equal(1, _mockDialog.SuccessCount);
+        Assert.Equal(0, _viewModel.FilterCount);
+        Assert.False(_viewModel.HasPolicyApplied);
+        Assert.Contains("removed", _mockDialog.LastSuccessMessage);
+    }
+
+    [Fact]
+    public async Task TeardownCommandWhenFailsShowsError()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ShouldSucceed = false;
+        _mockService.ErrorMessage = "Access denied";
+        _mockDialog.ConfirmWarningResults = new Queue<bool>(new[] { true, true });
+
+        // Act
+        await _viewModel.TeardownCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.TeardownCallCount);
+        Assert.Equal(1, _mockDialog.ErrorCount);
+        Assert.Contains("Access denied", _mockDialog.LastErrorMessage);
+    }
 }

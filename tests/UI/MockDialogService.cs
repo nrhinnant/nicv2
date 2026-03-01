@@ -12,6 +12,9 @@ public class MockDialogService : IDialogService
     public string? OpenFileResult { get; set; } = @"C:\test\policy.json";
     public string? SaveFileResult { get; set; } = @"C:\test\saved-policy.json";
 
+    // Queue-based results for testing multiple sequential confirmations
+    public Queue<bool>? ConfirmWarningResults { get; set; }
+
     // Call tracking
     public int SuccessCount { get; private set; }
     public int ErrorCount { get; private set; }
@@ -61,6 +64,13 @@ public class MockDialogService : IDialogService
     {
         ConfirmWarningCount++;
         LastConfirmMessage = message;
+
+        // Use queue if provided, otherwise fall back to default
+        if (ConfirmWarningResults != null && ConfirmWarningResults.Count > 0)
+        {
+            return ConfirmWarningResults.Dequeue();
+        }
+
         return ConfirmResult;
     }
 
@@ -90,5 +100,6 @@ public class MockDialogService : IDialogService
         LastErrorMessage = null;
         LastWarningMessage = null;
         LastConfirmMessage = null;
+        ConfirmWarningResults = null;
     }
 }

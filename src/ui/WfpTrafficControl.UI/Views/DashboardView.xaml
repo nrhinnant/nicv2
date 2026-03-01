@@ -22,6 +22,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
@@ -285,8 +286,50 @@
                 </Border>
             </Grid>
 
+            <!-- Maintenance Section -->
+            <Expander Grid.Row="4"
+                      Header="Maintenance (Advanced)"
+                      Margin="0,0,0,24"
+                      IsExpanded="False">
+                <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
+                    <StackPanel>
+                        <TextBlock Text="These commands are for troubleshooting and emergency recovery."
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   FontSize="12"
+                                   Margin="0,0,0,16" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Re-initialize WFP"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding BootstrapCommand}"
+                                    IsEnabled="{Binding IsConnected}"
+                                    ToolTip="Ensure WFP provider and sublayer are created"
+                                    Margin="0,0,12,0" />
+
+                            <Button Content="Teardown All"
+                                    Style="{StaticResource DangerButtonStyle}"
+                                    Command="{Binding TeardownCommand}"
+                                    IsEnabled="{Binding IsConnected}"
+                                    ToolTip="Remove all WFP objects (emergency recovery)" />
+
+                            <TextBlock Text="Initializing..."
+                                       VerticalAlignment="Center"
+                                       Margin="16,0,0,0"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Visibility="{Binding IsBootstrapping, Converter={StaticResource BoolToVisibility}}" />
+
+                            <TextBlock Text="Tearing down..."
+                                       VerticalAlignment="Center"
+                                       Margin="16,0,0,0"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Visibility="{Binding IsTearingDown, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Expander>
+
             <!-- Recent Activity -->
-            <Grid Grid.Row="4" Margin="0,8,0,0">
+            <Grid Grid.Row="5" Margin="0,8,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -347,7 +390,7 @@
             </Grid>
 
             <!-- Loading Overlay -->
-            <Border Grid.RowSpan="5"
+            <Border Grid.RowSpan="6"
                     Background="#80FFFFFF"
                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">

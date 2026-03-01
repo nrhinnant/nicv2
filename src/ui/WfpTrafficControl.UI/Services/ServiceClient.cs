@@ -88,6 +88,18 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<WatchStatusRequest, WatchStatusResponse>(new WatchStatusRequest(), ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<BootstrapResponse>> BootstrapAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<BootstrapRequest, BootstrapResponse>(new BootstrapRequest(), ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<TeardownResponse>> TeardownAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<TeardownRequest, TeardownResponse>(new TeardownRequest(), ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

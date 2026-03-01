@@ -62,4 +62,14 @@ public interface IServiceClient
     /// Gets the current file watch status.
     /// </summary>
     Task<Result<WatchStatusResponse>> WatchStatusAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Ensures WFP provider and sublayer are initialized.
+    /// </summary>
+    Task<Result<BootstrapResponse>> BootstrapAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes all WFP objects (provider, sublayer, filters). Emergency recovery.
+    /// </summary>
+    Task<Result<TeardownResponse>> TeardownAsync(CancellationToken ct = default);
 }

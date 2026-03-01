@@ -43,6 +43,12 @@ public class MockServiceClient : IServiceClient
     public string? WatchLastError { get; set; }
     public string? LastWatchSetPath { get; set; }
 
+    // Bootstrap/Teardown Configuration
+    public bool BootstrapProviderExists { get; set; } = true;
+    public bool BootstrapSublayerExists { get; set; } = true;
+    public bool TeardownProviderRemoved { get; set; } = true;
+    public bool TeardownSublayerRemoved { get; set; } = true;
+
     // Call tracking
     public int PingCallCount { get; private set; }
     public int ApplyCallCount { get; private set; }
@@ -53,6 +59,8 @@ public class MockServiceClient : IServiceClient
     public int ValidateCallCount { get; private set; }
     public int WatchSetCallCount { get; private set; }
     public int WatchStatusCallCount { get; private set; }
+    public int BootstrapCallCount { get; private set; }
+    public int TeardownCallCount { get; private set; }
     public string? LastApplyPath { get; private set; }
     public string? LastValidateJson { get; private set; }
 
@@ -285,6 +293,46 @@ public class MockServiceClient : IServiceClient
         }));
     }
 
+    public Task<Result<BootstrapResponse>> BootstrapAsync(CancellationToken ct = default)
+    {
+        BootstrapCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<BootstrapResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        return Task.FromResult(Result<BootstrapResponse>.Success(new BootstrapResponse
+        {
+            Ok = ShouldSucceed,
+            ProviderExists = BootstrapProviderExists,
+            SublayerExists = BootstrapSublayerExists,
+            Error = ShouldSucceed ? null : ErrorMessage
+        }));
+    }
+
+    public Task<Result<TeardownResponse>> TeardownAsync(CancellationToken ct = default)
+    {
+        TeardownCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<TeardownResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        return Task.FromResult(Result<TeardownResponse>.Success(new TeardownResponse
+        {
+            Ok = ShouldSucceed,
+            ProviderRemoved = TeardownProviderRemoved,
+            SublayerRemoved = TeardownSublayerRemoved,
+            Error = ShouldSucceed ? null : ErrorMessage
+        }));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -296,6 +344,8 @@ public class MockServiceClient : IServiceClient
         ValidateCallCount = 0;
         WatchSetCallCount = 0;
         WatchStatusCallCount = 0;
+        BootstrapCallCount = 0;
+        TeardownCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;
