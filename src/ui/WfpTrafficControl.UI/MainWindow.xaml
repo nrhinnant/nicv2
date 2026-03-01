@@ -12,7 +12,7 @@
         Height="700" Width="1000"
         MinHeight="500" MinWidth="800"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource BackgroundBrush}"
+        Background="{DynamicResource BackgroundBrush}"
         Loaded="Window_Loaded">
 
     <Window.Resources>
@@ -34,8 +34,8 @@
 
         <!-- Header -->
         <Border Grid.Row="0"
-                Background="{StaticResource CardBackgroundBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="16,12">
             <Grid>
@@ -46,20 +46,27 @@
 
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <TextBlock Text="WFP Traffic Control"
-                               Style="{StaticResource HeaderTextStyle}"
+                               Style="{DynamicResource HeaderTextStyle}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="Administrator"
-                               Foreground="{StaticResource WarningBrush}"
+                               Foreground="{DynamicResource WarningBrush}"
                                FontSize="11"
                                VerticalAlignment="Center"
                                Margin="12,0,0,0" />
                 </StackPanel>
 
-                <Button Grid.Column="1"
-                        Content="Refresh"
-                        Style="{StaticResource SecondaryButtonStyle}"
-                        Command="{Binding RefreshStatusCommand}"
-                        Padding="12,6" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="{Binding ThemeButtonText}"
+                            Style="{DynamicResource SecondaryButtonStyle}"
+                            Command="{Binding ToggleThemeCommand}"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="Toggle between light and dark theme" />
+                    <Button Content="Refresh"
+                            Style="{DynamicResource SecondaryButtonStyle}"
+                            Command="{Binding RefreshStatusCommand}"
+                            Padding="12,6" />
+                </StackPanel>
             </Grid>
         </Border>
 
@@ -91,8 +98,8 @@
 
         <!-- Status Bar -->
         <Border Grid.Row="3"
-                Background="{StaticResource CardBackgroundBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="16,8">
             <Grid>
@@ -111,10 +118,10 @@
                              Margin="0,0,8,0">
                         <Ellipse.Style>
                             <Style TargetType="Ellipse">
-                                <Setter Property="Fill" Value="{StaticResource OfflineBrush}" />
+                                <Setter Property="Fill" Value="{DynamicResource OfflineBrush}" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                        <Setter Property="Fill" Value="{StaticResource OnlineBrush}" />
+                                        <Setter Property="Fill" Value="{DynamicResource OnlineBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -124,7 +131,7 @@
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Text" Value="Offline" />
-                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsConnected}" Value="True">
                                         <Setter Property="Text" Value="Connected" />
@@ -138,7 +145,7 @@
                 <!-- Filter Count -->
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,24,0">
                     <TextBlock Text="Filters: "
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="{Binding FilterCount}"
                                FontWeight="SemiBold"
@@ -148,7 +155,7 @@
                 <!-- Last Operation -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
                     <TextBlock Text="Last update: "
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="{Binding LastOperationTime}"
                                VerticalAlignment="Center" />
@@ -156,7 +163,7 @@
 
                 <!-- Service Version -->
                 <TextBlock Grid.Column="4"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center">
                     <Run Text="Service v" />
                     <Run Text="{Binding ServiceVersion, Mode=OneWay}" />

@@ -13,6 +13,7 @@ public partial class App : Application
     private ServiceProvider? _serviceProvider;
     private MainWindow? _mainWindow;
     private ITrayIconService? _trayIconService;
+    private ThemeService? _themeService;
     private MainViewModel? _mainViewModel;
 
     /// <summary>
@@ -26,6 +27,10 @@ public partial class App : Application
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
         Services = _serviceProvider;
+
+        // Initialize theme service (must be done before showing any UI)
+        _themeService = _serviceProvider.GetRequiredService<IThemeService>() as ThemeService;
+        _themeService?.Initialize();
 
         // Initialize tray icon service
         _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
@@ -54,7 +59,10 @@ public partial class App : Application
 
     private void Application_Exit(object sender, ExitEventArgs e)
     {
-        // Dispose tray icon first
+        // Clean up theme service
+        _themeService?.Cleanup();
+
+        // Dispose tray icon
         if (_trayIconService != null)
         {
             _trayIconService.ShowWindowRequested -= OnTrayShowWindowRequested;
@@ -73,6 +81,7 @@ public partial class App : Application
         services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IPolicyTemplateProvider, PolicyTemplateProvider>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
+        services.AddSingleton<IThemeService, ThemeService>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();

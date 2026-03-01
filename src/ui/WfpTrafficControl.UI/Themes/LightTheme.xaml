@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Light Theme Colors -->
+
+    <!-- Primary accent colors (same across themes) -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#0078D4" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#106EBE" />
+
+    <!-- Status colors (same across themes) -->
+    <SolidColorBrush x:Key="SuccessBrush" Color="#107C10" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#FF8C00" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#E81123" />
+    <SolidColorBrush x:Key="OnlineBrush" Color="#107C10" />
+    <SolidColorBrush x:Key="OfflineBrush" Color="#E81123" />
+
+    <!-- Background colors -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#F3F3F3" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#E1E1E1" />
+
+    <!-- Text colors -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#666666" />
+
+    <!-- Interactive colors -->
+    <SolidColorBrush x:Key="SelectionBrush" Color="#E8F4FD" />
+    <SolidColorBrush x:Key="SelectionBorderBrush" Color="#0078D4" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#F5F5F5" />
+
+    <!-- Button colors -->
+    <SolidColorBrush x:Key="SecondaryButtonHoverBrush" Color="#E8F4FD" />
+    <SolidColorBrush x:Key="DisabledBackgroundBrush" Color="#CCCCCC" />
+    <SolidColorBrush x:Key="DisabledForegroundBrush" Color="#888888" />
+    <SolidColorBrush x:Key="DangerHoverBrush" Color="#C50F1F" />
+    <SolidColorBrush x:Key="TabHoverBrush" Color="#F0F0F0" />
+
+    <!-- Input colors -->
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#E1E1E1" />
+    <SolidColorBrush x:Key="InputFocusBorderBrush" Color="#0078D4" />
+
+    <!-- DataGrid colors -->
+    <SolidColorBrush x:Key="DataGridHeaderBrush" Color="#F5F5F5" />
+    <SolidColorBrush x:Key="DataGridAlternateRowBrush" Color="#FAFAFA" />
+    <SolidColorBrush x:Key="DataGridRowBrush" Color="#FFFFFF" />
+
+</ResourceDictionary>

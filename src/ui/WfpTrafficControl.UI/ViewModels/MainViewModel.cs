@@ -10,6 +10,7 @@ namespace WfpTrafficControl.UI.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly IServiceClient _serviceClient;
+    private readonly IThemeService _themeService;
 
     [ObservableProperty]
     private bool _isConnected;
@@ -38,19 +39,28 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedTabIndex;
 
+    [ObservableProperty]
+    private string _themeButtonText = "Dark";
+
     public MainViewModel(
         IServiceClient serviceClient,
+        IThemeService themeService,
         DashboardViewModel dashboardViewModel,
         PolicyEditorViewModel policyEditorViewModel,
         LogsViewModel logsViewModel)
     {
         _serviceClient = serviceClient;
+        _themeService = themeService;
         _dashboardViewModel = dashboardViewModel;
         _policyEditorViewModel = policyEditorViewModel;
         _logsViewModel = logsViewModel;
 
         // Subscribe to dashboard updates
         _dashboardViewModel.StatusUpdated += OnDashboardStatusUpdated;
+
+        // Subscribe to theme changes and set initial button text
+        _themeService.ThemeChanged += OnThemeChanged;
+        UpdateThemeButtonText(_themeService.IsDarkTheme);
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)
@@ -80,6 +90,23 @@ public partial class MainViewModel : ObservableObject
     private async Task RefreshStatusAsync()
     {
         await DashboardViewModel.RefreshStatusAsync();
+    }
+
+    [RelayCommand]
+    private void ToggleTheme()
+    {
+        _themeService.ToggleTheme();
+    }
+
+    private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
+    {
+        UpdateThemeButtonText(e.IsDarkTheme);
+    }
+
+    private void UpdateThemeButtonText(bool isDarkTheme)
+    {
+        // Show the opposite theme as button text (what clicking will switch to)
+        ThemeButtonText = isDarkTheme ? "Light" : "Dark";
     }
 }
 

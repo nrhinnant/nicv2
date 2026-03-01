@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:DashboardViewModel}"
              d:DesignHeight="600" d:DesignWidth="900"
-             Background="{StaticResource BackgroundBrush}">
+             Background="{DynamicResource BackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
@@ -37,7 +37,7 @@
                 <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
                     <StackPanel>
                         <TextBlock Text="Service"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,0,0,8" />
                         <StackPanel Orientation="Horizontal">
@@ -46,10 +46,10 @@
                                      Margin="0,0,8,0">
                                 <Ellipse.Style>
                                     <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="{StaticResource OfflineBrush}" />
+                                        <Setter Property="Fill" Value="{DynamicResource OfflineBrush}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsConnected}" Value="True">
-                                                <Setter Property="Fill" Value="{StaticResource OnlineBrush}" />
+                                                <Setter Property="Fill" Value="{DynamicResource OnlineBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -61,7 +61,7 @@
                                        VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Margin="0,8,0,0"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12">
                             <Run Text="Version: " />
                             <Run Text="{Binding ServiceVersion, Mode=OneWay}" />
@@ -73,15 +73,15 @@
                 <Border Style="{StaticResource CardStyle}" Margin="6,0">
                     <StackPanel>
                         <TextBlock Text="Active Filters"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,0,0,8" />
                         <TextBlock Text="{Binding FilterCount}"
                                    FontSize="32"
                                    FontWeight="Bold"
-                                   Foreground="{StaticResource PrimaryBrush}" />
+                                   Foreground="{DynamicResource PrimaryBrush}" />
                         <TextBlock Text="WFP filters installed"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,8,0,0" />
                     </StackPanel>
@@ -91,7 +91,7 @@
                 <Border Style="{StaticResource CardStyle}" Margin="6,0">
                     <StackPanel>
                         <TextBlock Text="Policy"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,0,0,8" />
                         <TextBlock FontSize="18"
@@ -99,17 +99,17 @@
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Text" Value="Not Applied" />
-                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasPolicyApplied}" Value="True">
                                             <Setter Property="Text" Value="{Binding PolicyVersion}" />
-                                            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                        <TextBlock Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,8,0,0">
                             <TextBlock.Style>
@@ -130,7 +130,7 @@
                 <Border Style="{StaticResource CardStyle}" Margin="12,0,0,0">
                     <StackPanel>
                         <TextBlock Text="Last Known Good"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,0,0,8" />
                         <TextBlock Text="{Binding LkgStatusText}"
@@ -138,16 +138,16 @@
                                    FontWeight="SemiBold">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding HasLkg}" Value="True">
-                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                        <TextBlock Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,8,0,0"
                                    Visibility="{Binding HasLkg, Converter={StaticResource BoolToVisibility}}">
@@ -198,25 +198,25 @@
                 <TextBlock Text="Applying..."
                            VerticalAlignment="Center"
                            Margin="16,0,0,0"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Visibility="{Binding IsApplying, Converter={StaticResource BoolToVisibility}}" />
 
                 <TextBlock Text="Rolling back..."
                            VerticalAlignment="Center"
                            Margin="16,0,0,0"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Visibility="{Binding IsRollingBack, Converter={StaticResource BoolToVisibility}}" />
 
                 <TextBlock Text="Reverting..."
                            VerticalAlignment="Center"
                            Margin="16,0,0,0"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Visibility="{Binding IsRevertingToLkg, Converter={StaticResource BoolToVisibility}}" />
 
                 <TextBlock Text="Validating..."
                            VerticalAlignment="Center"
                            Margin="16,0,0,0"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Visibility="{Binding IsValidating, Converter={StaticResource BoolToVisibility}}" />
             </StackPanel>
 
@@ -247,10 +247,10 @@
                                      Margin="0,0,12,0">
                                 <Ellipse.Style>
                                     <Style TargetType="Ellipse">
-                                        <Setter Property="Fill" Value="{StaticResource OfflineBrush}" />
+                                        <Setter Property="Fill" Value="{DynamicResource OfflineBrush}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsWatching}" Value="True">
-                                                <Setter Property="Fill" Value="{StaticResource OnlineBrush}" />
+                                                <Setter Property="Fill" Value="{DynamicResource OnlineBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -261,13 +261,13 @@
                                            FontSize="14"
                                            FontWeight="SemiBold" />
                                 <TextBlock Text="{Binding WatchedFilePath}"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            FontSize="12"
                                            TextTrimming="CharacterEllipsis"
                                            MaxWidth="400"
                                            Visibility="{Binding IsWatching, Converter={StaticResource BoolToVisibility}}" />
                                 <TextBlock Text="{Binding WatchLastError}"
-                                           Foreground="{StaticResource ErrorBrush}"
+                                           Foreground="{DynamicResource ErrorBrush}"
                                            FontSize="12"
                                            TextTrimming="CharacterEllipsis"
                                            MaxWidth="400"
@@ -292,7 +292,7 @@
                             <TextBlock Text="Setting..."
                                        VerticalAlignment="Center"
                                        Margin="12,0,0,0"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        Visibility="{Binding IsSettingWatch, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
                     </Grid>
@@ -307,7 +307,7 @@
                 <Border Style="{StaticResource CardStyle}" Margin="0,8,0,0">
                     <StackPanel>
                         <TextBlock Text="These commands are for troubleshooting and emergency recovery."
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    FontSize="12"
                                    Margin="0,0,0,16" />
 
@@ -328,13 +328,13 @@
                             <TextBlock Text="Initializing..."
                                        VerticalAlignment="Center"
                                        Margin="16,0,0,0"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        Visibility="{Binding IsBootstrapping, Converter={StaticResource BoolToVisibility}}" />
 
                             <TextBlock Text="Tearing down..."
                                        VerticalAlignment="Center"
                                        Margin="16,0,0,0"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        Visibility="{Binding IsTearingDown, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
                     </StackPanel>
@@ -361,7 +361,7 @@
                               GridLinesVisibility="Horizontal"
                               BorderThickness="0"
                               Background="Transparent"
-                              RowBackground="{StaticResource CardBackgroundBrush}"
+                              RowBackground="{DynamicResource CardBackgroundBrush}"
                               AlternatingRowBackground="#FAFAFA"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
@@ -397,7 +397,7 @@
                     <TextBlock Text="No recent activity"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                Padding="24" />
                 </Border>
             </Grid>
@@ -409,7 +409,7 @@
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Loading..."
                                FontSize="16"
-                               Foreground="{StaticResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
             </Border>
         </Grid>

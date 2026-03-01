@@ -8,7 +8,7 @@
              mc:Ignorable="d"
              d:DataContext="{d:DesignInstance Type=vm:LogsViewModel}"
              d:DesignHeight="600" d:DesignWidth="1000"
-             Background="{StaticResource BackgroundBrush}">
+             Background="{DynamicResource BackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
@@ -28,8 +28,8 @@
 
         <!-- Toolbar -->
         <Border Grid.Row="0"
-                Background="{StaticResource CardBackgroundBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="16,12">
             <Grid>
@@ -98,7 +98,7 @@
                           GridLinesVisibility="Horizontal"
                           BorderThickness="0"
                           Background="Transparent"
-                          RowBackground="{StaticResource CardBackgroundBrush}"
+                          RowBackground="{DynamicResource CardBackgroundBrush}"
                           AlternatingRowBackground="#FAFAFA"
                           CanUserAddRows="False"
                           CanUserDeleteRows="False"
@@ -124,11 +124,11 @@
                                 <Style TargetType="TextBlock">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Status}" Value="success">
-                                            <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
                                             <Setter Property="FontWeight" Value="SemiBold" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding Status}" Value="failure">
-                                            <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}" />
                                             <Setter Property="FontWeight" Value="SemiBold" />
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -149,7 +149,7 @@
                                             Width="*">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="{StaticResource ErrorBrush}" />
+                                    <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}" />
                                     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
                                     <Setter Property="ToolTip" Value="{Binding ErrorMessage}" />
                                 </Style>
@@ -162,7 +162,7 @@
                 <TextBlock Text="No log entries found. Click Refresh to load logs."
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            FontSize="14">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
@@ -183,15 +183,15 @@
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                FontSize="16"
-                               Foreground="{StaticResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                 </Border>
             </Grid>
         </Border>
 
         <!-- Status Bar -->
         <Border Grid.Row="2"
-                Background="{StaticResource CardBackgroundBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="0,1,0,0"
                 Padding="16,8">
             <Grid>
@@ -204,12 +204,12 @@
                 <TextBlock Grid.Column="0"
                            Text="{Binding StatusMessage}"
                            VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
 
                 <!-- Log File Path -->
                 <TextBlock Grid.Column="1"
                            VerticalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            FontSize="11">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
