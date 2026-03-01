@@ -757,6 +757,7 @@ public static class IpcMessageParser
                 WatchSetRequest.RequestType => ParseWatchSetRequest(json),
                 WatchStatusRequest.RequestType => Result<IpcRequest>.Success(new WatchStatusRequest()),
                 AuditLogsRequest.RequestType => ParseAuditLogsRequest(json),
+                BlockRulesRequest.RequestType => Result<IpcRequest>.Success(new BlockRulesRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };

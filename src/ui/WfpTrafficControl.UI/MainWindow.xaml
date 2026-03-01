@@ -90,6 +90,11 @@
                 <views:PolicyEditorView DataContext="{Binding PolicyEditorViewModel}" />
             </TabItem>
 
+            <!-- Block Rules Tab -->
+            <TabItem Header="Block Rules">
+                <views:BlockRulesView DataContext="{Binding BlockRulesViewModel}" />
+            </TabItem>
+
             <!-- Logs Tab -->
             <TabItem Header="Logs">
                 <views:LogsView DataContext="{Binding LogsViewModel}" />

@@ -49,6 +49,35 @@ public class MockServiceClient : IServiceClient
     public bool TeardownProviderRemoved { get; set; } = true;
     public bool TeardownSublayerRemoved { get; set; } = true;
 
+    // Block Rules Configuration
+    public bool BlockRulesPolicyLoaded { get; set; } = true;
+    public string BlockRulesPolicyVersion { get; set; } = "1.0.0";
+    public List<BlockRuleDto> BlockRules { get; set; } = new()
+    {
+        new BlockRuleDto
+        {
+            Id = "block-telnet",
+            Direction = "outbound",
+            Protocol = "tcp",
+            RemotePorts = "23",
+            Comment = "Block outbound Telnet",
+            Priority = 100,
+            Enabled = true,
+            Summary = "Outbound TCP to port 23"
+        },
+        new BlockRuleDto
+        {
+            Id = "block-ftp",
+            Direction = "both",
+            Protocol = "tcp",
+            RemotePorts = "20,21",
+            Comment = "Block FTP connections",
+            Priority = 100,
+            Enabled = true,
+            Summary = "Both directions TCP to ports 20,21"
+        }
+    };
+
     // Call tracking
     public int PingCallCount { get; private set; }
     public int ApplyCallCount { get; private set; }
@@ -61,6 +90,7 @@ public class MockServiceClient : IServiceClient
     public int WatchStatusCallCount { get; private set; }
     public int BootstrapCallCount { get; private set; }
     public int TeardownCallCount { get; private set; }
+    public int GetBlockRulesCallCount { get; private set; }
     public string? LastApplyPath { get; private set; }
     public string? LastValidateJson { get; private set; }
 
@@ -333,6 +363,27 @@ public class MockServiceClient : IServiceClient
         }));
     }
 
+    public Task<Result<BlockRulesResponse>> GetBlockRulesAsync(CancellationToken ct = default)
+    {
+        GetBlockRulesCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<BlockRulesResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        if (!BlockRulesPolicyLoaded)
+        {
+            return Task.FromResult(Result<BlockRulesResponse>.Success(
+                BlockRulesResponse.NoPolicyLoaded()));
+        }
+
+        return Task.FromResult(Result<BlockRulesResponse>.Success(
+            BlockRulesResponse.Success(BlockRules, BlockRulesPolicyVersion)));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -346,6 +397,7 @@ public class MockServiceClient : IServiceClient
         WatchStatusCallCount = 0;
         BootstrapCallCount = 0;
         TeardownCallCount = 0;
+        GetBlockRulesCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;

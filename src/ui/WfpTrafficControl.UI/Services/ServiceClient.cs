@@ -100,6 +100,12 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<TeardownRequest, TeardownResponse>(new TeardownRequest(), ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<BlockRulesResponse>> GetBlockRulesAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<BlockRulesRequest, BlockRulesResponse>(new BlockRulesRequest(), ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

@@ -411,6 +411,7 @@ public sealed class PipeServer : IDisposable
             WatchSetRequest watchSetRequest => ProcessWatchSetRequest(watchSetRequest),
             WatchStatusRequest => ProcessWatchStatusRequest(),
             AuditLogsRequest auditLogsRequest => ProcessAuditLogsRequest(auditLogsRequest),
+            BlockRulesRequest => ProcessBlockRulesRequest(),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -944,6 +945,113 @@ public sealed class PipeServer : IDisposable
             _logger.LogError(ex, "Exception during audit-logs request");
             return AuditLogsResponse.Failure($"Failed to read audit logs: {ex.Message}");
         }
+    }
+
+    private IpcResponse ProcessBlockRulesRequest()
+    {
+        _logger.LogDebug("Processing block-rules request");
+
+        try
+        {
+            // Load the current policy from LKG
+            var loadResult = LkgStore.Load();
+
+            if (!loadResult.Exists)
+            {
+                _logger.LogDebug("No policy loaded - returning empty block rules");
+                return BlockRulesResponse.NoPolicyLoaded();
+            }
+
+            if (loadResult.Error != null)
+            {
+                _logger.LogWarning("Policy is corrupt: {Error}", loadResult.Error);
+                return BlockRulesResponse.Failure($"Policy is corrupt: {loadResult.Error}");
+            }
+
+            var policy = loadResult.Policy!;
+
+            // Filter to just block rules
+            var blockRules = policy.Rules
+                .Where(r => r.Action?.Equals("block", StringComparison.OrdinalIgnoreCase) == true && r.Enabled)
+                .Select(r => new BlockRuleDto
+                {
+                    Id = r.Id ?? "unknown",
+                    Direction = r.Direction ?? "both",
+                    Protocol = r.Protocol,
+                    Process = r.Process,
+                    RemoteIp = r.Remote?.Ip,
+                    RemotePorts = r.Remote?.Ports,
+                    LocalIp = r.Local?.Ip,
+                    LocalPorts = r.Local?.Ports,
+                    Comment = r.Comment,
+                    Priority = r.Priority,
+                    Enabled = r.Enabled,
+                    Summary = GenerateRuleSummary(r)
+                })
+                .ToList();
+
+            _logger.LogDebug("Returning {Count} block rules from policy version {Version}",
+                blockRules.Count, policy.Version);
+
+            return BlockRulesResponse.Success(blockRules, policy.Version);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during block-rules request");
+            return BlockRulesResponse.Failure($"Failed to get block rules: {ex.Message}");
+        }
+    }
+
+    private static string GenerateRuleSummary(Rule rule)
+    {
+        var parts = new List<string>();
+
+        // Direction
+        var direction = rule.Direction?.ToLowerInvariant() switch
+        {
+            "inbound" => "Inbound",
+            "outbound" => "Outbound",
+            "both" => "All",
+            _ => "All"
+        };
+        parts.Add(direction);
+
+        // Protocol
+        if (!string.IsNullOrEmpty(rule.Protocol) && rule.Protocol != "any")
+        {
+            parts.Add(rule.Protocol.ToUpperInvariant());
+        }
+
+        // Process
+        if (!string.IsNullOrEmpty(rule.Process))
+        {
+            var processName = Path.GetFileName(rule.Process);
+            parts.Add($"from {processName}");
+        }
+
+        // Remote
+        if (rule.Remote != null)
+        {
+            if (!string.IsNullOrEmpty(rule.Remote.Ip))
+            {
+                parts.Add($"to {rule.Remote.Ip}");
+            }
+            if (!string.IsNullOrEmpty(rule.Remote.Ports))
+            {
+                parts.Add($"port {rule.Remote.Ports}");
+            }
+        }
+
+        // Local
+        if (rule.Local != null)
+        {
+            if (!string.IsNullOrEmpty(rule.Local.Ports))
+            {
+                parts.Add($"local port {rule.Local.Ports}");
+            }
+        }
+
+        return string.Join(" ", parts);
     }
 
     private async Task SendResponseAsync(NamedPipeServerStream pipeServer, IpcResponse response, CancellationToken cancellationToken)

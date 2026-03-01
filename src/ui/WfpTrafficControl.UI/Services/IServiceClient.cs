@@ -72,4 +72,9 @@ public interface IServiceClient
     /// Removes all WFP objects (provider, sublayer, filters). Emergency recovery.
     /// </summary>
     Task<Result<TeardownResponse>> TeardownAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the current block rules from the active policy.
+    /// </summary>
+    Task<Result<BlockRulesResponse>> GetBlockRulesAsync(CancellationToken ct = default);
 }
