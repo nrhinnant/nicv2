@@ -42,6 +42,9 @@ public partial class MainViewModel : ObservableObject
     private BlockRulesViewModel _blockRulesViewModel;
 
     [ObservableProperty]
+    private ConnectionMonitorViewModel _connectionMonitorViewModel;
+
+    [ObservableProperty]
     private int _selectedTabIndex;
 
     [ObservableProperty]
@@ -53,7 +56,8 @@ public partial class MainViewModel : ObservableObject
         DashboardViewModel dashboardViewModel,
         PolicyEditorViewModel policyEditorViewModel,
         LogsViewModel logsViewModel,
-        BlockRulesViewModel blockRulesViewModel)
+        BlockRulesViewModel blockRulesViewModel,
+        ConnectionMonitorViewModel connectionMonitorViewModel)
     {
         _serviceClient = serviceClient;
         _themeService = themeService;
@@ -61,6 +65,7 @@ public partial class MainViewModel : ObservableObject
         _policyEditorViewModel = policyEditorViewModel;
         _logsViewModel = logsViewModel;
         _blockRulesViewModel = blockRulesViewModel;
+        _connectionMonitorViewModel = connectionMonitorViewModel;
 
         // Subscribe to dashboard updates
         _dashboardViewModel.StatusUpdated += OnDashboardStatusUpdated;

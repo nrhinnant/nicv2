@@ -117,6 +117,11 @@
             <TabItem Header="Logs">
                 <views:LogsView DataContext="{Binding LogsViewModel}" />
             </TabItem>
+
+            <!-- Connections Tab -->
+            <TabItem Header="Connections">
+                <views:ConnectionMonitorView DataContext="{Binding ConnectionMonitorViewModel}" />
+            </TabItem>
         </TabControl>
 
         <!-- Status Bar -->

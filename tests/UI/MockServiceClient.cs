@@ -551,6 +551,53 @@ public class MockServiceClient : IServiceClient
             PolicyHistoryGetResponse.Success(entry, policyJson)));
     }
 
+    // Connection Monitor Configuration
+    public List<ConnectionDto> Connections { get; set; } = new()
+    {
+        new ConnectionDto
+        {
+            Protocol = "tcp",
+            State = "ESTABLISHED",
+            LocalIp = "192.168.1.100",
+            LocalPort = 54321,
+            RemoteIp = "142.250.80.46",
+            RemotePort = 443,
+            ProcessId = 1234,
+            ProcessName = "chrome.exe"
+        },
+        new ConnectionDto
+        {
+            Protocol = "udp",
+            State = "*",
+            LocalIp = "0.0.0.0",
+            LocalPort = 53,
+            RemoteIp = "*",
+            RemotePort = 0,
+            ProcessId = 4,
+            ProcessName = "System"
+        }
+    };
+    public int GetConnectionsCallCount { get; private set; }
+
+    public Task<Result<GetConnectionsResponse>> GetConnectionsAsync(bool includeTcp = true, bool includeUdp = true, CancellationToken ct = default)
+    {
+        GetConnectionsCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<GetConnectionsResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        var filtered = Connections
+            .Where(c => (includeTcp && c.Protocol == "tcp") || (includeUdp && c.Protocol == "udp"))
+            .ToList();
+
+        return Task.FromResult(Result<GetConnectionsResponse>.Success(
+            GetConnectionsResponse.Success(filtered)));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -569,6 +616,7 @@ public class MockServiceClient : IServiceClient
         GetPolicyHistoryCallCount = 0;
         RevertToHistoryCallCount = 0;
         GetPolicyFromHistoryCallCount = 0;
+        GetConnectionsCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;

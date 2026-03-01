@@ -417,6 +417,7 @@ public sealed class PipeServer : IDisposable
             PolicyHistoryRequest historyRequest => ProcessPolicyHistoryRequest(historyRequest),
             PolicyHistoryRevertRequest historyRevertRequest => ProcessPolicyHistoryRevertRequest(historyRevertRequest),
             PolicyHistoryGetRequest historyGetRequest => ProcessPolicyHistoryGetRequest(historyGetRequest),
+            GetConnectionsRequest connectionsRequest => ProcessGetConnectionsRequest(connectionsRequest),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -1201,6 +1202,26 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during policy-history-get request");
             return PolicyHistoryGetResponse.Failure($"Failed to get history entry: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessGetConnectionsRequest(GetConnectionsRequest request)
+    {
+        _logger.LogDebug("Processing get-connections request (tcp={IncludeTcp}, udp={IncludeUdp})",
+            request.IncludeTcp, request.IncludeUdp);
+
+        try
+        {
+            var connections = IpHelperApi.GetConnections(request.IncludeTcp, request.IncludeUdp);
+
+            _logger.LogDebug("Found {Count} active connections", connections.Count);
+
+            return GetConnectionsResponse.Success(connections);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during get-connections request");
+            return GetConnectionsResponse.Failure($"Failed to enumerate connections: {ex.Message}");
         }
     }
 

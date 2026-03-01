@@ -92,6 +92,7 @@ public partial class App : Application
         services.AddTransient<RuleSimulatorViewModel>();
         services.AddTransient<PolicyDiffViewModel>();
         services.AddTransient<PolicyHistoryViewModel>();
+        services.AddTransient<ConnectionMonitorViewModel>();
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)

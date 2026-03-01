@@ -762,6 +762,7 @@ public static class IpcMessageParser
                 PolicyHistoryRequest.RequestType => ParsePolicyHistoryRequest(json),
                 PolicyHistoryRevertRequest.RequestType => ParsePolicyHistoryRevertRequest(json),
                 PolicyHistoryGetRequest.RequestType => ParsePolicyHistoryGetRequest(json),
+                GetConnectionsRequest.RequestType => ParseGetConnectionsRequest(json),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -1013,6 +1014,26 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid policy-history-get request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a get-connections request.
+    /// </summary>
+    private static Result<IpcRequest> ParseGetConnectionsRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<GetConnectionsRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse get-connections request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid get-connections request JSON: {ex.Message}");
         }
     }
 }

@@ -115,4 +115,11 @@ public interface IServiceClient
     /// </summary>
     /// <param name="entryId">The history entry ID.</param>
     Task<Result<PolicyHistoryGetResponse>> GetPolicyFromHistoryAsync(string entryId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets active network connections.
+    /// </summary>
+    /// <param name="includeTcp">Whether to include TCP connections.</param>
+    /// <param name="includeUdp">Whether to include UDP connections.</param>
+    Task<Result<GetConnectionsResponse>> GetConnectionsAsync(bool includeTcp = true, bool includeUdp = true, CancellationToken ct = default);
 }

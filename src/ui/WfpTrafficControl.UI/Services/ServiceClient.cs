@@ -151,6 +151,13 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<PolicyHistoryGetRequest, PolicyHistoryGetResponse>(request, ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<GetConnectionsResponse>> GetConnectionsAsync(bool includeTcp = true, bool includeUdp = true, CancellationToken ct = default)
+    {
+        var request = new GetConnectionsRequest { IncludeTcp = includeTcp, IncludeUdp = includeUdp };
+        return await SendRequestAsync<GetConnectionsRequest, GetConnectionsResponse>(request, ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).
