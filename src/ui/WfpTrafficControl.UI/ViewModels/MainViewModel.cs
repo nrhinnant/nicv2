@@ -156,6 +156,17 @@ public partial class MainViewModel : ObservableObject
         dialog.ShowDialog();
     }
 
+    [RelayCommand]
+    private void OpenNetworkProfiles()
+    {
+        var viewModel = App.Services.GetRequiredService<NetworkProfilesViewModel>();
+        var dialog = new NetworkProfilesView(viewModel)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
     private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
     {
         UpdateThemeButtonText(e.IsDarkTheme);

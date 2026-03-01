@@ -177,6 +177,45 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<TestSyslogRequest, TestSyslogResponse>(new TestSyslogRequest(), ct);
     }
 
+    public async Task<Result<GetNetworkProfilesResponse>> GetNetworkProfilesAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<GetNetworkProfilesRequest, GetNetworkProfilesResponse>(new GetNetworkProfilesRequest(), ct);
+    }
+
+    public async Task<Result<SaveNetworkProfileResponse>> SaveNetworkProfileAsync(NetworkProfile profile, CancellationToken ct = default)
+    {
+        var request = new SaveNetworkProfileRequest { Profile = profile };
+        return await SendRequestAsync<SaveNetworkProfileRequest, SaveNetworkProfileResponse>(request, ct);
+    }
+
+    public async Task<Result<DeleteNetworkProfileResponse>> DeleteNetworkProfileAsync(string profileId, CancellationToken ct = default)
+    {
+        var request = new DeleteNetworkProfileRequest { ProfileId = profileId };
+        return await SendRequestAsync<DeleteNetworkProfileRequest, DeleteNetworkProfileResponse>(request, ct);
+    }
+
+    public async Task<Result<GetCurrentNetworkResponse>> GetCurrentNetworkAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<GetCurrentNetworkRequest, GetCurrentNetworkResponse>(new GetCurrentNetworkRequest(), ct);
+    }
+
+    public async Task<Result<ActivateProfileResponse>> ActivateProfileAsync(string? profileId = null, CancellationToken ct = default)
+    {
+        var request = new ActivateProfileRequest { ProfileId = profileId };
+        return await SendRequestAsync<ActivateProfileRequest, ActivateProfileResponse>(request, ct);
+    }
+
+    public async Task<Result<SetAutoSwitchResponse>> SetAutoSwitchAsync(bool enabled, CancellationToken ct = default)
+    {
+        var request = new SetAutoSwitchRequest { Enabled = enabled };
+        return await SendRequestAsync<SetAutoSwitchRequest, SetAutoSwitchResponse>(request, ct);
+    }
+
+    public async Task<Result<GetAutoSwitchStatusResponse>> GetAutoSwitchStatusAsync(CancellationToken ct = default)
+    {
+        return await SendRequestAsync<GetAutoSwitchStatusRequest, GetAutoSwitchStatusResponse>(new GetAutoSwitchStatusRequest(), ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

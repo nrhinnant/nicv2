@@ -138,4 +138,43 @@ public interface IServiceClient
     /// Tests the syslog connection.
     /// </summary>
     Task<Result<TestSyslogResponse>> TestSyslogAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets all network profiles.
+    /// </summary>
+    Task<Result<GetNetworkProfilesResponse>> GetNetworkProfilesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Saves a network profile (create or update).
+    /// </summary>
+    /// <param name="profile">The profile to save.</param>
+    Task<Result<SaveNetworkProfileResponse>> SaveNetworkProfileAsync(NetworkProfile profile, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes a network profile.
+    /// </summary>
+    /// <param name="profileId">The ID of the profile to delete.</param>
+    Task<Result<DeleteNetworkProfileResponse>> DeleteNetworkProfileAsync(string profileId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets information about the current network.
+    /// </summary>
+    Task<Result<GetCurrentNetworkResponse>> GetCurrentNetworkAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Activates a specific profile.
+    /// </summary>
+    /// <param name="profileId">The ID of the profile to activate, or null for auto-detection.</param>
+    Task<Result<ActivateProfileResponse>> ActivateProfileAsync(string? profileId = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Sets whether automatic profile switching is enabled.
+    /// </summary>
+    /// <param name="enabled">Whether to enable automatic switching.</param>
+    Task<Result<SetAutoSwitchResponse>> SetAutoSwitchAsync(bool enabled, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the current auto-switch status.
+    /// </summary>
+    Task<Result<GetAutoSwitchStatusResponse>> GetAutoSwitchStatusAsync(CancellationToken ct = default);
 }

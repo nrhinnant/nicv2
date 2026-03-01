@@ -1,0 +1,534 @@
+<Window x:Class="WfpTrafficControl.UI.Views.NetworkProfilesView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:WfpTrafficControl.UI.ViewModels"
+        xmlns:converters="clr-namespace:WfpTrafficControl.UI.Converters"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:NetworkProfilesViewModel}"
+        Title="Network Profiles"
+        Height="700" Width="900"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+        <converters:InverseBoolConverter x:Key="InverseBool" />
+        <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibility" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left Panel: Profiles List and Current Network -->
+            <Border Grid.Column="0"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Current Network Info -->
+                    <Border Grid.Row="0" Padding="16" Background="{DynamicResource CardBackgroundBrush}">
+                        <StackPanel>
+                            <TextBlock Text="Current Network"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,8" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:"
+                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2" />
+                                <TextBlock Grid.Row="0" Grid.Column="1"
+                                           Text="{Binding CurrentNetwork.NetworkName, FallbackValue='Not connected'}"
+                                           FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
+                                           Margin="8,2" TextTrimming="CharacterEllipsis" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="SSID:"
+                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2" />
+                                <TextBlock Grid.Row="1" Grid.Column="1"
+                                           Text="{Binding CurrentNetwork.Ssid, FallbackValue='-'}"
+                                           FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
+                                           Margin="8,2" TextTrimming="CharacterEllipsis" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Category:"
+                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2" />
+                                <TextBlock Grid.Row="2" Grid.Column="1"
+                                           Text="{Binding CurrentNetwork.Category, FallbackValue='-'}"
+                                           FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
+                                           Margin="8,2" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Gateway:"
+                                           FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2" />
+                                <TextBlock Grid.Row="3" Grid.Column="1"
+                                           Text="{Binding CurrentNetwork.Gateway, FallbackValue='-'}"
+                                           FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}"
+                                           Margin="8,2" />
+                            </Grid>
+
+                            <Button Content="Refresh Network"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding RefreshNetworkCommand}"
+                                    FontSize="11"
+                                    Padding="8,4"
+                                    Margin="0,8,0,0"
+                                    HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Auto-Switch Toggle -->
+                    <Border Grid.Row="1" Padding="16" Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="Auto-Switch"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="Automatically switch profiles on network change"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0" />
+                            </StackPanel>
+
+                            <CheckBox Grid.Column="1"
+                                      IsChecked="{Binding AutoSwitchEnabled}"
+                                      Command="{Binding ToggleAutoSwitchCommand}"
+                                      VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Profiles List -->
+                    <Border Grid.Row="2" Padding="8">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="Profiles"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="8,8,8,8" />
+
+                            <ListBox Grid.Row="1"
+                                     ItemsSource="{Binding Profiles}"
+                                     SelectedItem="{Binding SelectedProfile}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     IsEnabled="{Binding IsEditing, Converter={StaticResource InverseBool}}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Text="{Binding Description}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Visibility="{Binding Description, Converter={StaticResource StringNotEmptyToVisibility}}" />
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Border CornerRadius="3" Padding="4,2" Margin="4,0"
+                                                        Background="{DynamicResource SuccessBackgroundBrush}"
+                                                        Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibility}}">
+                                                    <TextBlock Text="Default" FontSize="10" Foreground="{DynamicResource SuccessBrush}" />
+                                                </Border>
+                                                <Border CornerRadius="3" Padding="4,2"
+                                                        Background="{DynamicResource WarningBackgroundBrush}"
+                                                        Visibility="{Binding Enabled, Converter={StaticResource InverseBoolToVisibility}}">
+                                                    <TextBlock Text="Disabled" FontSize="10" Foreground="{DynamicResource WarningBrush}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- Profile Actions -->
+                    <Border Grid.Row="3" Padding="8" Background="{DynamicResource CardBackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0">
+                        <StackPanel>
+                            <Button Content="Add Profile"
+                                    Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding AddProfileCommand}"
+                                    IsEnabled="{Binding IsEditing, Converter={StaticResource InverseBool}}"
+                                    Padding="12,6"
+                                    Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0" Content="Edit"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding EditProfileCommand}"
+                                        IsEnabled="{Binding CanEditSelectedProfile}"
+                                        Padding="8,6"
+                                        Margin="0,0,4,0" />
+                                <Button Grid.Column="1" Content="Delete"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding DeleteProfileCommand}"
+                                        IsEnabled="{Binding CanDeleteSelectedProfile}"
+                                        Padding="8,6"
+                                        Margin="4,0,0,0" />
+                            </Grid>
+                            <Button Content="Activate Selected Profile"
+                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding ActivateProfileCommand}"
+                                    IsEnabled="{Binding CanActivateSelectedProfile}"
+                                    Padding="12,6"
+                                    Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Right Panel: Profile Editor -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="16">
+                <!-- Empty State -->
+                <Grid Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVisibility}}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Select a profile to view details"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   Visibility="{Binding SelectedProfile, Converter={StaticResource InverseBoolToVisibility}}" />
+
+                        <!-- Selected Profile Details (View Mode) -->
+                        <Border Visibility="{Binding SelectedProfile, Converter={StaticResource BoolToVisibility}}"
+                                Width="500">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedProfile.Name}"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                           Margin="0,0,0,8" />
+                                <TextBlock Text="{Binding SelectedProfile.Description}"
+                                           FontSize="13"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,16" />
+
+                                <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,12">
+                                    <StackPanel>
+                                        <TextBlock Text="Policy Path" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4" />
+                                        <TextBlock Text="{Binding SelectedProfile.PolicyPath, TargetNullValue='(No policy assigned)'}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource CardStyle}" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="Matching Conditions" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
+
+                                        <TextBlock Text="Match mode:"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Margin="0,0,0,4" />
+                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Any condition (OR)" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding SelectedProfile.Conditions.MatchAll}" Value="True">
+                                                            <Setter Property="Text" Value="All conditions (AND)" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+
+                                        <ItemsControl ItemsSource="{Binding SelectedProfile.Conditions.Ssids}" Margin="0,4,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock FontSize="12" Margin="0,2">
+                                                        <Run Text="SSID: " Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <Run Text="{Binding Mode=OneWay}" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <ItemsControl ItemsSource="{Binding SelectedProfile.Conditions.Gateways}" Margin="0,4,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock FontSize="12" Margin="0,2">
+                                                        <Run Text="Gateway: " Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <Run Text="{Binding Mode=OneWay}" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <ItemsControl ItemsSource="{Binding SelectedProfile.Conditions.DnsSuffixes}" Margin="0,4,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock FontSize="12" Margin="0,2">
+                                                        <Run Text="DNS Suffix: " Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                        <Run Text="{Binding Mode=OneWay}" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <TextBlock FontSize="12" Margin="0,4,0,0"
+                                                   Visibility="{Binding SelectedProfile.Conditions.NetworkCategory, Converter={StaticResource BoolToVisibility}}">
+                                            <Run Text="Category: " Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <Run Text="{Binding SelectedProfile.Conditions.NetworkCategory, Mode=OneWay}" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- Profile Editor (Edit Mode) -->
+            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="16"
+                          Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel MaxWidth="500" HorizontalAlignment="Left">
+                    <TextBlock FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,16">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="Edit Profile" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsNewProfile}" Value="True">
+                                        <Setter Property="Text" Value="New Profile" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                    <!-- Basic Info -->
+                    <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Basic Information"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,12" />
+
+                            <TextBlock Text="Name *" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding EditProfileName, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
+
+                            <TextBlock Text="Description" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding EditProfileDescription, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
+
+                            <TextBlock Text="Policy File Path" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding EditProfilePolicyPath, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="1" Content="Browse..."
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding BrowsePolicyFileCommand}"
+                                        Padding="8,4" Margin="8,0,0,0" />
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                    <TextBlock Text="Priority" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding EditProfilePriority, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                    <CheckBox Content="Enabled" IsChecked="{Binding EditProfileEnabled}" Margin="0,20,0,0" />
+                                    <CheckBox Content="Default Profile" IsChecked="{Binding EditProfileIsDefault}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Conditions -->
+                    <Border Style="{StaticResource CardStyle}" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Matching Conditions"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       Margin="0,0,0,4" />
+                            <TextBlock Text="Define when this profile should be activated"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Margin="0,0,0,12" />
+
+                            <CheckBox Content="Require ALL conditions to match (AND logic)"
+                                      IsChecked="{Binding EditConditionsMatchAll}"
+                                      Margin="0,0,0,16" />
+
+                            <!-- SSIDs -->
+                            <TextBlock Text="WiFi SSIDs (comma-separated)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding EditConditionsSsids, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="1" Content="Current"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding CopyCurrentSsidCommand}"
+                                        ToolTip="Copy current network's SSID"
+                                        Padding="8,4" Margin="8,0,0,0" />
+                            </Grid>
+
+                            <!-- Gateways -->
+                            <TextBlock Text="Gateway IPs (comma-separated)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding EditConditionsGateways, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="1" Content="Current"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding CopyCurrentGatewayCommand}"
+                                        ToolTip="Copy current network's gateway"
+                                        Padding="8,4" Margin="8,0,0,0" />
+                            </Grid>
+
+                            <!-- DNS Suffixes -->
+                            <TextBlock Text="DNS Suffixes (comma-separated)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding EditConditionsDnsSuffixes, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="1" Content="Current"
+                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        Command="{Binding CopyCurrentDnsSuffixCommand}"
+                                        ToolTip="Copy current network's DNS suffix"
+                                        Padding="8,4" Margin="8,0,0,0" />
+                            </Grid>
+
+                            <!-- Network Names -->
+                            <TextBlock Text="Network Names (comma-separated)" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBox Text="{Binding EditConditionsNetworkNames, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" />
+
+                            <!-- Network Category -->
+                            <TextBlock Text="Network Category" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <ComboBox ItemsSource="{x:Static vm:NetworkProfilesViewModel.AvailableCategories}"
+                                      SelectedValue="{Binding EditConditionsNetworkCategory}"
+                                      Width="150" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Editor Actions -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="Cancel"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding CancelEditCommand}"
+                                Padding="16,8"
+                                Margin="0,0,8,0" />
+                        <Button Content="Save Profile"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding SaveProfileCommand}"
+                                Padding="24,8" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Active: " Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding ActiveProfileName, FallbackValue='None'}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusMessage}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+
+                <Button Grid.Column="2"
+                        Content="Close"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="CloseButton_Click"
+                        Padding="16,8" />
+            </Grid>
+        </Border>
+
+        <!-- Loading Overlay -->
+        <Border Grid.Row="0" Grid.RowSpan="2"
+                Background="{DynamicResource BackgroundBrush}"
+                Opacity="0.9"
+                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="Loading..."
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="16"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+        </Border>
+    </Grid>
+</Window>

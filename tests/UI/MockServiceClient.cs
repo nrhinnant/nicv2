@@ -665,6 +665,239 @@ public class MockServiceClient : IServiceClient
             TestSyslogResponse.Success(rttMs: 5)));
     }
 
+    // Network Profile Configuration
+    public List<NetworkProfile> NetworkProfiles { get; set; } = new()
+    {
+        new NetworkProfile
+        {
+            Id = "home",
+            Name = "Home Network",
+            Description = "Relaxed policy for home use",
+            PolicyPath = "C:\\Policies\\home-policy.json",
+            Priority = 100,
+            Enabled = true,
+            Conditions = new ProfileConditions
+            {
+                Ssids = new List<string> { "MyHomeWiFi" },
+                MatchAll = false
+            }
+        },
+        new NetworkProfile
+        {
+            Id = "public",
+            Name = "Public Network",
+            Description = "Strict policy for public networks",
+            PolicyPath = "C:\\Policies\\public-policy.json",
+            Priority = 50,
+            Enabled = true,
+            Conditions = new ProfileConditions
+            {
+                NetworkCategory = "Public",
+                MatchAll = false
+            }
+        }
+    };
+    public string? ActiveProfileId { get; set; }
+    public bool AutoSwitchEnabled { get; set; } = true;
+    public CurrentNetworkInfo CurrentNetwork { get; set; } = new()
+    {
+        NetworkName = "TestNetwork",
+        Category = "Private",
+        Ssid = "TestWiFi",
+        DnsSuffix = "local",
+        Gateway = "192.168.1.1",
+        IsConnected = true,
+        AdapterName = "Wi-Fi"
+    };
+    public int GetNetworkProfilesCallCount { get; private set; }
+    public int SaveNetworkProfileCallCount { get; private set; }
+    public int DeleteNetworkProfileCallCount { get; private set; }
+    public int GetCurrentNetworkCallCount { get; private set; }
+    public int ActivateProfileCallCount { get; private set; }
+    public int SetAutoSwitchCallCount { get; private set; }
+    public int GetAutoSwitchStatusCallCount { get; private set; }
+    public NetworkProfile? LastSavedProfile { get; private set; }
+    public string? LastDeletedProfileId { get; private set; }
+    public string? LastActivatedProfileId { get; private set; }
+
+    public Task<Result<GetNetworkProfilesResponse>> GetNetworkProfilesAsync(CancellationToken ct = default)
+    {
+        GetNetworkProfilesCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<GetNetworkProfilesResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        return Task.FromResult(Result<GetNetworkProfilesResponse>.Success(
+            GetNetworkProfilesResponse.Success(NetworkProfiles, ActiveProfileId)));
+    }
+
+    public Task<Result<SaveNetworkProfileResponse>> SaveNetworkProfileAsync(NetworkProfile profile, CancellationToken ct = default)
+    {
+        SaveNetworkProfileCallCount++;
+        LastSavedProfile = profile;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<SaveNetworkProfileResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        // Update or add profile
+        var existing = NetworkProfiles.FindIndex(p => p.Id == profile.Id);
+        if (existing >= 0)
+        {
+            NetworkProfiles[existing] = profile;
+        }
+        else
+        {
+            NetworkProfiles.Add(profile);
+        }
+
+        return Task.FromResult(Result<SaveNetworkProfileResponse>.Success(
+            SaveNetworkProfileResponse.Success()));
+    }
+
+    public Task<Result<DeleteNetworkProfileResponse>> DeleteNetworkProfileAsync(string profileId, CancellationToken ct = default)
+    {
+        DeleteNetworkProfileCallCount++;
+        LastDeletedProfileId = profileId;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<DeleteNetworkProfileResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        var existing = NetworkProfiles.FindIndex(p => p.Id == profileId);
+        if (existing < 0)
+        {
+            return Task.FromResult(Result<DeleteNetworkProfileResponse>.Success(
+                DeleteNetworkProfileResponse.Failure("Profile not found")));
+        }
+
+        NetworkProfiles.RemoveAt(existing);
+        return Task.FromResult(Result<DeleteNetworkProfileResponse>.Success(
+            DeleteNetworkProfileResponse.Success()));
+    }
+
+    public Task<Result<GetCurrentNetworkResponse>> GetCurrentNetworkAsync(CancellationToken ct = default)
+    {
+        GetCurrentNetworkCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<GetCurrentNetworkResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        // Find matching profile
+        string? matchingProfileId = null;
+        foreach (var profile in NetworkProfiles.Where(p => p.Enabled).OrderByDescending(p => p.Priority))
+        {
+            if (ProfileMatchesNetwork(profile, CurrentNetwork))
+            {
+                matchingProfileId = profile.Id;
+                break;
+            }
+        }
+
+        return Task.FromResult(Result<GetCurrentNetworkResponse>.Success(
+            GetCurrentNetworkResponse.Success(CurrentNetwork, matchingProfileId)));
+    }
+
+    public Task<Result<ActivateProfileResponse>> ActivateProfileAsync(string? profileId = null, CancellationToken ct = default)
+    {
+        ActivateProfileCallCount++;
+        LastActivatedProfileId = profileId;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<ActivateProfileResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        if (profileId != null && !NetworkProfiles.Any(p => p.Id == profileId))
+        {
+            return Task.FromResult(Result<ActivateProfileResponse>.Success(
+                ActivateProfileResponse.Failure("Profile not found")));
+        }
+
+        ActiveProfileId = profileId;
+        return Task.FromResult(Result<ActivateProfileResponse>.Success(
+            ActivateProfileResponse.Success(profileId, policyApplied: true)));
+    }
+
+    public Task<Result<SetAutoSwitchResponse>> SetAutoSwitchAsync(bool enabled, CancellationToken ct = default)
+    {
+        SetAutoSwitchCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<SetAutoSwitchResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        AutoSwitchEnabled = enabled;
+        return Task.FromResult(Result<SetAutoSwitchResponse>.Success(
+            SetAutoSwitchResponse.Success()));
+    }
+
+    public Task<Result<GetAutoSwitchStatusResponse>> GetAutoSwitchStatusAsync(CancellationToken ct = default)
+    {
+        GetAutoSwitchStatusCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<GetAutoSwitchStatusResponse>.Failure(
+                ErrorCodes.ServiceUnavailable, "Service unavailable"));
+        }
+
+        var activeProfile = NetworkProfiles.FirstOrDefault(p => p.Id == ActiveProfileId);
+        return Task.FromResult(Result<GetAutoSwitchStatusResponse>.Success(
+            GetAutoSwitchStatusResponse.Success(AutoSwitchEnabled, ActiveProfileId, activeProfile?.Name)));
+    }
+
+    private static bool ProfileMatchesNetwork(NetworkProfile profile, CurrentNetworkInfo network)
+    {
+        var conditions = profile.Conditions;
+        var matches = new List<bool>();
+
+        if (conditions.Ssids.Count > 0)
+        {
+            matches.Add(network.Ssid != null && conditions.Ssids.Contains(network.Ssid, StringComparer.OrdinalIgnoreCase));
+        }
+
+        if (conditions.DnsSuffixes.Count > 0)
+        {
+            matches.Add(network.DnsSuffix != null && conditions.DnsSuffixes.Contains(network.DnsSuffix, StringComparer.OrdinalIgnoreCase));
+        }
+
+        if (conditions.NetworkNames.Count > 0)
+        {
+            matches.Add(network.NetworkName != null && conditions.NetworkNames.Contains(network.NetworkName, StringComparer.OrdinalIgnoreCase));
+        }
+
+        if (conditions.Gateways.Count > 0)
+        {
+            matches.Add(network.Gateway != null && conditions.Gateways.Contains(network.Gateway));
+        }
+
+        if (!string.IsNullOrEmpty(conditions.NetworkCategory))
+        {
+            matches.Add(string.Equals(network.Category, conditions.NetworkCategory, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (matches.Count == 0)
+        {
+            return profile.IsDefault;
+        }
+
+        return conditions.MatchAll ? matches.All(m => m) : matches.Any(m => m);
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -687,6 +920,13 @@ public class MockServiceClient : IServiceClient
         GetSyslogConfigCallCount = 0;
         SetSyslogConfigCallCount = 0;
         TestSyslogCallCount = 0;
+        GetNetworkProfilesCallCount = 0;
+        SaveNetworkProfileCallCount = 0;
+        DeleteNetworkProfileCallCount = 0;
+        GetCurrentNetworkCallCount = 0;
+        ActivateProfileCallCount = 0;
+        SetAutoSwitchCallCount = 0;
+        GetAutoSwitchStatusCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;
@@ -695,5 +935,8 @@ public class MockServiceClient : IServiceClient
         LastSimulateRequest = null;
         LastHistoryEntryId = null;
         LastSyslogConfig = null;
+        LastSavedProfile = null;
+        LastDeletedProfileId = null;
+        LastActivatedProfileId = null;
     }
 }

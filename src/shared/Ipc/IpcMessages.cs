@@ -766,6 +766,13 @@ public static class IpcMessageParser
                 GetSyslogConfigRequest.RequestType => Result<IpcRequest>.Success(new GetSyslogConfigRequest()),
                 SetSyslogConfigRequest.RequestType => ParseSetSyslogConfigRequest(json),
                 TestSyslogRequest.RequestType => Result<IpcRequest>.Success(new TestSyslogRequest()),
+                GetNetworkProfilesRequest.RequestType => Result<IpcRequest>.Success(new GetNetworkProfilesRequest()),
+                SaveNetworkProfileRequest.RequestType => ParseSaveNetworkProfileRequest(json),
+                DeleteNetworkProfileRequest.RequestType => ParseDeleteNetworkProfileRequest(json),
+                GetCurrentNetworkRequest.RequestType => Result<IpcRequest>.Success(new GetCurrentNetworkRequest()),
+                ActivateProfileRequest.RequestType => ParseActivateProfileRequest(json),
+                SetAutoSwitchRequest.RequestType => ParseSetAutoSwitchRequest(json),
+                GetAutoSwitchStatusRequest.RequestType => Result<IpcRequest>.Success(new GetAutoSwitchStatusRequest()),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -1061,6 +1068,82 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid set-syslog-config request JSON: {ex.Message}");
+        }
+    }
+
+    private static Result<IpcRequest> ParseSaveNetworkProfileRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<SaveNetworkProfileRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse save-network-profile request.");
+            }
+            if (request.Profile == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'profile' field in save-network-profile request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid save-network-profile request JSON: {ex.Message}");
+        }
+    }
+
+    private static Result<IpcRequest> ParseDeleteNetworkProfileRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<DeleteNetworkProfileRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse delete-network-profile request.");
+            }
+            if (string.IsNullOrWhiteSpace(request.ProfileId))
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'profileId' field in delete-network-profile request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid delete-network-profile request JSON: {ex.Message}");
+        }
+    }
+
+    private static Result<IpcRequest> ParseActivateProfileRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<ActivateProfileRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse activate-profile request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid activate-profile request JSON: {ex.Message}");
+        }
+    }
+
+    private static Result<IpcRequest> ParseSetAutoSwitchRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<SetAutoSwitchRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse set-auto-switch request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid set-auto-switch request JSON: {ex.Message}");
         }
     }
 }
