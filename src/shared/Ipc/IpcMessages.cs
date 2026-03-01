@@ -759,6 +759,9 @@ public static class IpcMessageParser
                 AuditLogsRequest.RequestType => ParseAuditLogsRequest(json),
                 BlockRulesRequest.RequestType => Result<IpcRequest>.Success(new BlockRulesRequest()),
                 SimulateRequest.RequestType => ParseSimulateRequest(json),
+                PolicyHistoryRequest.RequestType => ParsePolicyHistoryRequest(json),
+                PolicyHistoryRevertRequest.RequestType => ParsePolicyHistoryRevertRequest(json),
+                PolicyHistoryGetRequest.RequestType => ParsePolicyHistoryGetRequest(json),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -943,5 +946,73 @@ public static class IpcMessageParser
             return ErrorResponse.RequestTooLarge(size, WfpConstants.IpcMaxMessageSize);
         }
         return null;
+    }
+
+    /// <summary>
+    /// Parses a policy-history request, extracting the limit.
+    /// </summary>
+    private static Result<IpcRequest> ParsePolicyHistoryRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<PolicyHistoryRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse policy-history request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid policy-history request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a policy-history-revert request, extracting the entry ID.
+    /// </summary>
+    private static Result<IpcRequest> ParsePolicyHistoryRevertRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<PolicyHistoryRevertRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse policy-history-revert request.");
+            }
+            if (string.IsNullOrWhiteSpace(request.EntryId))
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'entryId' field in policy-history-revert request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid policy-history-revert request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a policy-history-get request, extracting the entry ID.
+    /// </summary>
+    private static Result<IpcRequest> ParsePolicyHistoryGetRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<PolicyHistoryGetRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse policy-history-get request.");
+            }
+            if (string.IsNullOrWhiteSpace(request.EntryId))
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Missing 'entryId' field in policy-history-get request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid policy-history-get request JSON: {ex.Message}");
+        }
     }
 }

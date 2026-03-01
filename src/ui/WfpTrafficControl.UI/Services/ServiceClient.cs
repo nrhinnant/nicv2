@@ -130,6 +130,27 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<SimulateRequest, SimulateResponse>(request, ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<PolicyHistoryResponse>> GetPolicyHistoryAsync(int limit = 50, CancellationToken ct = default)
+    {
+        var request = new PolicyHistoryRequest { Limit = limit };
+        return await SendRequestAsync<PolicyHistoryRequest, PolicyHistoryResponse>(request, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<PolicyHistoryRevertResponse>> RevertToHistoryAsync(string entryId, CancellationToken ct = default)
+    {
+        var request = new PolicyHistoryRevertRequest { EntryId = entryId };
+        return await SendRequestAsync<PolicyHistoryRevertRequest, PolicyHistoryRevertResponse>(request, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<PolicyHistoryGetResponse>> GetPolicyFromHistoryAsync(string entryId, CancellationToken ct = default)
+    {
+        var request = new PolicyHistoryGetRequest { EntryId = entryId };
+        return await SendRequestAsync<PolicyHistoryGetRequest, PolicyHistoryGetResponse>(request, ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

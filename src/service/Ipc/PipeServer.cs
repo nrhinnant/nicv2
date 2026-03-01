@@ -5,6 +5,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Audit;
+using WfpTrafficControl.Shared.History;
 using WfpTrafficControl.Shared.Ipc;
 using WfpTrafficControl.Shared.Lkg;
 using WfpTrafficControl.Shared.Native;
@@ -413,6 +414,9 @@ public sealed class PipeServer : IDisposable
             AuditLogsRequest auditLogsRequest => ProcessAuditLogsRequest(auditLogsRequest),
             BlockRulesRequest => ProcessBlockRulesRequest(),
             SimulateRequest simulateRequest => ProcessSimulateRequest(simulateRequest),
+            PolicyHistoryRequest historyRequest => ProcessPolicyHistoryRequest(historyRequest),
+            PolicyHistoryRevertRequest historyRevertRequest => ProcessPolicyHistoryRevertRequest(historyRevertRequest),
+            PolicyHistoryGetRequest historyGetRequest => ProcessPolicyHistoryGetRequest(historyGetRequest),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -673,6 +677,23 @@ public sealed class PipeServer : IDisposable
             else
             {
                 _logger.LogInformation("Policy saved as LKG at: {Path}", WfpConstants.GetLkgPolicyPath());
+            }
+
+            // Step 8: Save to history for versioning
+            var historyResult = PolicyHistoryStore.Save(
+                json,
+                request.PolicyPath,
+                "CLI",
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved);
+            if (historyResult.IsFailure)
+            {
+                _logger.LogWarning("Failed to save policy history (non-fatal): {Error}", historyResult.Error);
+                // Don't fail the apply - history save failure is non-fatal
+            }
+            else
+            {
+                _logger.LogDebug("Policy saved to history with ID: {EntryId}", historyResult.Value.Id);
             }
 
             _auditLog.Write(AuditLogEntry.ApplyFinished(
@@ -1039,6 +1060,147 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during simulate request");
             return SimulateResponse.Failure($"Simulation failed: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessPolicyHistoryRequest(PolicyHistoryRequest request)
+    {
+        _logger.LogDebug("Processing policy-history request (limit={Limit})", request.Limit);
+
+        try
+        {
+            var historyResult = PolicyHistoryStore.GetHistory(request.Limit);
+            if (historyResult.IsFailure)
+            {
+                return PolicyHistoryResponse.Failure(historyResult.Error.Message);
+            }
+
+            var entries = historyResult.Value
+                .Select(PolicyHistoryEntryDto.FromEntry)
+                .ToList();
+
+            var totalCount = PolicyHistoryStore.GetCount();
+
+            _logger.LogDebug("Returning {Count} history entries (total: {TotalCount})",
+                entries.Count, totalCount);
+
+            return PolicyHistoryResponse.Success(entries, totalCount);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during policy-history request");
+            return PolicyHistoryResponse.Failure($"Failed to get policy history: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessPolicyHistoryRevertRequest(PolicyHistoryRevertRequest request)
+    {
+        _logger.LogInformation("Processing policy-history-revert request (entryId={EntryId})", request.EntryId);
+        _auditLog.Write(AuditLogEntry.LkgRevertStarted(AuditSource.Cli));
+
+        try
+        {
+            // Step 1: Load the policy from history
+            var policyResult = PolicyHistoryStore.LoadPolicy(request.EntryId);
+            if (policyResult.IsFailure)
+            {
+                _logger.LogWarning("History entry not found: {EntryId}", request.EntryId);
+                _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "NOT_FOUND", policyResult.Error.Message));
+                return PolicyHistoryRevertResponse.NotFound(request.EntryId);
+            }
+
+            var policy = policyResult.Value;
+
+            _logger.LogInformation("Loaded policy from history: version={Version}, rules={RuleCount}",
+                policy.Version, policy.Rules.Count);
+
+            // Step 2: Compile the policy to WFP filters
+            var compilationResult = RuleCompiler.Compile(policy);
+            if (!compilationResult.IsSuccess)
+            {
+                _logger.LogWarning("History policy compilation failed with {ErrorCount} error(s)",
+                    compilationResult.Errors.Count);
+                _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "COMPILATION_FAILED", "Policy compilation failed"));
+                return PolicyHistoryRevertResponse.Failure("Policy compilation failed");
+            }
+
+            _logger.LogInformation("Policy compiled: {FilterCount} filter(s), {SkippedCount} rule(s) skipped",
+                compilationResult.Filters.Count, compilationResult.SkippedRules);
+
+            // Step 3: Apply the compiled filters to WFP
+            var applyResult = _wfpEngine.ApplyFilters(compilationResult.Filters);
+            if (applyResult.IsFailure)
+            {
+                _logger.LogError("Failed to apply history filters to WFP: {Error}", applyResult.Error);
+                _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "WFP_ERROR", applyResult.Error.Message));
+                return PolicyHistoryRevertResponse.Failure($"Failed to apply filters: {applyResult.Error.Message}");
+            }
+
+            _logger.LogInformation("History policy reverted successfully: {Created} filter(s) created, {Removed} filter(s) removed",
+                applyResult.Value.FiltersCreated, applyResult.Value.FiltersRemoved);
+
+            // Step 4: Update LKG to this reverted policy
+            var policyJsonResult = PolicyHistoryStore.LoadPolicyJson(request.EntryId);
+            if (policyJsonResult.IsSuccess)
+            {
+                var lkgResult = LkgStore.Save(policyJsonResult.Value, null);
+                if (lkgResult.IsFailure)
+                {
+                    _logger.LogWarning("Failed to update LKG after history revert (non-fatal): {Error}", lkgResult.Error);
+                }
+            }
+
+            _auditLog.Write(AuditLogEntry.LkgRevertFinished(
+                AuditSource.Cli,
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved,
+                compilationResult.SkippedRules,
+                policy.Version,
+                policy.Rules.Count));
+
+            return PolicyHistoryRevertResponse.Success(
+                applyResult.Value.FiltersCreated,
+                applyResult.Value.FiltersRemoved,
+                compilationResult.SkippedRules,
+                policy.Version,
+                policy.Rules.Count,
+                request.EntryId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during policy-history-revert request");
+            _auditLog.Write(AuditLogEntry.LkgRevertFailed(AuditSource.Cli, "EXCEPTION", ex.Message));
+            return PolicyHistoryRevertResponse.Failure($"History revert error: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessPolicyHistoryGetRequest(PolicyHistoryGetRequest request)
+    {
+        _logger.LogDebug("Processing policy-history-get request (entryId={EntryId})", request.EntryId);
+
+        try
+        {
+            // Get the entry metadata
+            var entryResult = PolicyHistoryStore.GetEntry(request.EntryId);
+            if (entryResult.IsFailure)
+            {
+                return PolicyHistoryGetResponse.NotFound(request.EntryId);
+            }
+
+            // Get the policy JSON
+            var jsonResult = PolicyHistoryStore.LoadPolicyJson(request.EntryId);
+            if (jsonResult.IsFailure)
+            {
+                return PolicyHistoryGetResponse.Failure(jsonResult.Error.Message);
+            }
+
+            var dto = PolicyHistoryEntryDto.FromEntry(entryResult.Value);
+            return PolicyHistoryGetResponse.Success(dto, jsonResult.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during policy-history-get request");
+            return PolicyHistoryGetResponse.Failure($"Failed to get history entry: {ex.Message}");
         }
     }
 

@@ -452,6 +452,105 @@ public class MockServiceClient : IServiceClient
         return Task.FromResult(Result<SimulateResponse>.Success(response));
     }
 
+    // Policy History Configuration
+    public List<PolicyHistoryEntryDto> HistoryEntries { get; set; } = new()
+    {
+        new PolicyHistoryEntryDto
+        {
+            Id = "20250301-120000-001",
+            AppliedAt = DateTime.UtcNow.AddHours(-1),
+            PolicyVersion = "1.0.0",
+            RuleCount = 5,
+            Source = "CLI",
+            FiltersCreated = 5,
+            FiltersRemoved = 0
+        },
+        new PolicyHistoryEntryDto
+        {
+            Id = "20250301-100000-001",
+            AppliedAt = DateTime.UtcNow.AddHours(-3),
+            PolicyVersion = "0.9.0",
+            RuleCount = 3,
+            Source = "UI",
+            FiltersCreated = 3,
+            FiltersRemoved = 2
+        }
+    };
+    public int HistoryTotalCount { get; set; } = 10;
+    public int GetPolicyHistoryCallCount { get; private set; }
+    public int RevertToHistoryCallCount { get; private set; }
+    public int GetPolicyFromHistoryCallCount { get; private set; }
+    public string? LastHistoryEntryId { get; private set; }
+
+    public Task<Result<PolicyHistoryResponse>> GetPolicyHistoryAsync(int limit = 50, CancellationToken ct = default)
+    {
+        GetPolicyHistoryCallCount++;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<PolicyHistoryResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        var entries = HistoryEntries.Take(limit).ToList();
+        return Task.FromResult(Result<PolicyHistoryResponse>.Success(
+            PolicyHistoryResponse.Success(entries, HistoryTotalCount)));
+    }
+
+    public Task<Result<PolicyHistoryRevertResponse>> RevertToHistoryAsync(string entryId, CancellationToken ct = default)
+    {
+        RevertToHistoryCallCount++;
+        LastHistoryEntryId = entryId;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<PolicyHistoryRevertResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        var entry = HistoryEntries.FirstOrDefault(e => e.Id == entryId);
+        if (entry == null)
+        {
+            return Task.FromResult(Result<PolicyHistoryRevertResponse>.Success(
+                PolicyHistoryRevertResponse.NotFound(entryId)));
+        }
+
+        return Task.FromResult(Result<PolicyHistoryRevertResponse>.Success(
+            PolicyHistoryRevertResponse.Success(
+                entry.FiltersCreated,
+                entry.FiltersRemoved,
+                0,
+                entry.PolicyVersion,
+                entry.RuleCount,
+                entryId)));
+    }
+
+    public Task<Result<PolicyHistoryGetResponse>> GetPolicyFromHistoryAsync(string entryId, CancellationToken ct = default)
+    {
+        GetPolicyFromHistoryCallCount++;
+        LastHistoryEntryId = entryId;
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<PolicyHistoryGetResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        var entry = HistoryEntries.FirstOrDefault(e => e.Id == entryId);
+        if (entry == null)
+        {
+            return Task.FromResult(Result<PolicyHistoryGetResponse>.Success(
+                PolicyHistoryGetResponse.NotFound(entryId)));
+        }
+
+        var policyJson = "{\"version\":\"" + entry.PolicyVersion + "\",\"defaultAction\":\"allow\",\"rules\":[]}";
+        return Task.FromResult(Result<PolicyHistoryGetResponse>.Success(
+            PolicyHistoryGetResponse.Success(entry, policyJson)));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -467,11 +566,15 @@ public class MockServiceClient : IServiceClient
         TeardownCallCount = 0;
         GetBlockRulesCallCount = 0;
         SimulateCallCount = 0;
+        GetPolicyHistoryCallCount = 0;
+        RevertToHistoryCallCount = 0;
+        GetPolicyFromHistoryCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;
         LastLogsSinceMinutes = null;
         LastWatchSetPath = null;
         LastSimulateRequest = null;
+        LastHistoryEntryId = null;
     }
 }

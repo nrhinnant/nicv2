@@ -68,6 +68,12 @@
                             Padding="12,6"
                             Margin="0,0,8,0"
                             ToolTip="Compare two policy files side by side" />
+                    <Button Content="History"
+                            Style="{DynamicResource SecondaryButtonStyle}"
+                            Command="{Binding OpenPolicyHistoryCommand}"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="View and revert to previous policy versions" />
                     <Button Content="{Binding ThemeButtonText}"
                             Style="{DynamicResource SecondaryButtonStyle}"
                             Command="{Binding ToggleThemeCommand}"

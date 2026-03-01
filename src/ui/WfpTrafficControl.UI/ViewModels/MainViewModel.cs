@@ -124,6 +124,17 @@ public partial class MainViewModel : ObservableObject
         dialog.ShowDialog();
     }
 
+    [RelayCommand]
+    private void OpenPolicyHistory()
+    {
+        var viewModel = App.Services.GetRequiredService<PolicyHistoryViewModel>();
+        var dialog = new PolicyHistoryView(viewModel)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
     private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
     {
         UpdateThemeButtonText(e.IsDarkTheme);

@@ -97,4 +97,22 @@ public interface IServiceClient
         string? localIp = null,
         int? localPort = null,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets the policy version history.
+    /// </summary>
+    /// <param name="limit">Maximum number of entries to return (default 50).</param>
+    Task<Result<PolicyHistoryResponse>> GetPolicyHistoryAsync(int limit = 50, CancellationToken ct = default);
+
+    /// <summary>
+    /// Reverts to a specific policy version from history.
+    /// </summary>
+    /// <param name="entryId">The history entry ID to revert to.</param>
+    Task<Result<PolicyHistoryRevertResponse>> RevertToHistoryAsync(string entryId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Gets a specific policy from history.
+    /// </summary>
+    /// <param name="entryId">The history entry ID.</param>
+    Task<Result<PolicyHistoryGetResponse>> GetPolicyFromHistoryAsync(string entryId, CancellationToken ct = default);
 }
