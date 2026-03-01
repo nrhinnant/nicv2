@@ -82,6 +82,7 @@ public partial class App : Application
         services.AddSingleton<IPolicyTemplateProvider, PolicyTemplateProvider>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IThemeService, ThemeService>();
+        services.AddSingleton<IAnalyticsService, AnalyticsService>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
@@ -93,6 +94,7 @@ public partial class App : Application
         services.AddTransient<PolicyDiffViewModel>();
         services.AddTransient<PolicyHistoryViewModel>();
         services.AddTransient<ConnectionMonitorViewModel>();
+        services.AddTransient<AnalyticsDashboardViewModel>();
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)

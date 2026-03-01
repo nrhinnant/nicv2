@@ -122,6 +122,11 @@
             <TabItem Header="Connections">
                 <views:ConnectionMonitorView DataContext="{Binding ConnectionMonitorViewModel}" />
             </TabItem>
+
+            <!-- Analytics Tab -->
+            <TabItem Header="Analytics">
+                <views:AnalyticsDashboardView DataContext="{Binding AnalyticsDashboardViewModel}" />
+            </TabItem>
         </TabControl>
 
         <!-- Status Bar -->
