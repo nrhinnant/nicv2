@@ -547,6 +547,45 @@ public partial class PolicyEditorViewModel : ObservableObject
         HasUnsavedChanges = true;
     }
 
+    /// <summary>
+    /// Opens a file dialog to browse for a process executable.
+    /// </summary>
+    [RelayCommand]
+    private void BrowseProcess()
+    {
+        if (SelectedRule == null)
+            return;
+
+        var filePath = _dialogService.ShowOpenFileDialog(
+            "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+            "Select Process");
+
+        if (!string.IsNullOrEmpty(filePath))
+        {
+            SelectedRule.Process = filePath;
+        }
+    }
+
+    /// <summary>
+    /// Opens the process picker dialog to select from running processes.
+    /// </summary>
+    [RelayCommand]
+    private void PickProcess()
+    {
+        if (SelectedRule == null)
+            return;
+
+        var dialog = new Views.ProcessPickerDialog
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+
+        if (dialog.ShowDialog() == true && !string.IsNullOrEmpty(dialog.SelectedPath))
+        {
+            SelectedRule.Process = dialog.SelectedPath;
+        }
+    }
+
     private void LoadPolicyToUI(Policy policy)
     {
         PolicyVersion = policy.Version;
@@ -703,6 +742,165 @@ public partial class RuleViewModel : ObservableObject
 
             return parts.Count > 0 ? string.Join(" ", parts) : "(any)";
         }
+    }
+
+    /// <summary>
+    /// Gets the JSON preview of this rule.
+    /// </summary>
+    public string JsonPreview
+    {
+        get
+        {
+            var rule = new Rule
+            {
+                Id = Id,
+                Action = Action,
+                Direction = Direction,
+                Protocol = Protocol,
+                Process = string.IsNullOrWhiteSpace(Process) ? null : Process,
+                Priority = Priority,
+                Enabled = Enabled,
+                Comment = string.IsNullOrWhiteSpace(Comment) ? null : Comment
+            };
+
+            // Remote endpoint
+            if (!string.IsNullOrWhiteSpace(RemoteIp) || !string.IsNullOrWhiteSpace(RemotePorts))
+            {
+                rule.Remote = new EndpointFilter
+                {
+                    Ip = string.IsNullOrWhiteSpace(RemoteIp) ? null : RemoteIp,
+                    Ports = string.IsNullOrWhiteSpace(RemotePorts) ? null : RemotePorts
+                };
+            }
+
+            // Local endpoint
+            if (!string.IsNullOrWhiteSpace(LocalIp) || !string.IsNullOrWhiteSpace(LocalPorts))
+            {
+                rule.Local = new EndpointFilter
+                {
+                    Ip = string.IsNullOrWhiteSpace(LocalIp) ? null : LocalIp,
+                    Ports = string.IsNullOrWhiteSpace(LocalPorts) ? null : LocalPorts
+                };
+            }
+
+            return System.Text.Json.JsonSerializer.Serialize(rule, JsonPreviewOptions);
+        }
+    }
+
+    private static readonly System.Text.Json.JsonSerializerOptions JsonPreviewOptions = new()
+    {
+        WriteIndented = true,
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
+
+    /// <summary>
+    /// Gets validation errors for the remote IP field.
+    /// </summary>
+    public string? RemoteIpError => ValidateIpCidr(RemoteIp);
+
+    /// <summary>
+    /// Gets validation errors for the local IP field.
+    /// </summary>
+    public string? LocalIpError => ValidateIpCidr(LocalIp);
+
+    /// <summary>
+    /// Gets validation errors for the remote ports field.
+    /// </summary>
+    public string? RemotePortsError => ValidatePorts(RemotePorts);
+
+    /// <summary>
+    /// Gets validation errors for the local ports field.
+    /// </summary>
+    public string? LocalPortsError => ValidatePorts(LocalPorts);
+
+    /// <summary>
+    /// Gets whether this rule has any validation errors.
+    /// </summary>
+    public bool HasValidationErrors =>
+        !string.IsNullOrEmpty(RemoteIpError) ||
+        !string.IsNullOrEmpty(LocalIpError) ||
+        !string.IsNullOrEmpty(RemotePortsError) ||
+        !string.IsNullOrEmpty(LocalPortsError);
+
+    private static string? ValidateIpCidr(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        // Check for CIDR notation
+        var parts = value.Split('/');
+        if (parts.Length > 2)
+            return "Invalid CIDR notation";
+
+        var ip = parts[0];
+        if (!System.Net.IPAddress.TryParse(ip, out _))
+            return "Invalid IP address";
+
+        if (parts.Length == 2)
+        {
+            if (!int.TryParse(parts[1], out var prefix) || prefix < 0 || prefix > 128)
+                return "Invalid CIDR prefix (0-128)";
+        }
+
+        return null;
+    }
+
+    private static string? ValidatePorts(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        // Ports can be: "80", "80-443", "80,443,8080-9000"
+        var segments = value.Split(',');
+        foreach (var segment in segments)
+        {
+            var trimmed = segment.Trim();
+            if (trimmed.Contains('-'))
+            {
+                var range = trimmed.Split('-');
+                if (range.Length != 2)
+                    return "Invalid port range format";
+
+                if (!ushort.TryParse(range[0].Trim(), out var start) ||
+                    !ushort.TryParse(range[1].Trim(), out var end))
+                    return "Port must be a number 0-65535";
+
+                if (start > end)
+                    return "Port range start must be <= end";
+            }
+            else
+            {
+                if (!ushort.TryParse(trimmed, out _))
+                    return "Port must be a number 0-65535";
+            }
+        }
+
+        return null;
+    }
+
+    // Notify property changed for derived properties
+    partial void OnIdChanged(string value) => NotifyDerivedProperties();
+    partial void OnActionChanged(string value) => NotifyDerivedProperties();
+    partial void OnDirectionChanged(string value) => NotifyDerivedProperties();
+    partial void OnProtocolChanged(string value) => NotifyDerivedProperties();
+    partial void OnProcessChanged(string value) => NotifyDerivedProperties();
+    partial void OnRemoteIpChanged(string value) => NotifyDerivedProperties();
+    partial void OnRemotePortsChanged(string value) => NotifyDerivedProperties();
+    partial void OnLocalIpChanged(string value) => NotifyDerivedProperties();
+    partial void OnLocalPortsChanged(string value) => NotifyDerivedProperties();
+    partial void OnPriorityChanged(int value) => NotifyDerivedProperties();
+    partial void OnEnabledChanged(bool value) => NotifyDerivedProperties();
+    partial void OnCommentChanged(string value) => NotifyDerivedProperties();
+
+    private void NotifyDerivedProperties()
+    {
+        OnPropertyChanged(nameof(Summary));
+        OnPropertyChanged(nameof(JsonPreview));
+        OnPropertyChanged(nameof(RemoteIpError));
+        OnPropertyChanged(nameof(LocalIpError));
+        OnPropertyChanged(nameof(RemotePortsError));
+        OnPropertyChanged(nameof(LocalPortsError));
+        OnPropertyChanged(nameof(HasValidationErrors));
     }
 
     /// <summary>
