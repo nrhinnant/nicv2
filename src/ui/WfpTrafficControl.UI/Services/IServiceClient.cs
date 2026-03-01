@@ -77,4 +77,24 @@ public interface IServiceClient
     /// Gets the current block rules from the active policy.
     /// </summary>
     Task<Result<BlockRulesResponse>> GetBlockRulesAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Simulates a connection against the current policy to determine what action would be taken.
+    /// </summary>
+    /// <param name="direction">Traffic direction: "inbound" or "outbound".</param>
+    /// <param name="protocol">Protocol: "tcp" or "udp".</param>
+    /// <param name="remoteIp">Remote IP address.</param>
+    /// <param name="remotePort">Remote port.</param>
+    /// <param name="processPath">Process path (optional).</param>
+    /// <param name="localIp">Local IP address (optional).</param>
+    /// <param name="localPort">Local port (optional).</param>
+    Task<Result<SimulateResponse>> SimulateAsync(
+        string direction,
+        string protocol,
+        string? remoteIp,
+        int? remotePort,
+        string? processPath = null,
+        string? localIp = null,
+        int? localPort = null,
+        CancellationToken ct = default);
 }

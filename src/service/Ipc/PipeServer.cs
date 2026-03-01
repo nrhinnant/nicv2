@@ -412,6 +412,7 @@ public sealed class PipeServer : IDisposable
             WatchStatusRequest => ProcessWatchStatusRequest(),
             AuditLogsRequest auditLogsRequest => ProcessAuditLogsRequest(auditLogsRequest),
             BlockRulesRequest => ProcessBlockRulesRequest(),
+            SimulateRequest simulateRequest => ProcessSimulateRequest(simulateRequest),
             _ => new ErrorResponse($"Unknown request type: {request.Type}")
         };
     }
@@ -999,6 +1000,45 @@ public sealed class PipeServer : IDisposable
         {
             _logger.LogError(ex, "Exception during block-rules request");
             return BlockRulesResponse.Failure($"Failed to get block rules: {ex.Message}");
+        }
+    }
+
+    private IpcResponse ProcessSimulateRequest(SimulateRequest request)
+    {
+        _logger.LogDebug("Processing simulate request: direction={Direction}, protocol={Protocol}, remote={RemoteIp}:{RemotePort}",
+            request.Direction, request.Protocol, request.RemoteIp, request.RemotePort);
+
+        try
+        {
+            // Load the current policy from LKG
+            var loadResult = LkgStore.Load();
+
+            if (!loadResult.Exists)
+            {
+                _logger.LogDebug("No policy loaded - returning default allow");
+                return SimulateResponse.NoPolicyLoaded();
+            }
+
+            if (loadResult.Error != null)
+            {
+                _logger.LogWarning("Policy is corrupt: {Error}", loadResult.Error);
+                return SimulateResponse.Failure($"Policy is corrupt: {loadResult.Error}");
+            }
+
+            var policy = loadResult.Policy!;
+
+            // Run the simulation
+            var result = RuleSimulator.Simulate(policy, request);
+
+            _logger.LogDebug("Simulation result: wouldAllow={WouldAllow}, matchedRule={MatchedRuleId}, rulesEvaluated={RulesEvaluated}",
+                result.WouldAllow, result.MatchedRuleId, result.RulesEvaluated);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during simulate request");
+            return SimulateResponse.Failure($"Simulation failed: {ex.Message}");
         }
     }
 

@@ -89,6 +89,7 @@ public partial class App : Application
         services.AddTransient<PolicyEditorViewModel>();
         services.AddTransient<LogsViewModel>();
         services.AddTransient<BlockRulesViewModel>();
+        services.AddTransient<RuleSimulatorViewModel>();
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)

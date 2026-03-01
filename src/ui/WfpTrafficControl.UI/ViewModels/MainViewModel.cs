@@ -1,6 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.DependencyInjection;
 using WfpTrafficControl.UI.Services;
+using WfpTrafficControl.UI.Views;
 
 namespace WfpTrafficControl.UI.ViewModels;
 
@@ -101,6 +103,14 @@ public partial class MainViewModel : ObservableObject
     private void ToggleTheme()
     {
         _themeService.ToggleTheme();
+    }
+
+    [RelayCommand]
+    private void OpenRuleSimulator()
+    {
+        var viewModel = App.Services.GetRequiredService<RuleSimulatorViewModel>();
+        var dialog = new RuleSimulatorView(viewModel);
+        dialog.ShowDialog();
     }
 
     private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)

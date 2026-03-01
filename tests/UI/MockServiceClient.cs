@@ -49,6 +49,15 @@ public class MockServiceClient : IServiceClient
     public bool TeardownProviderRemoved { get; set; } = true;
     public bool TeardownSublayerRemoved { get; set; } = true;
 
+    // Simulate Configuration
+    public bool SimulatePolicyLoaded { get; set; } = true;
+    public string SimulatePolicyVersion { get; set; } = "1.0.0";
+    public bool SimulateWouldAllow { get; set; } = true;
+    public string? SimulateMatchedRuleId { get; set; } = "test-rule";
+    public string? SimulateMatchedAction { get; set; } = "allow";
+    public bool SimulateUsedDefaultAction { get; set; } = false;
+    public SimulateRequest? LastSimulateRequest { get; private set; }
+
     // Block Rules Configuration
     public bool BlockRulesPolicyLoaded { get; set; } = true;
     public string BlockRulesPolicyVersion { get; set; } = "1.0.0";
@@ -91,6 +100,7 @@ public class MockServiceClient : IServiceClient
     public int BootstrapCallCount { get; private set; }
     public int TeardownCallCount { get; private set; }
     public int GetBlockRulesCallCount { get; private set; }
+    public int SimulateCallCount { get; private set; }
     public string? LastApplyPath { get; private set; }
     public string? LastValidateJson { get; private set; }
 
@@ -384,6 +394,64 @@ public class MockServiceClient : IServiceClient
             BlockRulesResponse.Success(BlockRules, BlockRulesPolicyVersion)));
     }
 
+    public Task<Result<SimulateResponse>> SimulateAsync(
+        string direction,
+        string protocol,
+        string? remoteIp,
+        int? remotePort,
+        string? processPath = null,
+        string? localIp = null,
+        int? localPort = null,
+        CancellationToken ct = default)
+    {
+        SimulateCallCount++;
+        LastSimulateRequest = new SimulateRequest
+        {
+            Direction = direction,
+            Protocol = protocol,
+            RemoteIp = remoteIp,
+            RemotePort = remotePort,
+            ProcessPath = processPath,
+            LocalIp = localIp,
+            LocalPort = localPort
+        };
+
+        if (!ShouldConnect)
+        {
+            return Task.FromResult(Result<SimulateResponse>.Failure(
+                ErrorCodes.ServiceUnavailable,
+                "Service not running"));
+        }
+
+        if (!SimulatePolicyLoaded)
+        {
+            return Task.FromResult(Result<SimulateResponse>.Success(
+                SimulateResponse.NoPolicyLoaded()));
+        }
+
+        var response = SimulateResponse.Success(
+            wouldAllow: SimulateWouldAllow,
+            matchedRuleId: SimulateUsedDefaultAction ? null : SimulateMatchedRuleId,
+            matchedAction: SimulateUsedDefaultAction ? null : SimulateMatchedAction,
+            matchedRuleComment: null,
+            usedDefaultAction: SimulateUsedDefaultAction,
+            defaultAction: "allow",
+            evaluationTrace: new List<SimulateEvaluationStep>
+            {
+                new SimulateEvaluationStep
+                {
+                    RuleId = SimulateMatchedRuleId ?? "test-rule",
+                    Action = SimulateMatchedAction ?? "allow",
+                    Matched = !SimulateUsedDefaultAction,
+                    Reason = SimulateUsedDefaultAction ? "No match" : "All criteria matched",
+                    Priority = 100
+                }
+            },
+            policyVersion: SimulatePolicyVersion);
+
+        return Task.FromResult(Result<SimulateResponse>.Success(response));
+    }
+
     public void Reset()
     {
         PingCallCount = 0;
@@ -398,10 +466,12 @@ public class MockServiceClient : IServiceClient
         BootstrapCallCount = 0;
         TeardownCallCount = 0;
         GetBlockRulesCallCount = 0;
+        SimulateCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
         LastLogsTail = null;
         LastLogsSinceMinutes = null;
         LastWatchSetPath = null;
+        LastSimulateRequest = null;
     }
 }

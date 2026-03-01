@@ -106,6 +106,30 @@ public sealed class ServiceClient : IServiceClient, IDisposable
         return await SendRequestAsync<BlockRulesRequest, BlockRulesResponse>(new BlockRulesRequest(), ct);
     }
 
+    /// <inheritdoc />
+    public async Task<Result<SimulateResponse>> SimulateAsync(
+        string direction,
+        string protocol,
+        string? remoteIp,
+        int? remotePort,
+        string? processPath = null,
+        string? localIp = null,
+        int? localPort = null,
+        CancellationToken ct = default)
+    {
+        var request = new SimulateRequest
+        {
+            Direction = direction,
+            Protocol = protocol,
+            RemoteIp = remoteIp,
+            RemotePort = remotePort,
+            ProcessPath = processPath,
+            LocalIp = localIp,
+            LocalPort = localPort
+        };
+        return await SendRequestAsync<SimulateRequest, SimulateResponse>(request, ct);
+    }
+
     /// <summary>
     /// Sends a request to the service and receives a response.
     /// Creates a new connection for each request (simple approach for UI).

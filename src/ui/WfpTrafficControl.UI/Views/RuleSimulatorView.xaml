@@ -1,0 +1,345 @@
+<Window x:Class="WfpTrafficControl.UI.Views.RuleSimulatorView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:WfpTrafficControl.UI.ViewModels"
+        xmlns:converters="clr-namespace:WfpTrafficControl.UI.Converters"
+        Title="Rule Simulator - What If Testing"
+        Width="700"
+        Height="650"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource BackgroundBrush}">
+
+    <Window.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:InverseBoolToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" />
+        <converters:BooleanToToggleTextConverter x:Key="BooleanToToggleTextConverter" />
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Rule Simulator"
+                       FontSize="20" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="Test if a hypothetical connection would be allowed or blocked by your current policy."
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Input Form -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="16"
+                Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Direction -->
+                <TextBlock Grid.Row="0" Grid.Column="0"
+                           Text="Direction:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Margin="0,0,0,12" />
+                <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                          ItemsSource="{x:Static vm:RuleSimulatorViewModel.AvailableDirections}"
+                          SelectedItem="{Binding Direction}"
+                          Margin="0,0,0,12" />
+
+                <!-- Protocol -->
+                <TextBlock Grid.Row="1" Grid.Column="0"
+                           Text="Protocol:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Margin="0,0,0,12" />
+                <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                          ItemsSource="{x:Static vm:RuleSimulatorViewModel.AvailableProtocols}"
+                          SelectedItem="{Binding Protocol}"
+                          Margin="0,0,0,12" />
+
+                <!-- Remote IP -->
+                <TextBlock Grid.Row="2" Grid.Column="0"
+                           Text="Remote IP: *"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Margin="0,0,0,12" />
+                <TextBox Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                         Text="{Binding RemoteIp, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Remote IP address (e.g., 192.168.1.1, 10.0.0.0)"
+                         Margin="0,0,0,12" />
+
+                <!-- Remote Port -->
+                <TextBlock Grid.Row="3" Grid.Column="0"
+                           Text="Remote Port:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Margin="0,0,0,12" />
+                <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2"
+                         Text="{Binding RemotePort, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Remote port number (e.g., 443, 80)"
+                         Margin="0,0,0,12" />
+
+                <!-- Process Path -->
+                <TextBlock Grid.Row="4" Grid.Column="0"
+                           Text="Process:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           Margin="0,0,0,12" />
+                <Grid Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                             Text="{Binding ProcessPath, UpdateSourceTrigger=PropertyChanged}"
+                             ToolTip="Full path to the process executable (optional)" />
+                    <Button Grid.Column="1" Content="..."
+                            Command="{Binding BrowseProcessCommand}"
+                            Width="30" Margin="4,0,0,0"
+                            ToolTip="Browse for executable" />
+                    <Button Grid.Column="2" Content="Pick"
+                            Command="{Binding PickProcessCommand}"
+                            Margin="4,0,0,0"
+                            ToolTip="Pick from running processes" />
+                </Grid>
+
+                <!-- Local IP (Optional) -->
+                <TextBlock Grid.Row="5" Grid.Column="0"
+                           Text="Local IP:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Margin="0,0,0,12" />
+                <TextBox Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                         Text="{Binding LocalIp, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Local IP address (optional)"
+                         Margin="0,0,0,12" />
+
+                <!-- Local Port (Optional) -->
+                <TextBlock Grid.Row="6" Grid.Column="0"
+                           Text="Local Port:"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Margin="0,0,0,12" />
+                <TextBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
+                         Text="{Binding LocalPort, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Local port number (optional)"
+                         Margin="0,0,0,12" />
+            </Grid>
+        </Border>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,16">
+            <Button Content="Simulate"
+                    Command="{Binding SimulateCommand}"
+                    IsEnabled="{Binding CanSimulate}"
+                    Style="{DynamicResource PrimaryButtonStyle}"
+                    Padding="24,8"
+                    Margin="0,0,8,0" />
+            <Button Content="Clear"
+                    Command="{Binding ClearFormCommand}"
+                    Padding="16,8" />
+        </StackPanel>
+
+        <!-- Results Section -->
+        <Border Grid.Row="3"
+                Background="{DynamicResource CardBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Padding="16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Loading State -->
+                <StackPanel Grid.Row="0" Grid.RowSpan="2"
+                            Visibility="{Binding IsSimulating, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="Simulating..."
+                               FontSize="16"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Error State -->
+                <Border Grid.Row="0" Grid.RowSpan="2"
+                        Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}"
+                        Background="#FFF0F0"
+                        CornerRadius="4"
+                        Padding="16"
+                        VerticalAlignment="Top">
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               Foreground="#D32F2F"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <!-- Result Display -->
+                <StackPanel Grid.Row="0"
+                            Visibility="{Binding HasResult, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+                    <!-- Result Banner -->
+                    <Border CornerRadius="4" Padding="16" Margin="0,0,0,16">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E8F5E9" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ResultWouldAllow}" Value="False">
+                                        <Setter Property="Background" Value="#FFEBEE" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <TextBlock FontSize="24" FontWeight="Bold" HorizontalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="ALLOWED" />
+                                        <Setter Property="Foreground" Value="#2E7D32" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ResultWouldAllow}" Value="False">
+                                                <Setter Property="Text" Value="BLOCKED" />
+                                                <Setter Property="Foreground" Value="#C62828" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding ResultSummary}"
+                                       TextWrapping="Wrap"
+                                       TextAlignment="Center"
+                                       Margin="0,8,0,0"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Matched Rule Details -->
+                    <Border Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12"
+                            Margin="0,0,0,12"
+                            Visibility="{Binding MatchedRuleId, Converter={StaticResource NullToVisibilityConverter}}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Rule ID:"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding MatchedRuleId}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" Margin="0,0,0,4" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Action:"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding MatchedRuleAction}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,4" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Comment:"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       Visibility="{Binding MatchedRuleComment, Converter={StaticResource NullToVisibilityConverter}}" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding MatchedRuleComment}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Visibility="{Binding MatchedRuleComment, Converter={StaticResource NullToVisibilityConverter}}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <Button Content="Copy Result"
+                                Command="{Binding CopyResultCommand}"
+                                Padding="12,6"
+                                Margin="0,0,8,0" />
+                        <Button Content="{Binding ShowEvaluationTrace, Converter={StaticResource BooleanToToggleTextConverter}, ConverterParameter='Hide Trace|Show Trace'}"
+                                Command="{Binding ToggleEvaluationTraceCommand}"
+                                Padding="12,6" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Evaluation Trace -->
+                <Border Grid.Row="1"
+                        Visibility="{Binding ShowEvaluationTrace, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Background="{DynamicResource BackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="8"
+                        Margin="0,8,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Evaluation Trace" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   Margin="0,0,0,8" />
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding EvaluationTrace}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserAddRows="False"
+                                  CanUserDeleteRows="False"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderThickness="0"
+                                  Background="Transparent">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Rule ID" Binding="{Binding RuleId}" Width="120" />
+                                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="70" />
+                                <DataGridTextColumn Header="Priority" Binding="{Binding Priority}" Width="60" />
+                                <DataGridCheckBoxColumn Header="Matched" Binding="{Binding Matched}" Width="60" />
+                                <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                </Border>
+
+                <!-- Empty State -->
+                <StackPanel Grid.Row="0" Grid.RowSpan="2"
+                            VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding HasResult, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                    <TextBlock Text="Enter connection details and click Simulate"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               Visibility="{Binding ErrorMessage, Converter={StaticResource InverseNullToVisibilityConverter}}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

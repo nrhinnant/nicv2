@@ -758,6 +758,7 @@ public static class IpcMessageParser
                 WatchStatusRequest.RequestType => Result<IpcRequest>.Success(new WatchStatusRequest()),
                 AuditLogsRequest.RequestType => ParseAuditLogsRequest(json),
                 BlockRulesRequest.RequestType => Result<IpcRequest>.Success(new BlockRulesRequest()),
+                SimulateRequest.RequestType => ParseSimulateRequest(json),
                 null => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "'type' field cannot be null."),
                 _ => Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Unknown request type: {requestType}")
             };
@@ -878,6 +879,26 @@ public static class IpcMessageParser
         catch (JsonException ex)
         {
             return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid audit-logs request JSON: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Parses a simulate request, extracting the connection parameters.
+    /// </summary>
+    private static Result<IpcRequest> ParseSimulateRequest(string json)
+    {
+        try
+        {
+            var request = JsonSerializer.Deserialize<SimulateRequest>(json, JsonOptions);
+            if (request == null)
+            {
+                return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, "Failed to parse simulate request.");
+            }
+            return Result<IpcRequest>.Success(request);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IpcRequest>.Failure(ErrorCodes.InvalidArgument, $"Invalid simulate request JSON: {ex.Message}");
         }
     }
 

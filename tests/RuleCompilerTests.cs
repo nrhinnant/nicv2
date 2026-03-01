@@ -2,6 +2,7 @@ using WfpTrafficControl.Shared;
 using WfpTrafficControl.Shared.Ipc;
 using WfpTrafficControl.Shared.Policy;
 using Xunit;
+using PolicyModel = WfpTrafficControl.Shared.Policy.Policy;
 
 namespace WfpTrafficControl.Tests;
 
@@ -28,7 +29,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompileEmptyPolicyReturnsNoFilters()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -227,7 +228,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompileMixedInboundOutboundCreatesFiltersWithCorrectDirection()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -417,7 +418,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompileMixedTcpUdpOutboundCreatesBothFilters()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -889,7 +890,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompileMixedEnabledDisabledCompilesOnlyEnabled()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -961,7 +962,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompilePriorityAffectsWeight()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -1065,7 +1066,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompileDifferentRuleIdGeneratesDifferentGuid()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -1315,7 +1316,7 @@ public class RuleCompilerTests
     public void CompileSimilarRulesGenerateUniqueGuids()
     {
         // Test collision resistance for similar but not identical rules
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -1390,7 +1391,7 @@ public class RuleCompilerTests
     [Fact]
     public void CompileMultipleUnsupportedRulesReturnsAllErrors()
     {
-        var policy = new Policy
+        var policy = new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
@@ -1416,9 +1417,9 @@ public class RuleCompilerTests
     // Helper Methods
     // ========================================
 
-    private static Policy CreatePolicy(Rule rule)
+    private static PolicyModel CreatePolicy(Rule rule)
     {
-        return new Policy
+        return new PolicyModel
         {
             Version = "1.0.0",
             DefaultAction = "allow",
