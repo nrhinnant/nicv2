@@ -1,5 +1,6 @@
 using System.Windows;
 using Microsoft.Win32;
+using WfpTrafficControl.UI.Views;
 
 namespace WfpTrafficControl.UI.Services;
 
@@ -94,5 +95,19 @@ public sealed class DialogService : IDialogService
         };
 
         return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
+    /// <inheritdoc />
+    public string? ShowTextInputDialog(string prompt, string title = "Input", string? initialText = null)
+    {
+        var dialog = new TextInputDialog
+        {
+            Title = title,
+            Prompt = prompt,
+            InputText = initialText ?? string.Empty,
+            Owner = Application.Current.MainWindow
+        };
+
+        return dialog.ShowDialog() == true ? dialog.InputText : null;
     }
 }

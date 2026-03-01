@@ -537,4 +537,74 @@ public class DashboardViewModelTests
         Assert.Equal(1, _mockDialog.ErrorCount);
         Assert.Contains("Access denied", _mockDialog.LastErrorMessage);
     }
+
+    // ===== Validate JSON Tests =====
+
+    [Fact]
+    public async Task ValidateJsonCommandWhenUserCancelsDoesNotValidate()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockDialog.TextInputResult = null; // User cancels
+
+        // Act
+        await _viewModel.ValidateJsonCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.ValidateCallCount);
+    }
+
+    [Fact]
+    public async Task ValidateJsonCommandWhenEmptyInputDoesNotValidate()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockDialog.TextInputResult = "   "; // Whitespace only
+
+        // Act
+        await _viewModel.ValidateJsonCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(0, _mockService.ValidateCallCount);
+    }
+
+    [Fact]
+    public async Task ValidateJsonCommandWhenValidShowsSuccess()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ValidationIsValid = true;
+        _mockDialog.TextInputResult = "{\"version\": \"1.0.0\", \"rules\": []}";
+
+        // Act
+        await _viewModel.ValidateJsonCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.ValidateCallCount);
+        Assert.Equal("{\"version\": \"1.0.0\", \"rules\": []}", _mockService.LastValidateJson);
+        Assert.Equal(1, _mockDialog.SuccessCount);
+        Assert.Contains("valid", _mockDialog.LastSuccessMessage);
+    }
+
+    [Fact]
+    public async Task ValidateJsonCommandWhenInvalidShowsError()
+    {
+        // Arrange
+        _mockService.ShouldConnect = true;
+        _mockService.ValidationIsValid = false;
+        _mockService.ValidationErrors = new List<WfpTrafficControl.Shared.Ipc.ValidationErrorDto>
+        {
+            new() { Path = "rules[0]", Message = "Invalid protocol" }
+        };
+        _mockDialog.TextInputResult = "{\"invalid\": \"json\"}";
+
+        // Act
+        await _viewModel.ValidateJsonCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(1, _mockService.ValidateCallCount);
+        Assert.Equal(1, _mockDialog.ErrorCount);
+        Assert.Contains("Invalid protocol", _mockDialog.LastErrorMessage);
+        Assert.Contains("rules[0]", _mockDialog.LastErrorMessage);
+    }
 }

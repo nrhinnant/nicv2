@@ -53,4 +53,13 @@ public interface IDialogService
     /// <param name="title">Dialog title</param>
     /// <returns>Selected file path, or null if cancelled.</returns>
     string? ShowSaveFileDialog(string filter = "JSON files (*.json)|*.json|All files (*.*)|*.*", string? defaultFileName = null, string title = "Save File");
+
+    /// <summary>
+    /// Shows a text input dialog for multiline text entry.
+    /// </summary>
+    /// <param name="prompt">Prompt text displayed above the input area.</param>
+    /// <param name="title">Dialog title.</param>
+    /// <param name="initialText">Initial text in the input area.</param>
+    /// <returns>The entered text, or null if cancelled.</returns>
+    string? ShowTextInputDialog(string prompt, string title = "Input", string? initialText = null);
 }

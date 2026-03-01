@@ -11,6 +11,7 @@ public class MockDialogService : IDialogService
     public bool ConfirmResult { get; set; } = true;
     public string? OpenFileResult { get; set; } = @"C:\test\policy.json";
     public string? SaveFileResult { get; set; } = @"C:\test\saved-policy.json";
+    public string? TextInputResult { get; set; } = null;
 
     // Queue-based results for testing multiple sequential confirmations
     public Queue<bool>? ConfirmWarningResults { get; set; }
@@ -24,6 +25,7 @@ public class MockDialogService : IDialogService
     public int ConfirmWarningCount { get; private set; }
     public int OpenFileCount { get; private set; }
     public int SaveFileCount { get; private set; }
+    public int TextInputCount { get; private set; }
 
     public string? LastSuccessMessage { get; private set; }
     public string? LastErrorMessage { get; private set; }
@@ -86,6 +88,12 @@ public class MockDialogService : IDialogService
         return SaveFileResult;
     }
 
+    public string? ShowTextInputDialog(string prompt, string title = "Input", string? initialText = null)
+    {
+        TextInputCount++;
+        return TextInputResult;
+    }
+
     public void Reset()
     {
         SuccessCount = 0;
@@ -96,10 +104,12 @@ public class MockDialogService : IDialogService
         ConfirmWarningCount = 0;
         OpenFileCount = 0;
         SaveFileCount = 0;
+        TextInputCount = 0;
         LastSuccessMessage = null;
         LastErrorMessage = null;
         LastWarningMessage = null;
         LastConfirmMessage = null;
         ConfirmWarningResults = null;
+        TextInputResult = null;
     }
 }

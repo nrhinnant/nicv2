@@ -185,7 +185,14 @@
 
                 <Button Content="Refresh"
                         Style="{StaticResource SecondaryButtonStyle}"
-                        Command="{Binding RefreshStatusCommand}" />
+                        Command="{Binding RefreshStatusCommand}"
+                        Margin="0,0,12,0" />
+
+                <Button Content="Validate JSON..."
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Command="{Binding ValidateJsonCommand}"
+                        IsEnabled="{Binding IsConnected}"
+                        ToolTip="Validate policy JSON without saving to a file" />
 
                 <!-- Loading Indicators -->
                 <TextBlock Text="Applying..."
@@ -205,6 +212,12 @@
                            Margin="16,0,0,0"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            Visibility="{Binding IsRevertingToLkg, Converter={StaticResource BoolToVisibility}}" />
+
+                <TextBlock Text="Validating..."
+                           VerticalAlignment="Center"
+                           Margin="16,0,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Visibility="{Binding IsValidating, Converter={StaticResource BoolToVisibility}}" />
             </StackPanel>
 
             <!-- Hot Reload Section -->

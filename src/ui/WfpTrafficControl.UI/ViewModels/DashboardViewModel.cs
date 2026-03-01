@@ -94,6 +94,9 @@ public partial class DashboardViewModel : ObservableObject
     [ObservableProperty]
     private bool _isTearingDown;
 
+    [ObservableProperty]
+    private bool _isValidating;
+
     // Recent Activity
     [ObservableProperty]
     private ObservableCollection<AuditLogEntryDto> _recentActivity = new();
@@ -454,6 +457,89 @@ public partial class DashboardViewModel : ObservableObject
         {
             IsTearingDown = false;
         }
+    }
+
+    /// <summary>
+    /// Validates policy JSON directly without requiring a file.
+    /// </summary>
+    [RelayCommand]
+    private async Task ValidateJsonAsync()
+    {
+        var json = _dialogService.ShowTextInputDialog(
+            "Paste or type policy JSON below to validate:",
+            "Validate Policy JSON",
+            GetSamplePolicyJson());
+
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        IsValidating = true;
+
+        try
+        {
+            var result = await _serviceClient.ValidateAsync(json);
+
+            if (result.IsSuccess)
+            {
+                var response = result.Value;
+                if (response.Valid)
+                {
+                    _dialogService.ShowSuccess(
+                        $"Policy is valid!\n\n" +
+                        $"Version: {response.Version}\n" +
+                        $"Rule count: {response.RuleCount}",
+                        "Validation Successful");
+                }
+                else
+                {
+                    var errorList = response.Errors.Count > 0
+                        ? string.Join("\n", response.Errors.Select(e =>
+                            $"  - [{e.Path}] {e.Message}"))
+                        : "  - Unknown validation error";
+
+                    _dialogService.ShowError(
+                        $"Policy validation failed:\n\n{errorList}",
+                        "Validation Failed");
+                }
+            }
+            else
+            {
+                _dialogService.ShowError(
+                    $"Error validating policy:\n\n{result.Error.Message}",
+                    "Validation Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError(
+                $"Error validating policy:\n\n{ex.Message}",
+                "Error");
+        }
+        finally
+        {
+            IsValidating = false;
+        }
+    }
+
+    private static string GetSamplePolicyJson()
+    {
+        return """
+            {
+              "version": "1.0.0",
+              "defaultAction": "allow",
+              "rules": [
+                {
+                  "id": "example-block",
+                  "action": "block",
+                  "direction": "outbound",
+                  "protocol": "tcp",
+                  "remote": {
+                    "ports": "443"
+                  }
+                }
+              ]
+            }
+            """;
     }
 
     private async Task RefreshRecentActivityAsync()
