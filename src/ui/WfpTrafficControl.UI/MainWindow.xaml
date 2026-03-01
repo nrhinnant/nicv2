@@ -82,6 +82,11 @@
             <TabItem Header="Policy Editor">
                 <views:PolicyEditorView DataContext="{Binding PolicyEditorViewModel}" />
             </TabItem>
+
+            <!-- Logs Tab -->
+            <TabItem Header="Logs">
+                <views:LogsView DataContext="{Binding LogsViewModel}" />
+            </TabItem>
         </TabControl>
 
         <!-- Status Bar -->

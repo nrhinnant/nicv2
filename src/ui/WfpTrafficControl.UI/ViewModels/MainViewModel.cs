@@ -33,16 +33,21 @@ public partial class MainViewModel : ObservableObject
     private PolicyEditorViewModel _policyEditorViewModel;
 
     [ObservableProperty]
+    private LogsViewModel _logsViewModel;
+
+    [ObservableProperty]
     private int _selectedTabIndex;
 
     public MainViewModel(
         IServiceClient serviceClient,
         DashboardViewModel dashboardViewModel,
-        PolicyEditorViewModel policyEditorViewModel)
+        PolicyEditorViewModel policyEditorViewModel,
+        LogsViewModel logsViewModel)
     {
         _serviceClient = serviceClient;
         _dashboardViewModel = dashboardViewModel;
         _policyEditorViewModel = policyEditorViewModel;
+        _logsViewModel = logsViewModel;
 
         // Subscribe to dashboard updates
         _dashboardViewModel.StatusUpdated += OnDashboardStatusUpdated;

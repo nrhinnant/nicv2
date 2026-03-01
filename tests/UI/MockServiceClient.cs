@@ -28,6 +28,13 @@ public class MockServiceClient : IServiceClient
     public bool ValidationIsValid { get; set; } = true;
     public List<ValidationErrorDto> ValidationErrors { get; set; } = new();
 
+    // Logs Configuration
+    public int LogEntryCount { get; set; } = 5;
+    public int LogTotalCount { get; set; } = 100;
+    public string LogFilePath { get; set; } = @"C:\ProgramData\WfpTrafficControl\audit.log";
+    public int? LastLogsTail { get; set; }
+    public int? LastLogsSinceMinutes { get; set; }
+
     // Call tracking
     public int PingCallCount { get; private set; }
     public int ApplyCallCount { get; private set; }
@@ -151,6 +158,8 @@ public class MockServiceClient : IServiceClient
     public Task<Result<AuditLogsResponse>> GetLogsAsync(int? tail = null, int? sinceMinutes = null, CancellationToken ct = default)
     {
         GetLogsCallCount++;
+        LastLogsTail = tail;
+        LastLogsSinceMinutes = sinceMinutes;
 
         if (!ShouldConnect)
         {
@@ -159,23 +168,28 @@ public class MockServiceClient : IServiceClient
                 "Service not running"));
         }
 
-        var entries = new List<AuditLogEntryDto>
+        var entries = new List<AuditLogEntryDto>();
+        for (int i = 0; i < LogEntryCount; i++)
         {
-            new()
+            entries.Add(new AuditLogEntryDto
             {
-                Timestamp = DateTime.UtcNow.ToString("o"),
-                Event = "apply-finished",
+                Timestamp = DateTime.UtcNow.AddMinutes(-i).ToString("o"),
+                Event = i % 2 == 0 ? "apply-finished" : "rollback-finished",
+                Source = "cli",
                 Status = "success",
-                FiltersCreated = FilterCount
-            }
-        };
+                FiltersCreated = FilterCount,
+                PolicyVersion = "1.0.0"
+            });
+        }
 
         return Task.FromResult(Result<AuditLogsResponse>.Success(new AuditLogsResponse
         {
-            Ok = true,
+            Ok = ShouldSucceed,
             Entries = entries,
             Count = entries.Count,
-            TotalCount = entries.Count
+            TotalCount = LogTotalCount,
+            LogPath = LogFilePath,
+            Error = ShouldSucceed ? null : ErrorMessage
         }));
     }
 
@@ -212,5 +226,7 @@ public class MockServiceClient : IServiceClient
         ValidateCallCount = 0;
         LastApplyPath = null;
         LastValidateJson = null;
+        LastLogsTail = null;
+        LastLogsSinceMinutes = null;
     }
 }

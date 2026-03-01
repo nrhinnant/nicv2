@@ -1,6 +1,47 @@
 # WfpTrafficControl Release Package Runbook
 
-This document describes the components included in the WfpTrafficControl release package and provides step-by-step instructions for installation, configuration, and operation.
+This document provides step-by-step instructions for installing, configuring, and operating WfpTrafficControl.
+
+---
+
+## What Is WfpTrafficControl?
+
+WfpTrafficControl is a **Windows network firewall system** that allows administrators to control network traffic at the operating system level using Microsoft's Windows Filtering Platform (WFP). It operates similarly to Windows Firewall but with a policy-as-code approach: you define rules in JSON files, and the system enforces them at the kernel network stack.
+
+### Implemented Capabilities
+
+| Capability | Description |
+|------------|-------------|
+| **Policy-based filtering** | Define allow/block rules for TCP and UDP traffic using JSON policy files |
+| **Process-level control** | Restrict network access per executable (e.g., block `telnet.exe` from any outbound connections) |
+| **IP/CIDR filtering** | Allow or block traffic to/from specific IP addresses or ranges |
+| **Port filtering** | Control access by port number, ranges, or lists (e.g., `"80,443"`, `"1024-65535"`) |
+| **Bidirectional rules** | Apply rules to inbound, outbound, or both traffic directions |
+| **Idempotent apply** | Re-applying the same policy makes no changes (infrastructure-as-code style) |
+| **Transactional safety** | Policy changes are atomic—all filters update or none do |
+| **Panic rollback** | Instantly remove all filters to restore connectivity |
+| **Last-Known-Good (LKG)** | Automatically saves successful policies; revert anytime |
+| **Fail-open design** | Service failures restore normal connectivity (no lockout risk) |
+| **Audit logging** | All control-plane operations are logged for troubleshooting |
+
+### Current Limitations
+
+- **IPv4 only** — IPv6 is not yet supported
+- **No ICMP filtering** — Only TCP, UDP, and "any" protocols
+- **No deep packet inspection** — Layer 4 filtering only (no L7/application-layer rules)
+- **Local administration only** — No remote management; CLI/UI must run on the same machine
+
+---
+
+## Prerequisites
+
+| Requirement | Details |
+|-------------|---------|
+| **Operating System** | Windows 10, Windows 11, or Windows Server 2016+ |
+| **Architecture** | x64 only |
+| **Runtime** | .NET 8.0 Runtime (included in MSI installer; required for manual install) |
+| **Privileges** | Administrator rights required for installation and operation |
+| **Network** | WFP access requires LocalSystem service account (configured automatically) |
 
 ---
 
@@ -111,28 +152,23 @@ The `wfpctl` CLI provides administrative control over the WfpTrafficControl serv
 
 **Available commands:**
 
-```powershell
-# Check service status and connection
-wfpctl status
+| Command | Description |
+|---------|-------------|
+| `wfpctl status` | Check service connection and WFP object status |
+| `wfpctl validate <file>` | Validate policy JSON syntax (offline, no service needed) |
+| `wfpctl apply <file>` | Apply a policy file to the service |
+| `wfpctl rollback` | Remove all filters and revert to previous state |
+| `wfpctl lkg show` | Show last-known-good policy info |
+| `wfpctl lkg revert` | Revert to the last-known-good policy |
+| `wfpctl watch set <file>` | Enable hot-reload: auto-apply when file changes |
+| `wfpctl watch set` | Disable hot-reload (no file argument) |
+| `wfpctl watch status` | Show current file watch status |
+| `wfpctl logs --tail <N>` | Show last N audit log entries |
+| `wfpctl logs --since <min>` | Show audit log entries from last N minutes |
+| `wfpctl bootstrap` | Initialize WFP provider and sublayer (usually automatic) |
+| `wfpctl teardown` | Remove all WFP objects (provider, sublayer, filters) |
 
-# Validate a policy file (syntax check only)
-wfpctl validate policy.json
-
-# Apply a policy to the service
-wfpctl apply policy.json
-
-# Rollback to previous policy (or clear all filters)
-wfpctl rollback
-
-# Enable traffic control (apply current policy)
-wfpctl enable
-
-# Disable traffic control (remove all filters, allow all traffic)
-wfpctl disable
-
-# View recent audit logs
-wfpctl logs --tail
-```
+**Note:** The `enable` and `disable` commands are reserved but not yet implemented. Use `apply` and `rollback` instead.
 
 **Example workflow:**
 ```powershell
@@ -146,14 +182,14 @@ wfpctl validate my-policy.json
 wfpctl apply my-policy.json
 
 # 4. Monitor logs
-wfpctl logs --tail
+wfpctl logs --tail 20
 ```
 
 ---
 
 ### GUI Application (`bin\ui\`)
 
-The WfpTrafficControl UI provides a graphical interface for managing policies and monitoring the service.
+The WfpTrafficControl UI is a WPF desktop application providing a graphical interface for policy management. It requires administrator privileges and communicates with the service via named pipes.
 
 **Key files:**
 | File | Description |
@@ -166,13 +202,28 @@ The WfpTrafficControl UI provides a graphical interface for managing policies an
 .\bin\ui\WfpTrafficControl.UI.exe
 ```
 
-**Features:**
-- View service status
-- Create and edit policies visually
-- Apply policies with one click
-- View real-time logs
+**The UI has three main tabs:**
 
-**Note:** The UI requires the service to be running. It communicates with the service via named pipes.
+#### Dashboard Tab
+- **System Status Cards** — View service connection state, active filter count, current policy version, and LKG status at a glance
+- **Quick Actions** — One-click buttons to apply a policy file, rollback all filters, or revert to the last known good policy
+- **Recent Activity** — Table showing recent audit log entries (apply, rollback, revert operations with timestamps and filter counts)
+
+#### Policy Editor Tab
+- **File Operations** — Create new policies, open existing JSON files, save, or save-as
+- **Template Library** — Quick-start templates for common scenarios (e.g., "Block Telemetry", "Development Lockdown")
+- **Rules List** — Visual list of all rules with enable/disable checkboxes, action badges (allow/block), and summary info
+- **Rule Detail Editor** — Form-based editing of all rule fields (ID, action, direction, protocol, process path, IP/CIDR, ports, priority, comments)
+- **Validation Bar** — Real-time validation feedback as you edit
+- **Keyboard Shortcuts** — Ctrl+N (new), Ctrl+O (open), Ctrl+S (save), Ctrl+D (duplicate rule), Delete (remove rule), Alt+Up/Down (reorder)
+
+#### Logs Tab
+- **Filter Options** — View last N entries or entries from the last N minutes
+- **Full Audit Log Table** — All log fields including timestamp, event type, source, status, policy version, filters created/removed, and error messages
+- **Export to CSV** — Export displayed entries for troubleshooting or archival
+- **Status Bar** — Shows entry count and log file path
+
+**Note:** The UI requires the service to be running. If the service is offline, the Dashboard will show "Offline" status and most operations will be disabled.
 
 ---
 
@@ -195,7 +246,7 @@ Helper scripts for manual service management (when not using the MSI installer).
 
 ### Option A: MSI Installation (Recommended)
 
-1. **Install:**
+1. **Install** (run as Administrator):
    ```powershell
    msiexec /i "installer\WfpTrafficControl-1.0.0.msi"
    ```
@@ -204,19 +255,21 @@ Helper scripts for manual service management (when not using the MSI installer).
    ```powershell
    wfpctl status
    ```
+   You should see "Service connected" and filter count information.
 
 3. **Create a policy file** (e.g., `my-policy.json`):
    ```json
    {
      "version": "1.0",
      "defaultAction": "allow",
+     "updatedAt": "2024-01-15T10:30:00Z",
      "rules": [
        {
          "id": "block-telnet",
          "action": "block",
          "direction": "outbound",
          "protocol": "tcp",
-         "remote": { "ports": [23] },
+         "remote": { "ports": "23" },
          "comment": "Block outbound Telnet"
        }
      ]
@@ -228,11 +281,16 @@ Helper scripts for manual service management (when not using the MSI installer).
    wfpctl apply my-policy.json
    ```
 
+5. **Verify filters are active:**
+   ```powershell
+   wfpctl status
+   ```
+
 ### Option B: Manual Installation
 
 1. **Copy binaries** to desired location (e.g., `C:\WfpTrafficControl\`)
 
-2. **Install the service:**
+2. **Install the service** (run as Administrator):
    ```powershell
    cd C:\WfpTrafficControl
    .\scripts\Install-Service.ps1
@@ -247,6 +305,27 @@ Helper scripts for manual service management (when not using the MSI installer).
    ```powershell
    .\bin\cli\wfpctl.exe status
    ```
+
+### Option C: Using the GUI
+
+1. **Install** using Option A or B above
+
+2. **Launch the UI** (run as Administrator):
+   ```powershell
+   .\bin\ui\WfpTrafficControl.UI.exe
+   ```
+
+3. **Check connection** — The status bar should show "Connected" with a green indicator
+
+4. **Create a policy:**
+   - Go to the **Policy Editor** tab
+   - Click **New Policy** or select a template from the Quick Start Templates section
+   - Add rules using the **+** button in the rules list
+   - Fill in rule details in the right panel
+
+5. **Apply the policy:**
+   - Click **Validate** to check for errors
+   - Click **Apply to Service** to enforce the policy
 
 ---
 
@@ -268,11 +347,11 @@ Policies are JSON files defining traffic control rules.
       "process": "C:\\Path\\To\\app.exe",
       "local": {
         "ip": "192.168.1.0/24",
-        "ports": [80, 443]
+        "ports": "80,443"
       },
       "remote": {
         "ip": "10.0.0.0/8",
-        "ports": [1024, 65535]
+        "ports": "1024-65535"
       },
       "priority": 100,
       "enabled": true,
@@ -294,9 +373,9 @@ Policies are JSON files defining traffic control rules.
 | `rules[].protocol` | No | "tcp", "udp", or "any" (default: "any") |
 | `rules[].process` | No | Full path to executable |
 | `rules[].local.ip` | No | Local IP or CIDR |
-| `rules[].local.ports` | No | Array of local ports |
+| `rules[].local.ports` | No | Port specification: "80", "80-443", or "80,443,8080" |
 | `rules[].remote.ip` | No | Remote IP or CIDR |
-| `rules[].remote.ports` | No | Array of remote ports |
+| `rules[].remote.ports` | No | Port specification: "80", "80-443", or "80,443,8080" |
 | `rules[].priority` | No | Higher values = higher priority |
 | `rules[].enabled` | No | true/false (default: true) |
 | `rules[].comment` | No | Human-readable description |
@@ -360,7 +439,7 @@ WfpTrafficControl includes multiple safety mechanisms:
 
 3. Review service logs:
    ```powershell
-   wfpctl logs --tail
+   wfpctl logs --tail 20
    ```
 
 ### Network connectivity lost
@@ -424,5 +503,5 @@ This verifies:
 ## Support
 
 - **Documentation:** See included docs folder
-- **Issues:** https://github.com/anthropics/wfp-traffic-control/issues
 - **Technical Details:** See `022-how-it-works.md`
+- **Troubleshooting:** See `023-troubleshooting.md`

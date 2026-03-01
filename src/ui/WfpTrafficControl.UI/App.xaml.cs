@@ -47,5 +47,6 @@ public partial class App : Application
         services.AddTransient<MainViewModel>();
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<PolicyEditorViewModel>();
+        services.AddTransient<LogsViewModel>();
     }
 }

@@ -388,7 +388,7 @@ The system supports automatic policy reload when the watched file changes:
 
 **Enable hot reload:**
 ```powershell
-wfpctl watch enable C:\policies\policy.json
+wfpctl watch set C:\policies\policy.json
 ```
 
 **Behavior:**
@@ -402,8 +402,9 @@ wfpctl watch enable C:\policies\policy.json
 
 **Disable:**
 ```powershell
-wfpctl watch disable
+wfpctl watch set
 ```
+(Running `watch set` with no path disables file watching)
 
 See [017-hot-reload.md](017-hot-reload.md) for implementation.
 
