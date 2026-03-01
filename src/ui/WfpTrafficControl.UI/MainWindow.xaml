@@ -86,6 +86,12 @@
                             Padding="12,6"
                             Margin="0,0,8,0"
                             ToolTip="Manage network profiles for automatic policy switching" />
+                    <Button Content="Apps"
+                            Style="{DynamicResource SecondaryButtonStyle}"
+                            Command="{Binding OpenApplicationDiscoveryCommand}"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="Discover installed applications and suggest firewall rules" />
                     <Button Content="{Binding ThemeButtonText}"
                             Style="{DynamicResource SecondaryButtonStyle}"
                             Command="{Binding ToggleThemeCommand}"

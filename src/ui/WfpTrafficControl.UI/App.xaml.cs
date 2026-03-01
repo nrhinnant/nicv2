@@ -83,6 +83,7 @@ public partial class App : Application
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IAnalyticsService, AnalyticsService>();
+        services.AddSingleton<IApplicationDiscoveryService, ApplicationDiscoveryService>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
@@ -97,6 +98,7 @@ public partial class App : Application
         services.AddTransient<AnalyticsDashboardViewModel>();
         services.AddTransient<SyslogSettingsViewModel>();
         services.AddTransient<NetworkProfilesViewModel>();
+        services.AddTransient<ApplicationDiscoveryViewModel>();
     }
 
     private void OnDashboardStatusUpdated(object? sender, DashboardStatusEventArgs e)

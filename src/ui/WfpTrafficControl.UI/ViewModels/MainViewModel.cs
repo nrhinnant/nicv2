@@ -167,6 +167,17 @@ public partial class MainViewModel : ObservableObject
         dialog.ShowDialog();
     }
 
+    [RelayCommand]
+    private void OpenApplicationDiscovery()
+    {
+        var viewModel = App.Services.GetRequiredService<ApplicationDiscoveryViewModel>();
+        var dialog = new ApplicationDiscoveryView(viewModel)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+        dialog.ShowDialog();
+    }
+
     private void OnThemeChanged(object? sender, ThemeChangedEventArgs e)
     {
         UpdateThemeButtonText(e.IsDarkTheme);
