@@ -81,4 +81,9 @@ public interface ITrayIconService : IDisposable
     /// Event raised when the user clicks "Refresh" from the context menu.
     /// </summary>
     event EventHandler? RefreshRequested;
+
+    /// <summary>
+    /// Event raised when the user clicks "Emergency Rollback" from the context menu.
+    /// </summary>
+    event EventHandler? EmergencyRollbackRequested;
 }

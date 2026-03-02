@@ -21,4 +21,10 @@ public partial class MainWindow : Window
             await mainVm.DashboardViewModel.InitializeAsync();
         }
     }
+
+    private void ToolsButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Toggle the Tools menu popup
+        ToolsMenuPopup.IsOpen = !ToolsMenuPopup.IsOpen;
+    }
 }

@@ -32,6 +32,9 @@ public sealed class TrayIconService : ITrayIconService
     public event EventHandler? RefreshRequested;
 
     /// <inheritdoc />
+    public event EventHandler? EmergencyRollbackRequested;
+
+    /// <inheritdoc />
     public void Initialize()
     {
         if (_notifyIcon != null)
@@ -166,6 +169,24 @@ public sealed class TrayIconService : ITrayIconService
         var refreshItem = new WinForms.ToolStripMenuItem("Refresh Status");
         refreshItem.Click += (_, _) => RefreshRequested?.Invoke(this, EventArgs.Empty);
         menu.Items.Add(refreshItem);
+
+        menu.Items.Add(new WinForms.ToolStripSeparator());
+
+        // Emergency Rollback (CRITICAL BLOCKER #2: Background thread execution)
+        var emergencyRollbackItem = new WinForms.ToolStripMenuItem("Emergency Rollback")
+        {
+            Font = new Drawing.Font(menu.Font, Drawing.FontStyle.Bold),
+            ForeColor = Drawing.Color.FromArgb(244, 67, 54) // Red text
+        };
+        emergencyRollbackItem.Click += (_, _) =>
+        {
+            // Execute on background thread to avoid UI deadlock (BLOCK-2 mitigation)
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                EmergencyRollbackRequested?.Invoke(this, EventArgs.Empty);
+            });
+        };
+        menu.Items.Add(emergencyRollbackItem);
 
         menu.Items.Add(new WinForms.ToolStripSeparator());
 

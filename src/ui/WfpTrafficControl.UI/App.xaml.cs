@@ -38,6 +38,7 @@ public partial class App : Application
         _trayIconService.ShowWindowRequested += OnTrayShowWindowRequested;
         _trayIconService.ExitRequested += OnTrayExitRequested;
         _trayIconService.RefreshRequested += OnTrayRefreshRequested;
+        _trayIconService.EmergencyRollbackRequested += OnTrayEmergencyRollbackRequested;
 
         // Create main window and view model
         _mainViewModel = _serviceProvider.GetRequiredService<MainViewModel>();
@@ -68,6 +69,7 @@ public partial class App : Application
             _trayIconService.ShowWindowRequested -= OnTrayShowWindowRequested;
             _trayIconService.ExitRequested -= OnTrayExitRequested;
             _trayIconService.RefreshRequested -= OnTrayRefreshRequested;
+            _trayIconService.EmergencyRollbackRequested -= OnTrayEmergencyRollbackRequested;
             _trayIconService.Dispose();
         }
 
@@ -129,6 +131,20 @@ public partial class App : Application
         if (_mainViewModel != null)
         {
             await _mainViewModel.RefreshStatusCommand.ExecuteAsync(null);
+        }
+    }
+
+    private async void OnTrayEmergencyRollbackRequested(object? sender, EventArgs e)
+    {
+        // CRITICAL BLOCKER #2 mitigation: This is already invoked on background thread by TrayIconService
+        // Execute Emergency Rollback command (which will show confirmation dialog on UI thread)
+        if (_mainViewModel != null)
+        {
+            // Dispatch to UI thread for MessageBox display
+            await Dispatcher.InvokeAsync(async () =>
+            {
+                await _mainViewModel.EmergencyRollbackCommand.ExecuteAsync(null);
+            });
         }
     }
 

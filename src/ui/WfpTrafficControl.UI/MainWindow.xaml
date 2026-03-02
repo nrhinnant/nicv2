@@ -56,52 +56,112 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <Button Content="Simulate"
-                            Style="{DynamicResource SecondaryButtonStyle}"
-                            Command="{Binding OpenRuleSimulatorCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0"
-                            ToolTip="Test if a connection would be allowed or blocked" />
-                    <Button Content="Compare"
-                            Style="{DynamicResource SecondaryButtonStyle}"
-                            Command="{Binding OpenPolicyDiffCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0"
-                            ToolTip="Compare two policy files side by side" />
-                    <Button Content="History"
-                            Style="{DynamicResource SecondaryButtonStyle}"
-                            Command="{Binding OpenPolicyHistoryCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0"
-                            ToolTip="View and revert to previous policy versions" />
-                    <Button Content="Syslog"
-                            Style="{DynamicResource SecondaryButtonStyle}"
-                            Command="{Binding OpenSyslogSettingsCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0"
-                            ToolTip="Configure syslog/SIEM export settings" />
-                    <Button Content="Profiles"
-                            Style="{DynamicResource SecondaryButtonStyle}"
-                            Command="{Binding OpenNetworkProfilesCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0"
-                            ToolTip="Manage network profiles for automatic policy switching" />
-                    <Button Content="Apps"
-                            Style="{DynamicResource SecondaryButtonStyle}"
-                            Command="{Binding OpenApplicationDiscoveryCommand}"
-                            Padding="12,6"
-                            Margin="0,0,8,0"
-                            ToolTip="Discover installed applications and suggest firewall rules" />
-                    <Button Content="{Binding ThemeButtonText}"
-                            Style="{DynamicResource SecondaryButtonStyle}"
+                    <!-- Emergency Rollback Button -->
+                    <Button Content="Emergency Rollback"
+                            Style="{DynamicResource DangerButtonStyle}"
+                            Command="{Binding EmergencyRollbackCommand}"
+                            Padding="16,6"
+                            FontWeight="SemiBold"
+                            Margin="0,0,12,0"
+                            ToolTip="Immediately remove all filters and restore connectivity" />
+
+                    <!-- Tools Dropdown Button with Popup -->
+                    <Grid Margin="0,0,8,0">
+                        <Button x:Name="ToolsButton"
+                                Style="{DynamicResource SecondaryButtonStyle}"
+                                Click="ToolsButton_Click"
+                                Padding="12,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Tools" VerticalAlignment="Center" />
+                                <TextBlock Text=" ▼" FontSize="10" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Popup x:Name="ToolsMenuPopup"
+                               PlacementTarget="{Binding ElementName=ToolsButton}"
+                               Placement="Bottom"
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Fade">
+                            <Border Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="4">
+                                <StackPanel Orientation="Vertical" MinWidth="220">
+                                    <!-- Section 1: Policy Tools -->
+                                    <TextBlock Text="Policy Tools"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Margin="12,8,12,4" />
+                                    <Button Content="Simulate Connection"
+                                            Command="{Binding OpenRuleSimulatorCommand}"
+                                            Style="{DynamicResource MenuItemButtonStyle}"
+                                            ToolTip="Test if a connection would be allowed or blocked" />
+                                    <Button Content="Compare Policies"
+                                            Command="{Binding OpenPolicyDiffCommand}"
+                                            Style="{DynamicResource MenuItemButtonStyle}"
+                                            ToolTip="Compare two policy files side by side" />
+                                    <Button Content="Policy History"
+                                            Command="{Binding OpenPolicyHistoryCommand}"
+                                            Style="{DynamicResource MenuItemButtonStyle}"
+                                            ToolTip="View and revert to previous policy versions" />
+
+                                    <Separator Margin="8,4" Background="{DynamicResource BorderBrush}" />
+
+                                    <!-- Section 2: Integration -->
+                                    <TextBlock Text="Integration"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Margin="12,4,12,4" />
+                                    <Button Content="Syslog/SIEM Settings"
+                                            Command="{Binding OpenSyslogSettingsCommand}"
+                                            Style="{DynamicResource MenuItemButtonStyle}"
+                                            ToolTip="Configure syslog/SIEM export settings" />
+                                    <Button Content="Network Profiles"
+                                            Command="{Binding OpenNetworkProfilesCommand}"
+                                            Style="{DynamicResource MenuItemButtonStyle}"
+                                            ToolTip="Manage network profiles for automatic policy switching" />
+
+                                    <Separator Margin="8,4" Background="{DynamicResource BorderBrush}" />
+
+                                    <!-- Section 3: Discovery -->
+                                    <TextBlock Text="Discovery"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Margin="12,4,12,4" />
+                                    <Button Content="Discover Applications"
+                                            Command="{Binding OpenApplicationDiscoveryCommand}"
+                                            Style="{DynamicResource MenuItemButtonStyle}"
+                                            ToolTip="Discover installed applications and suggest firewall rules" />
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <!-- Theme Toggle Button (Icon Only) -->
+                    <Button Content="{Binding ThemeIcon}"
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="16"
+                            Style="{DynamicResource ThemeToggleButtonStyle}"
                             Command="{Binding ToggleThemeCommand}"
-                            Padding="12,6"
+                            Width="36"
+                            Height="36"
                             Margin="0,0,8,0"
                             ToolTip="Toggle between light and dark theme" />
-                    <Button Content="Refresh"
-                            Style="{DynamicResource SecondaryButtonStyle}"
+
+                    <!-- Refresh Button (Icon Only) -->
+                    <Button Content="&#xE72C;"
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="16"
+                            Style="{DynamicResource ThemeToggleButtonStyle}"
                             Command="{Binding RefreshStatusCommand}"
-                            Padding="12,6" />
+                            Width="36"
+                            Height="36"
+                            ToolTip="Refresh service status" />
                 </StackPanel>
             </Grid>
         </Border>
