@@ -66,15 +66,23 @@
 
                 <!-- Buttons -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="Collect Now"
-                            Style="{StaticResource PrimaryButtonStyle}"
+                    <Button Style="{StaticResource PrimaryButtonStyle}"
                             Command="{Binding CollectDataCommand}"
                             Padding="16,6"
-                            Margin="0,0,8,0" />
-                    <Button Content="Clear Data"
-                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Collect Now" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding ClearDataCommand}"
-                            Padding="12,6" />
+                            Padding="12,6">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Clear Data" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -381,8 +389,7 @@
 
         <!-- Loading Overlay -->
         <Border Grid.Row="0" Grid.RowSpan="4"
-                Background="{DynamicResource BackgroundBrush}"
-                Opacity="0.9"
+                Style="{StaticResource LoadingOverlayStyle}"
                 Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
             <TextBlock Text="Collecting data..."
                        HorizontalAlignment="Center"

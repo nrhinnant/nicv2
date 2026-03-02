@@ -249,4 +249,12 @@
         </Setter>
     </Style>
 
+    <!-- Loading Overlay Style -->
+    <Style x:Key="LoadingOverlayStyle" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource BackgroundBrush}" />
+        <Setter Property="Opacity" Value="0.95" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="24" />
+    </Style>
+
 </ResourceDictionary>

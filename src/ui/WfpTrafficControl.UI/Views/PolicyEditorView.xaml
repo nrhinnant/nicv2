@@ -56,35 +56,51 @@
 
                 <!-- File Operations -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Content="New"
-                            Style="{StaticResource SecondaryButtonStyle}"
+                    <Button Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding NewPolicyCommand}"
                             Padding="12,6"
                             Margin="0,0,8,0"
-                            ToolTip="New Policy (Ctrl+N)" />
+                            ToolTip="New Policy (Ctrl+N)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="New" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
-                    <Button Content="Open"
-                            Style="{StaticResource SecondaryButtonStyle}"
+                    <Button Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding LoadPolicyCommand}"
                             Padding="12,6"
                             Margin="0,0,8,0"
-                            ToolTip="Open Policy (Ctrl+O)" />
+                            ToolTip="Open Policy (Ctrl+O)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Open" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
-                    <Button Content="Save"
-                            Style="{StaticResource SecondaryButtonStyle}"
+                    <Button Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding SavePolicyCommand}"
                             IsEnabled="{Binding HasPolicy}"
                             Padding="12,6"
                             Margin="0,0,8,0"
-                            ToolTip="Save Policy (Ctrl+S)" />
+                            ToolTip="Save Policy (Ctrl+S)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Save" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
-                    <Button Content="Save As..."
-                            Style="{StaticResource SecondaryButtonStyle}"
+                    <Button Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding SavePolicyAsCommand}"
                             IsEnabled="{Binding HasPolicy}"
                             Padding="12,6"
                             Margin="0,0,8,0"
-                            ToolTip="Save Policy As (Ctrl+Shift+S)" />
+                            ToolTip="Save Policy As (Ctrl+Shift+S)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE792;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Save As..." VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
                     <!-- Templates Dropdown -->
                     <Border BorderBrush="{DynamicResource BorderBrush}"
@@ -112,14 +128,18 @@
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <Button Content="Load"
-                                    Style="{StaticResource SecondaryButtonStyle}"
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
                                     Command="{Binding LoadFromTemplateCommand}"
                                     CommandParameter="{Binding SelectedItem, ElementName=TemplateComboBox}"
                                     IsEnabled="{Binding SelectedItem, ElementName=TemplateComboBox, Converter={StaticResource ObjectToBool}}"
                                     Padding="12,6"
                                     Margin="8,0,0,0"
-                                    ToolTip="Load the selected template" />
+                                    ToolTip="Load the selected template">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Load" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Border>
 
@@ -146,18 +166,26 @@
 
                 <!-- Policy Actions -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
-                    <Button Content="Validate"
-                            Style="{StaticResource SecondaryButtonStyle}"
+                    <Button Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding ValidatePolicyCommand}"
                             IsEnabled="{Binding HasPolicy}"
                             Padding="12,6"
-                            Margin="0,0,8,0" />
+                            Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8E0;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Validate" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
-                    <Button Content="Apply to Service"
-                            Style="{StaticResource PrimaryButtonStyle}"
+                    <Button Style="{StaticResource PrimaryButtonStyle}"
                             Command="{Binding ApplyPolicyCommand}"
                             IsEnabled="{Binding HasPolicy}"
-                            Padding="12,6" />
+                            Padding="12,6">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Apply to Service" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -179,13 +207,21 @@
                                    HorizontalAlignment="Center"
                                    Margin="0,0,0,24" />
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,32">
-                            <Button Content="New Policy"
-                                    Style="{StaticResource PrimaryButtonStyle}"
+                            <Button Style="{StaticResource PrimaryButtonStyle}"
                                     Command="{Binding NewPolicyCommand}"
-                                    Margin="0,0,12,0" />
-                            <Button Content="Open Policy"
-                                    Style="{StaticResource SecondaryButtonStyle}"
-                                    Command="{Binding LoadPolicyCommand}" />
+                                    Margin="0,0,12,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="New Policy" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
+                                    Command="{Binding LoadPolicyCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Open Policy" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                         <!-- Templates Section -->
@@ -278,12 +314,16 @@
 
                                                     <!-- Load Button -->
                                                     <Button Grid.Row="3"
-                                                            Content="Load Template"
                                                             Style="{StaticResource SecondaryButtonStyle}"
                                                             Command="{Binding DataContext.LoadFromTemplateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                             CommandParameter="{Binding}"
                                                             HorizontalAlignment="Stretch"
-                                                            Padding="8,6" />
+                                                            Padding="8,6">
+                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                            <TextBlock Text="&#xE896;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                            <TextBlock Text="Load Template" VerticalAlignment="Center" />
+                                                        </StackPanel>
+                                                    </Button>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -485,27 +525,39 @@
                                         FontWeight="Bold"
                                         Margin="4,0,0,0"
                                         ToolTip="Delete Rule (Delete)" />
-                                <Button Content="Copy"
-                                        Style="{StaticResource SecondaryButtonStyle}"
+                                <Button Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding CopyRuleCommand}"
                                         Padding="8,0"
                                         Height="32"
                                         Margin="4,0,0,0"
-                                        ToolTip="Duplicate Rule (Ctrl+D)" />
-                                <Button Content="Up"
-                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Duplicate Rule (Ctrl+D)">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Copy" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding MoveRuleUpCommand}"
                                         Padding="8,0"
                                         Height="32"
                                         Margin="8,0,0,0"
-                                        ToolTip="Move Up (Alt+Up)" />
-                                <Button Content="Down"
-                                        Style="{StaticResource SecondaryButtonStyle}"
+                                        ToolTip="Move Up (Alt+Up)">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE74A;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Up" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource SecondaryButtonStyle}"
                                         Command="{Binding MoveRuleDownCommand}"
                                         Padding="8,0"
                                         Height="32"
                                         Margin="4,0,0,0"
-                                        ToolTip="Move Down (Alt+Down)" />
+                                        ToolTip="Move Down (Alt+Down)">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE74B;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Down" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -608,19 +660,24 @@
                                          Text="{Binding Process, UpdateSourceTrigger=PropertyChanged}"
                                          ToolTip="Full path to the process executable" />
                                 <Button Grid.Column="1"
-                                        Content="..."
                                         Width="32"
                                         Margin="4,0,0,0"
                                         Padding="0"
                                         ToolTip="Browse for executable"
-                                        Command="{Binding DataContext.BrowseProcessCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        Command="{Binding DataContext.BrowseProcessCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <TextBlock Text="&#xE838;" FontFamily="Segoe MDL2 Assets" FontSize="16" />
+                                </Button>
                                 <Button Grid.Column="2"
-                                        Content="Pick"
-                                        Width="48"
+                                        Width="56"
                                         Margin="4,0,0,0"
-                                        Padding="0"
+                                        Padding="6,0"
                                         ToolTip="Select from running processes"
-                                        Command="{Binding DataContext.PickProcessCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        Command="{Binding DataContext.PickProcessCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,4,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="Pick" VerticalAlignment="Center" FontSize="12" />
+                                    </StackPanel>
+                                </Button>
                             </Grid>
 
                             <!-- Remote IP -->
@@ -794,7 +851,7 @@
             </Grid>
 
             <!-- Loading Overlay -->
-            <Border Background="#80FFFFFF"
+            <Border Style="{StaticResource LoadingOverlayStyle}"
                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock Text="Loading..."
                            HorizontalAlignment="Center"

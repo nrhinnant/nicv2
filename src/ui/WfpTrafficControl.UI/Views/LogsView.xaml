@@ -73,25 +73,37 @@
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button Content="Refresh"
-                                Style="{StaticResource PrimaryButtonStyle}"
+                        <Button Style="{StaticResource PrimaryButtonStyle}"
                                 Command="{Binding RefreshLogsCommand}"
                                 Padding="16,6"
-                                Margin="0,0,8,0" />
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Refresh" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
 
-                        <Button Content="Clear Filter"
-                                Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
                                 Command="{Binding ClearFilterCommand}"
                                 Padding="12,6"
-                                Margin="0,0,8,0" />
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE894;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Clear Filter" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Export Button -->
                     <Button Grid.Column="3"
-                            Content="Export to CSV"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding ExportToCsvCommand}"
-                            Padding="12,6" />
+                            Padding="12,6">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Export to CSV" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                 </Grid>
 
                 <!-- Second Row: Search and Filter -->
@@ -235,7 +247,7 @@
                 </TextBlock>
 
                 <!-- Loading Overlay -->
-                <Border Background="#80FFFFFF"
+                <Border Style="{StaticResource LoadingOverlayStyle}"
                         Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="Loading logs..."
                                HorizontalAlignment="Center"

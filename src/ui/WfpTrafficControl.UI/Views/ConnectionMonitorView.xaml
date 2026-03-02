@@ -72,18 +72,26 @@
 
                     <!-- Action Buttons -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
-                        <Button Content="Refresh"
-                                Style="{StaticResource PrimaryButtonStyle}"
+                        <Button Style="{StaticResource PrimaryButtonStyle}"
                                 Command="{Binding RefreshConnectionsCommand}"
                                 IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolToVisibility}}"
                                 Padding="16,6"
-                                Margin="0,0,8,0" />
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Refresh" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
 
-                        <Button Content="Copy"
-                                Style="{StaticResource SecondaryButtonStyle}"
+                        <Button Style="{StaticResource SecondaryButtonStyle}"
                                 Command="{Binding CopyConnectionDetailsCommand}"
                                 Padding="12,6"
-                                ToolTip="Copy selected connection details" />
+                                ToolTip="Copy selected connection details">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Copy" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
 
@@ -126,11 +134,15 @@
 
                     <!-- Clear Filters -->
                     <Button Grid.Column="3"
-                            Content="Clear Filters"
                             Style="{StaticResource SecondaryButtonStyle}"
                             Command="{Binding ClearFiltersCommand}"
                             Padding="12,4"
-                            Margin="16,0,0,0" />
+                            Margin="16,0,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE894;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="Clear Filters" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
 
                     <!-- Count -->
                     <TextBlock Grid.Column="4"
@@ -305,8 +317,7 @@
                 </StackPanel>
 
                 <!-- Loading Overlay -->
-                <Border Background="{DynamicResource BackgroundBrush}"
-                        Opacity="0.9"
+                <Border Style="{StaticResource LoadingOverlayStyle}"
                         Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="Loading connections..."
                                HorizontalAlignment="Center"

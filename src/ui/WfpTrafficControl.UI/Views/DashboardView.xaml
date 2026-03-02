@@ -165,34 +165,54 @@
                        Margin="0,0,0,16" />
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,32,0,24">
-                <Button Content="Apply Policy..."
-                        Style="{StaticResource PrimaryButtonStyle}"
+                <Button Style="{StaticResource PrimaryButtonStyle}"
                         Command="{Binding ApplyPolicyCommand}"
                         IsEnabled="{Binding IsConnected}"
-                        Margin="0,0,12,0" />
+                        Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Apply Policy..." VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
-                <Button Content="Rollback"
-                        Style="{StaticResource DangerButtonStyle}"
+                <Button Style="{StaticResource DangerButtonStyle}"
                         Command="{Binding RollbackCommand}"
                         IsEnabled="{Binding IsConnected}"
-                        Margin="0,0,12,0" />
+                        Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Rollback" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
-                <Button Content="Revert to LKG"
-                        Style="{StaticResource SecondaryButtonStyle}"
+                <Button Style="{StaticResource SecondaryButtonStyle}"
                         Command="{Binding RevertToLkgCommand}"
                         IsEnabled="{Binding HasLkg}"
-                        Margin="0,0,12,0" />
+                        Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE777;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Revert to LKG" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
-                <Button Content="Refresh"
-                        Style="{StaticResource SecondaryButtonStyle}"
+                <Button Style="{StaticResource SecondaryButtonStyle}"
                         Command="{Binding RefreshStatusCommand}"
-                        Margin="0,0,12,0" />
+                        Margin="0,0,12,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Refresh" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
-                <Button Content="Validate JSON..."
-                        Style="{StaticResource SecondaryButtonStyle}"
+                <Button Style="{StaticResource SecondaryButtonStyle}"
                         Command="{Binding ValidateJsonCommand}"
                         IsEnabled="{Binding IsConnected}"
-                        ToolTip="Validate policy JSON without saving to a file" />
+                        ToolTip="Validate policy JSON without saving to a file">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE8E0;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Validate JSON..." VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
 
                 <!-- Loading Indicators -->
                 <TextBlock Text="Applying..."
@@ -277,17 +297,25 @@
 
                         <!-- Action buttons -->
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Content="Enable..."
-                                    Style="{StaticResource SecondaryButtonStyle}"
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
                                     Command="{Binding EnableWatchCommand}"
                                     IsEnabled="{Binding IsConnected}"
                                     Visibility="{Binding IsWatching, Converter={StaticResource InverseBoolToVisibility}}"
-                                    Margin="0,0,8,0" />
-                            <Button Content="Disable"
-                                    Style="{StaticResource SecondaryButtonStyle}"
+                                    Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE768;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Enable..." VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
                                     Command="{Binding DisableWatchCommand}"
                                     IsEnabled="{Binding IsConnected}"
-                                    Visibility="{Binding IsWatching, Converter={StaticResource BoolToVisibility}}" />
+                                    Visibility="{Binding IsWatching, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE769;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Disable" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
 
                             <TextBlock Text="Setting..."
                                        VerticalAlignment="Center"
@@ -312,18 +340,26 @@
                                    Margin="0,0,0,16" />
 
                         <StackPanel Orientation="Horizontal">
-                            <Button Content="Re-initialize WFP"
-                                    Style="{StaticResource SecondaryButtonStyle}"
+                            <Button Style="{StaticResource SecondaryButtonStyle}"
                                     Command="{Binding BootstrapCommand}"
                                     IsEnabled="{Binding IsConnected}"
                                     ToolTip="Ensure WFP provider and sublayer are created"
-                                    Margin="0,0,12,0" />
+                                    Margin="0,0,12,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Re-initialize WFP" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
 
-                            <Button Content="Teardown All"
-                                    Style="{StaticResource DangerButtonStyle}"
+                            <Button Style="{StaticResource DangerButtonStyle}"
                                     Command="{Binding TeardownCommand}"
                                     IsEnabled="{Binding IsConnected}"
-                                    ToolTip="Remove all WFP objects (emergency recovery)" />
+                                    ToolTip="Remove all WFP objects (emergency recovery)">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="Teardown All" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
 
                             <TextBlock Text="Initializing..."
                                        VerticalAlignment="Center"
@@ -404,7 +440,7 @@
 
             <!-- Loading Overlay -->
             <Border Grid.RowSpan="6"
-                    Background="#80FFFFFF"
+                    Style="{StaticResource LoadingOverlayStyle}"
                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="Loading..."
