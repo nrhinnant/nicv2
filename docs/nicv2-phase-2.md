@@ -75,7 +75,7 @@ Add a system tray icon that provides quick status visibility and common actions 
 - [x] Ensure thread-safe UI updates
 
 #### Phase 4 - DOCUMENT
-- [ ] Update RUNBOOK.md with tray icon documentation
+- [x] Update RUNBOOK.md with tray icon documentation
 - [x] Create `docs/features/tray-icon.md`
 
 #### Phase 5 - TEST
@@ -138,8 +138,8 @@ Add dark mode support following Windows system theme or manual toggle. Modern ap
 - [x] Test with high-contrast Windows themes
 
 #### Phase 4 - DOCUMENT
-- [ ] Update RUNBOOK.md with theme settings
-- [ ] Add screenshots of both themes
+- [x] Update RUNBOOK.md with theme settings
+- [ ] Add screenshots of both themes (requires running GUI application)
 
 #### Phase 5 - TEST
 - [x] Create `ThemeServiceTests.cs`
@@ -214,7 +214,7 @@ Create a dedicated view showing recent blocked connections with one-click rule c
 
 #### Phase 4 - DOCUMENT
 - [x] Create `docs/features/blocked-connections.md`
-- [ ] Update RUNBOOK.md
+- [x] Update RUNBOOK.md
 
 #### Phase 5 - TEST
 - [x] Add service tests for blocked connection buffer
@@ -296,7 +296,8 @@ A form-based UI for creating firewall rules without writing JSON. This significa
 
 #### Phase 4 - DOCUMENT
 - [x] Create `docs/features/rule-builder.md`
-- [ ] Update RUNBOOK.md with screenshots
+- [x] Update RUNBOOK.md with visual rule builder documentation
+- [ ] Add screenshots (requires running GUI application)
 
 #### Phase 5 - TEST
 - [x] Create `RuleBuilderViewModelTests.cs`
@@ -502,7 +503,7 @@ Side-by-side comparison of two policies showing added, removed, and changed rule
 
 #### Phase 4 - DOCUMENT
 - [x] Create `docs/features/policy-diff.md`
-- [ ] Add screenshots
+- [ ] Add screenshots (requires running GUI application)
 
 #### Phase 5 - TEST
 - [x] Create `PolicyDiffServiceTests.cs`

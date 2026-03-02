@@ -226,7 +226,26 @@ The application displays a system tray icon providing quick status visibility:
 - Closing the window (X button) minimizes to tray instead of exiting
 - Use the "Exit" menu item in the tray icon to fully close the application
 
-**The UI has three main tabs:**
+#### Theme Settings
+
+The application supports both light and dark themes:
+
+**Automatic Theme Detection:**
+- By default, the application follows your Windows system theme
+- When Windows is set to dark mode, the application uses dark colors
+- When Windows is set to light mode, the application uses light colors
+
+**Manual Theme Override:**
+- Click the theme toggle button in the header bar (sun/moon icon)
+- Select from: System (follows Windows), Light, or Dark
+- Your preference is saved and persists across sessions
+
+**Theme Colors:**
+- **Light theme:** White backgrounds, dark text, blue accents
+- **Dark theme:** Dark gray backgrounds, light text, blue accents
+- All UI elements including cards, buttons, data grids, and dialogs respond to theme changes
+
+**The UI has multiple tabs:**
 
 #### Dashboard Tab
 - **System Status Cards** — View service connection state, active filter count, current policy version, and LKG status at a glance
@@ -247,6 +266,80 @@ The application displays a system tray icon providing quick status visibility:
 - **Full Audit Log Table** — All log fields including timestamp, event type, source, status, policy version, filters created/removed, and error messages
 - **Export to CSV** — Export displayed entries for troubleshooting or archival
 - **Status Bar** — Shows entry count and log file path
+
+#### Block Rules Tab
+- **Simplified Rule View** — View all active block rules in a clean, focused interface
+- **Quick Rule Creation** — Add new block rules without editing full policy JSON
+- **Search and Filter** — Find rules by process name, IP address, or port
+- **Rule Actions** — Enable/disable, edit, or delete individual rules
+- **Create from Blocked Connections** — Generate rules from observed blocked traffic
+
+#### Connection Monitor Tab
+- **Live Connections** — Real-time view of active TCP and UDP connections
+- **Process Attribution** — See which process owns each connection
+- **Auto-Refresh** — Configurable refresh interval (1-10 seconds)
+- **Create Rules** — Right-click to create allow or block rules from any connection
+- **Filter by Protocol** — View all, TCP only, or UDP only connections
+
+#### Analytics Tab
+- **Connection Charts** — Visualize connection patterns over time
+- **Top Processes** — Identify highest network-using applications
+- **Blocked vs Allowed** — See the ratio of blocked to allowed connections
+- **Time Range Selection** — View data from last hour, 24 hours, or 7 days
+- **Statistics Cards** — Quick overview of total connections and block counts
+
+#### Network Profiles Tab
+- **Profile Management** — Create profiles for different network environments (Home, Work, Public)
+- **Network Conditions** — Configure matching rules based on SSID, DNS suffix, or gateway
+- **Policy Assignment** — Assign different policies to each profile
+- **Auto-Switching** — Automatic profile activation when network conditions match
+- **Manual Override** — Force a specific profile regardless of network detection
+
+#### Application Discovery
+Access via the "Apps" button in the header bar:
+- **Scan Installed Applications** — Discover network-capable applications on your system
+- **Coverage Analysis** — See which applications have firewall rules and which don't
+- **Known Application Signatures** — Pre-configured rule templates for common applications (browsers, communication apps, dev tools)
+- **Suggested Rules** — Get intelligent rule suggestions based on application type
+- **Apply Suggestions** — Generate policy rules with one click
+
+#### Visual Rule Builder
+The Policy Editor includes a visual rule builder for creating rules without writing JSON:
+- **Form-Based Input** — Dropdowns for action, direction, and protocol
+- **Process Picker** — Browse or select from running processes
+- **Endpoint Configuration** — Configure local and remote IP/port restrictions
+- **JSON Preview** — See the generated JSON before saving
+- **Validation** — Real-time validation with error highlighting
+
+#### Rule Simulation ("What If" Testing)
+Access via the "Simulate" button in the Policy Editor:
+- **Test Connections** — Enter hypothetical connection parameters
+- **See Results** — Large "ALLOWED" or "BLOCKED" indicator
+- **Rule Attribution** — See which rule would match the connection
+- **Evaluation Trace** — View the order rules were evaluated
+- **Debug Blocked Traffic** — Understand why connections are being blocked
+
+#### Policy Diff View
+Compare policies before applying:
+- **Side-by-Side Comparison** — View differences between two policies
+- **Color Coding** — Green for added rules, red for removed, yellow for modified
+- **Summary Statistics** — Quick count of added, removed, and modified rules
+- **Compare with Current** — See what would change before applying
+
+#### Policy History
+Track all policy changes:
+- **Version Timeline** — See when policies were applied
+- **Rule Counts** — View number of rules in each version
+- **Source Tracking** — Know if change came from CLI or UI
+- **Revert Capability** — Roll back to any previous version
+- **Compare Versions** — Diff any two historical versions
+
+#### Syslog/SIEM Export
+Configure in Settings:
+- **Forward Logs** — Send audit logs to external SIEM systems
+- **Protocol Options** — UDP, TCP, or TLS encrypted
+- **Format Options** — CEF, JSON, or standard syslog
+- **Test Connection** — Verify connectivity before enabling
 
 **Note:** The UI requires the service to be running. If the service is offline, the Dashboard will show "Offline" status and most operations will be disabled.
 
