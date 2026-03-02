@@ -110,4 +110,12 @@ public sealed class DialogService : IDialogService
 
         return dialog.ShowDialog() == true ? dialog.InputText : null;
     }
+
+    /// <inheritdoc />
+    public bool ShowDeleteRuleDialog(ViewModels.RuleViewModel rule)
+    {
+        var dialog = DeleteRuleConfirmDialog.CreateFromRule(rule);
+        dialog.Owner = Application.Current.MainWindow;
+        return dialog.ShowDialog() == true;
+    }
 }

@@ -82,6 +82,24 @@ public partial class PolicyEditorViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<PolicyTemplate> _templates = new();
 
+    // Undo/Redo
+    private readonly Stack<PolicySnapshot> _undoStack = new();
+    private readonly Stack<PolicySnapshot> _redoStack = new();
+    private const int MaxUndoStackSize = 50;
+    private bool _isRestoringSnapshot = false;
+
+    [ObservableProperty]
+    private bool _canUndo;
+
+    [ObservableProperty]
+    private bool _canRedo;
+
+    [ObservableProperty]
+    private string _undoDescription = "";
+
+    [ObservableProperty]
+    private string _redoDescription = "";
+
     public PolicyEditorViewModel(IServiceClient serviceClient, IDialogService dialogService, IPolicyTemplateProvider templateProvider)
     {
         _serviceClient = serviceClient;
@@ -514,6 +532,8 @@ public partial class PolicyEditorViewModel : ObservableObject
     [RelayCommand]
     private void AddRule()
     {
+        TakeSnapshot("Add Rule");
+
         var newRule = new RuleViewModel
         {
             Id = $"rule-{Guid.NewGuid():N}".Substring(0, 20),
@@ -524,11 +544,12 @@ public partial class PolicyEditorViewModel : ObservableObject
             Priority = 100
         };
 
-        newRule.PropertyChanged += (s, e) => MarkAsChanged();
+        WireRulePropertyChanged(newRule);
 
         Rules.Add(newRule);
         SelectedRule = newRule;
         HasUnsavedChanges = true;
+        UpdateRulePriorityContext();
     }
 
     /// <summary>
@@ -540,12 +561,12 @@ public partial class PolicyEditorViewModel : ObservableObject
         if (SelectedRule == null)
             return;
 
-        if (!_dialogService.Confirm(
-                $"Delete rule '{SelectedRule.Id}'?",
-                "Confirm Delete"))
+        if (!_dialogService.ShowDeleteRuleDialog(SelectedRule))
         {
             return;
         }
+
+        TakeSnapshot($"Delete Rule: {SelectedRule.Id}");
 
         var index = Rules.IndexOf(SelectedRule);
         Rules.Remove(SelectedRule);
@@ -560,6 +581,7 @@ public partial class PolicyEditorViewModel : ObservableObject
         }
 
         HasUnsavedChanges = true;
+        UpdateRulePriorityContext();
     }
 
     /// <summary>
@@ -574,8 +596,10 @@ public partial class PolicyEditorViewModel : ObservableObject
         var index = Rules.IndexOf(SelectedRule);
         if (index > 0)
         {
+            TakeSnapshot($"Move Rule Up: {SelectedRule.Id}");
             Rules.Move(index, index - 1);
             HasUnsavedChanges = true;
+            UpdateRulePriorityContext();
         }
     }
 
@@ -591,8 +615,10 @@ public partial class PolicyEditorViewModel : ObservableObject
         var index = Rules.IndexOf(SelectedRule);
         if (index < Rules.Count - 1)
         {
+            TakeSnapshot($"Move Rule Down: {SelectedRule.Id}");
             Rules.Move(index, index + 1);
             HasUnsavedChanges = true;
+            UpdateRulePriorityContext();
         }
     }
 
@@ -604,6 +630,8 @@ public partial class PolicyEditorViewModel : ObservableObject
     {
         if (SelectedRule == null)
             return;
+
+        TakeSnapshot($"Copy Rule: {SelectedRule.Id}");
 
         var copy = new RuleViewModel
         {
@@ -621,13 +649,14 @@ public partial class PolicyEditorViewModel : ObservableObject
             Comment = SelectedRule.Comment
         };
 
-        copy.PropertyChanged += (s, e) => MarkAsChanged();
+        WireRulePropertyChanged(copy);
 
         // Insert after the selected rule
         var index = Rules.IndexOf(SelectedRule);
         Rules.Insert(index + 1, copy);
         SelectedRule = copy;
         HasUnsavedChanges = true;
+        UpdateRulePriorityContext();
     }
 
     /// <summary>
@@ -669,6 +698,249 @@ public partial class PolicyEditorViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Wires up property change handlers for a rule.
+    /// </summary>
+    private void WireRulePropertyChanged(RuleViewModel rule)
+    {
+        rule.PropertyChanged += (s, e) =>
+        {
+            MarkAsChanged();
+
+            // Update priority context when priority changes
+            if (e.PropertyName == nameof(RuleViewModel.Priority))
+            {
+                UpdateRulePriorityContext();
+            }
+        };
+    }
+
+    /// <summary>
+    /// Updates priority context for all rules based on evaluation order.
+    /// Rules are evaluated in descending priority order, with position breaking ties.
+    /// </summary>
+    private void UpdateRulePriorityContext()
+    {
+        if (Rules.Count == 0)
+            return;
+
+        // Order rules by priority (descending), then by current position (ascending)
+        var orderedRules = Rules
+            .Select((rule, index) => new { Rule = rule, OriginalIndex = index })
+            .OrderByDescending(x => x.Rule.Priority)
+            .ThenBy(x => x.OriginalIndex)
+            .ToList();
+
+        // Update each rule's priority context
+        for (int i = 0; i < orderedRules.Count; i++)
+        {
+            var current = orderedRules[i].Rule;
+            var beforeRuleId = i > 0 ? orderedRules[i - 1].Rule.Id : "";
+            var afterRuleId = i < orderedRules.Count - 1 ? orderedRules[i + 1].Rule.Id : "";
+
+            current.UpdatePriorityContext(i + 1, orderedRules.Count, beforeRuleId, afterRuleId);
+        }
+    }
+
+    /// <summary>
+    /// Takes a snapshot of the current policy state for undo functionality.
+    /// </summary>
+    private void TakeSnapshot(string description)
+    {
+        // Don't take snapshots when restoring from one
+        if (_isRestoringSnapshot)
+            return;
+
+        var snapshot = new PolicySnapshot
+        {
+            PolicyVersion = PolicyVersion,
+            DefaultAction = DefaultAction,
+            Rules = Rules.Select(r => new RuleSnapshot
+            {
+                Id = r.Id,
+                Action = r.Action,
+                Direction = r.Direction,
+                Protocol = r.Protocol,
+                Process = r.Process,
+                RemoteIp = r.RemoteIp,
+                RemotePorts = r.RemotePorts,
+                LocalIp = r.LocalIp,
+                LocalPorts = r.LocalPorts,
+                Priority = r.Priority,
+                Enabled = r.Enabled,
+                Comment = r.Comment
+            }).ToList(),
+            Description = description,
+            Timestamp = DateTime.Now
+        };
+
+        _undoStack.Push(snapshot);
+
+        // Limit stack size by removing oldest snapshot if exceeded
+        if (_undoStack.Count > MaxUndoStackSize)
+        {
+            // Remove bottom item (oldest) from stack
+            var items = _undoStack.ToArray();
+            _undoStack.Clear();
+            // Re-push all items except the oldest (last in array)
+            for (int i = items.Length - 2; i >= 0; i--)
+            {
+                _undoStack.Push(items[i]);
+            }
+        }
+
+        // Clear redo stack on new action
+        _redoStack.Clear();
+
+        UpdateUndoRedoState();
+    }
+
+    /// <summary>
+    /// Restores the policy state from a snapshot.
+    /// </summary>
+    private void RestoreSnapshot(PolicySnapshot snapshot)
+    {
+        _isRestoringSnapshot = true;
+
+        try
+        {
+            PolicyVersion = snapshot.PolicyVersion;
+            DefaultAction = snapshot.DefaultAction;
+
+            // Clear and rebuild rules
+            Rules.Clear();
+            foreach (var ruleSnapshot in snapshot.Rules)
+            {
+                var rule = new RuleViewModel
+                {
+                    Id = ruleSnapshot.Id,
+                    Action = ruleSnapshot.Action,
+                    Direction = ruleSnapshot.Direction,
+                    Protocol = ruleSnapshot.Protocol,
+                    Process = ruleSnapshot.Process,
+                    RemoteIp = ruleSnapshot.RemoteIp,
+                    RemotePorts = ruleSnapshot.RemotePorts,
+                    LocalIp = ruleSnapshot.LocalIp,
+                    LocalPorts = ruleSnapshot.LocalPorts,
+                    Priority = ruleSnapshot.Priority,
+                    Enabled = ruleSnapshot.Enabled,
+                    Comment = ruleSnapshot.Comment
+                };
+
+                WireRulePropertyChanged(rule);
+                Rules.Add(rule);
+            }
+
+            if (Rules.Count > 0)
+            {
+                SelectedRule = Rules[0];
+            }
+
+            UpdateRulePriorityContext();
+            HasUnsavedChanges = true;
+        }
+        finally
+        {
+            _isRestoringSnapshot = false;
+        }
+    }
+
+    /// <summary>
+    /// Updates the undo/redo button states and descriptions.
+    /// </summary>
+    private void UpdateUndoRedoState()
+    {
+        CanUndo = _undoStack.Count > 0;
+        CanRedo = _redoStack.Count > 0;
+
+        UndoDescription = _undoStack.Count > 0 ? _undoStack.Peek().Description : "";
+        RedoDescription = _redoStack.Count > 0 ? _redoStack.Peek().Description : "";
+    }
+
+    /// <summary>
+    /// Undoes the last change.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo()
+    {
+        if (_undoStack.Count == 0)
+            return;
+
+        // Take current state as redo snapshot before undoing
+        var currentSnapshot = new PolicySnapshot
+        {
+            PolicyVersion = PolicyVersion,
+            DefaultAction = DefaultAction,
+            Rules = Rules.Select(r => new RuleSnapshot
+            {
+                Id = r.Id,
+                Action = r.Action,
+                Direction = r.Direction,
+                Protocol = r.Protocol,
+                Process = r.Process,
+                RemoteIp = r.RemoteIp,
+                RemotePorts = r.RemotePorts,
+                LocalIp = r.LocalIp,
+                LocalPorts = r.LocalPorts,
+                Priority = r.Priority,
+                Enabled = r.Enabled,
+                Comment = r.Comment
+            }).ToList(),
+            Description = "Redo: " + _undoStack.Peek().Description,
+            Timestamp = DateTime.Now
+        };
+
+        _redoStack.Push(currentSnapshot);
+
+        // Restore previous state
+        var snapshot = _undoStack.Pop();
+        RestoreSnapshot(snapshot);
+
+        UpdateUndoRedoState();
+    }
+
+    /// <summary>
+    /// Redoes the last undone change.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void Redo()
+    {
+        if (_redoStack.Count == 0)
+            return;
+
+        // Take current state as undo snapshot before redoing
+        var currentSnapshot = new PolicySnapshot
+        {
+            PolicyVersion = PolicyVersion,
+            DefaultAction = DefaultAction,
+            Rules = Rules.Select(r => new RuleSnapshot
+            {
+                Id = r.Id,
+                Action = r.Action,
+                Direction = r.Direction,
+                Protocol = r.Protocol,
+                Process = r.Process,
+                RemoteIp = r.RemoteIp,
+                RemotePorts = r.RemotePorts,
+                LocalIp = r.LocalIp,
+                LocalPorts = r.LocalPorts,
+                Priority = r.Priority,
+                Enabled = r.Enabled,
+                Comment = r.Comment
+            }).ToList(),
+            Description = _redoStack.Peek().Description.Replace("Redo: ", ""),
+            Timestamp = DateTime.Now
+        };
+
+        _undoStack.Push(currentSnapshot);
+
+        // Restore redo state
+        var snapshot = _redoStack.Pop();
+        RestoreSnapshot(snapshot);
+
+        UpdateUndoRedoState();
+    }
+
     private void LoadPolicyToUI(Policy policy)
     {
         PolicyVersion = policy.Version;
@@ -694,7 +966,7 @@ public partial class PolicyEditorViewModel : ObservableObject
                 Comment = rule.Comment ?? ""
             };
 
-            ruleVm.PropertyChanged += (s, e) => MarkAsChanged();
+            WireRulePropertyChanged(ruleVm);
             Rules.Add(ruleVm);
         }
 
@@ -705,6 +977,7 @@ public partial class PolicyEditorViewModel : ObservableObject
 
         ValidationErrors.Clear();
         ValidationMessage = "";
+        UpdateRulePriorityContext();
     }
 
     private void SaveUIToPolicy()
@@ -804,6 +1077,69 @@ public partial class RuleViewModel : ObservableObject
 
     [ObservableProperty]
     private string _comment = "";
+
+    [ObservableProperty]
+    private int _ordinalPosition;
+
+    [ObservableProperty]
+    private string _priorityContext = "";
+
+    /// <summary>
+    /// Gets the priority display with ordinal position.
+    /// </summary>
+    public string PriorityDisplay => OrdinalPosition > 0 ? $"#{OrdinalPosition} (P:{Priority})" : $"P:{Priority}";
+
+    /// <summary>
+    /// Gets the priority badge color based on priority value.
+    /// </summary>
+    public string PriorityBadgeColor
+    {
+        get
+        {
+            if (Priority >= 200) return "#4CAF50"; // Green - High priority
+            if (Priority >= 100) return "#FF9800"; // Orange - Medium priority
+            return "#F44336"; // Red - Low priority
+        }
+    }
+
+    /// <summary>
+    /// Updates the priority context for this rule.
+    /// </summary>
+    /// <param name="position">Ordinal position in evaluation order (1-based).</param>
+    /// <param name="totalRules">Total number of rules.</param>
+    /// <param name="beforeRuleId">ID of the rule evaluated before this one.</param>
+    /// <param name="afterRuleId">ID of the rule evaluated after this one.</param>
+    public void UpdatePriorityContext(int position, int totalRules, string beforeRuleId, string afterRuleId)
+    {
+        OrdinalPosition = position;
+
+        var context = new List<string>();
+
+        if (position == 1)
+        {
+            context.Add("Evaluated FIRST");
+        }
+        else if (position == totalRules)
+        {
+            context.Add("Evaluated LAST");
+        }
+        else
+        {
+            context.Add($"Evaluated {position} of {totalRules}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(beforeRuleId))
+        {
+            context.Add($"After: {beforeRuleId}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(afterRuleId))
+        {
+            context.Add($"Before: {afterRuleId}");
+        }
+
+        PriorityContext = string.Join(" | ", context);
+    }
 
     /// <summary>
     /// Gets a summary string for display in the rule list.

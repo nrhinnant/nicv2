@@ -62,4 +62,11 @@ public interface IDialogService
     /// <param name="initialText">Initial text in the input area.</param>
     /// <returns>The entered text, or null if cancelled.</returns>
     string? ShowTextInputDialog(string prompt, string title = "Input", string? initialText = null);
+
+    /// <summary>
+    /// Shows a detailed confirmation dialog for deleting a firewall rule.
+    /// </summary>
+    /// <param name="rule">The rule to display for deletion confirmation.</param>
+    /// <returns>True if the user confirmed deletion, false otherwise.</returns>
+    bool ShowDeleteRuleDialog(ViewModels.RuleViewModel rule);
 }
