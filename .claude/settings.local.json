@@ -38,7 +38,9 @@
       "Bash(Select-Object Name, Status, StartType)",
       "Bash(dotnet restore:*)",
       "Bash(pwsh -File scripts/Fix-CA1707.ps1:*)",
-      "Bash(pwsh -File:*)"
+      "Bash(pwsh -File:*)",
+      "Bash(echo:*)",
+      "Bash(git status:*)"
     ]
   }
 }
